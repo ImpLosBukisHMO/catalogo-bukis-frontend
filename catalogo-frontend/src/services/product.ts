@@ -1,31 +1,27 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+import axios from "axios";
+import API from "../api";
 
 export async function getProducts() {
-  const url = `${API_BASE}/api/productos/`;
-
-  const res = await fetch(url, {
+  const res = await API.get("/api/productos/", {
     headers: { Accept: "application/json" },
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Error al cargar productos (${res.status}). ${text}`);
+  if (res.status !== 200) {
+    throw new Error(`Error al cargar productos (${res.status}).`);
   }
 
-  return res.json();
+  console.log("Respuesta de productos:", res.data);
+  return res.data;
 }
 
 export async function getProductById(id: string | number) {
-  const url = `${API_BASE}/api/productos/${id}/`;
-
-  const res = await fetch(url, {
+  const res = await API.get(`/api/productos/${id}/`, {
     headers: { Accept: "application/json" },
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Error al cargar producto (${res.status}). ${text}`);
+  if (res.status !== 200) {
+    throw new Error(`Error al cargar producto (${res.status}).`);
   }
 
-  return res.json();
+  return res.data;
 }

@@ -1,5 +1,5 @@
-import { FaFacebook } from "react-icons/fa";
-import { FaInstagram } from "react-icons/fa";
+import { Facebook, Instagram } from 'lucide-react';
+
 
 /*
 TO DO:
@@ -9,7 +9,7 @@ TO DO:
 
 const Footer = (props: { style?: React.CSSProperties }) => {
     return (
-        <footer className="pt-3 main-footer" style={props.style}>
+        <footer className="pt-3 main-footer is-fixeb-bottom" style={props.style}>
             {/* 1st. division */}
             <div className="content has-text-white py-2">
                 <div className="columns is-mobile is-centered is-vcentered is-variable is-8 px-6">
@@ -23,7 +23,7 @@ const Footer = (props: { style?: React.CSSProperties }) => {
 
                     <div className="column is-narrow">
                         <p className="has-text-grey-light" style={{ fontSize: '0.90rem' }}>Encuéntranos en:</p>
-                        <p style={{ fontSize: '0.85rem' }}>
+                        <p className="txt-white" style={{ fontSize: '0.85rem' }}>
                             Blvd. Solidaridad 118 A, Raquet Club II, 83200 Hermosillo, Sonora, México.
                         </p>
                     </div>
@@ -35,7 +35,7 @@ const Footer = (props: { style?: React.CSSProperties }) => {
                             <p className="mr-3 mb-0 has-text-grey-light" style={{ lineHeight: '1', fontSize: '0.90rem' }}>
                                 Redes sociales:
                             </p>
-                            <FaFacebook
+                            <Facebook
                                 className="social-network-icon"
                                 size={32}
                                 style={{ marginRight: 10, cursor: 'pointer' }}
@@ -46,7 +46,7 @@ const Footer = (props: { style?: React.CSSProperties }) => {
                                     )
                                 }
                             />
-                            <FaInstagram
+                            <Instagram
                                 className="social-network-icon"
                                 size={32}
                                 style={{ cursor: 'pointer' }}
@@ -66,7 +66,7 @@ const Footer = (props: { style?: React.CSSProperties }) => {
 
             {/* 2nd. division */}
             <div className='py-3 is-flex align-items-center is-justify-content-center main-footer-2' style={{width:'100%'}}>
-                <p>
+                <p className="txt-white">
                     Copyright &copy; {new Date().getFullYear()} Importaciones Los Bukis. Todos los derechos reservados.
                 </p>
             </div>

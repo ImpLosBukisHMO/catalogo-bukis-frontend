@@ -1,9 +1,7 @@
 import { useState } from "react";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
-import { RiPencilFill } from "react-icons/ri";
-import { FaRegSave } from "react-icons/fa";
-import { GiCancel } from "react-icons/gi";
+import { Pencil, Save, Ban } from "lucide-react";
 
 
 /*
@@ -18,8 +16,8 @@ const EditingButtons = (props:{isEditing: boolean, handleEditing: () => void}) =
             <div className="mt-5" style={{ width: '100%' }}>
                 <button className="mt-1 mx-auto p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
                     onClick={props.handleEditing}>
-                    <RiPencilFill size={22} />
-                    <p className='is-size-5'>&nbsp;Modificar datos</p>
+                    <Pencil size={22} />
+                    <p className='is-size-6 txt-white'>&nbsp;Modificar datos</p>
                 </button>
             </div>
         );
@@ -27,15 +25,15 @@ const EditingButtons = (props:{isEditing: boolean, handleEditing: () => void}) =
     else {
         return (
             <div className="mt-5 is-flex is-justify-content-center" style={{ width: '100%' }}>
-                <button className="mt-1 mx-3 p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
+                <button type="submit" className="mt-1 mx-3 p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
                     onClick={props.handleEditing}>
-                    <FaRegSave size={22} />
-                    <p className='is-size-5'>&nbsp;Guardar datos</p>
+                    <Save size={22} />
+                    <p className='is-size-6 txt-white'>&nbsp;Guardar datos</p>
                 </button>
-                <button className="mt-1 mx-3 p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
+                <button type="reset" className="mt-1 mx-3 p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
                     onClick={props.handleEditing}>
-                    <GiCancel size={22} />
-                    <p className='is-size-5'>&nbsp;Cancelar</p>
+                    <Ban size={22} />
+                    <p className='is-size-6 txt-white'>&nbsp;Cancelar</p>
                 </button>
             </div>
         );
@@ -86,7 +84,7 @@ const ProfilePage = () => {
                     <div className="column">
                         <div>
                             <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Calle</p>
-                            <input className="input custom-input" type="text" placeholder="Ej.: Nombre de la calle, número exterior de la casa." disabled={!isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Ej.: Nombre de la calle, número exterior." disabled={!isEditing} />
                         </div>
                         <div>
                             <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Código Postal (C.P.)</p>

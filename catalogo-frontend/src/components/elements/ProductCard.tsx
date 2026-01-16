@@ -1,18 +1,18 @@
-import { FaCartPlus } from "react-icons/fa";
-import { TiHeartFullOutline } from "react-icons/ti";
+import { CornerDownRight, Heart } from "lucide-react";
 import { useNavigate } from "react-router";
 import type { ProductCardVM } from "../../types/product";
 
 type Props = {
   product: ProductCardVM;
-  onAddToOrder?: (product: ProductCardVM) => void;
   onToggleFavorite?: (product: ProductCardVM) => void;
 };
 
-const ProductCard = ({ product, onAddToOrder, onToggleFavorite }: Props) => {
+const ProductCard = ({ product, onToggleFavorite }: Props) => {
   const navigate = useNavigate();
 
   const { id, nombre, sku, precio, imagenUrl, disponible } = product;
+
+  console.log("Rendering ProductCard for product:", product);
 
   const goToDetail = () => navigate(`/producto/${id}`);
 
@@ -24,18 +24,12 @@ const ProductCard = ({ product, onAddToOrder, onToggleFavorite }: Props) => {
         border: "1px solid #c3c3c3",
         boxShadow: "0 2px 5px rgba(0,0,0,0.35)",
         backgroundColor: "#f5f5f5",
-        cursor: "pointer",
       }}
-      role="link"
       tabIndex={0}
-      onClick={goToDetail}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") goToDetail();
-      }}
     >
       <div>
             <img
-            src={imagenUrl ?? "https://placehold.net/600x600.png"}
+            src={imagenUrl || "https://placehold.net/600x600.png"}
             alt={nombre}
             onError={(e) => {
                 const img = e.currentTarget;
@@ -57,20 +51,20 @@ const ProductCard = ({ product, onAddToOrder, onToggleFavorite }: Props) => {
           {nombre}
         </p>
 
-        <p className="is-size-7 has-text-weight-light" style={{ color: "black" }}>
-          No. ítem: {sku}
+        <p className="is-size-6 has-text-weight-light" style={{ color: "black" }}>
+          $ {precio.toFixed(2)} MXN
         </p>
 
         <p className="is-size-7 has-text-weight-light" style={{ color: "black" }}>
-          ${precio.toFixed(2)} MXN
+          Ítem (SKU): {sku}
         </p>
 
         {disponible ? (
-          <p className="is-size-7 has-text-weight-light" style={{ color: "green" }}>
+          <p className="is-size-6 has-text-weight-light" style={{ color: "green" }}>
             Disponible
           </p>
         ) : (
-          <p className="is-size-7 has-text-weight-light" style={{ color: "red" }}>
+          <p className="is-size- has-text-weight-light" style={{ color: "red" }}>
             No disponible
           </p>
         )}
@@ -78,18 +72,17 @@ const ProductCard = ({ product, onAddToOrder, onToggleFavorite }: Props) => {
         <div className="is-flex align-items-center my-1">
           <button
             className="mt-1 p-1 mr-3 custom-btn is-flex is-align-items-center is-justify-content-center"
-            disabled={!disponible}
             onClick={(e) => {
               e.stopPropagation();
-              onAddToOrder?.(product);
+              goToDetail();
             }}
             style={{
               opacity: disponible ? 1 : 0.6,
               cursor: disponible ? "pointer" : "not-allowed",
             }}
           >
-            <FaCartPlus size={20} />
-            <p className="is-size-7">&nbsp;&nbsp;Añadir al pedido</p>
+            <CornerDownRight size={20} />
+            <p className="is-size-7 txt-white">&nbsp;&nbsp;Ver producto</p>
           </button>
 
           <button
@@ -100,7 +93,7 @@ const ProductCard = ({ product, onAddToOrder, onToggleFavorite }: Props) => {
             }}
             aria-label="Agregar a favoritos"
           >
-            <TiHeartFullOutline size={24} />
+            <Heart size={24} />
           </button>
         </div>
       </div>

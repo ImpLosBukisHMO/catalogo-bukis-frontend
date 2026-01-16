@@ -6,7 +6,7 @@ const NotFoundPage = () => {
         <>
             <title>Página no encontrada | Importaciones Los Bukis</title>
             <NavBar />
-            <div>
+            <div className='pt-1 pb-5'>
                 <h1 className='mt-6 pt-6 mb-5 has-text-weight-semibold is-size-2' style={{ margin: 0, textAlign: 'center' }}>
                     Ups... La página no se encuentra disponible.
                 </h1>

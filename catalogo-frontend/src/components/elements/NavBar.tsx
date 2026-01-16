@@ -1,7 +1,4 @@
-import { IoHome } from "react-icons/io5";
-import { TiHeartFullOutline } from "react-icons/ti";
-import { FaShoppingCart } from "react-icons/fa";
-import { CgProfile } from "react-icons/cg";
+import { House, Heart, ShoppingCart, UserRound } from "lucide-react";
 import logoBukis from '/bukis_logo.png';
 
 /*
@@ -24,22 +21,22 @@ const NavBar = () => {
                 <div className="navbar-end">
                     <a className="navbar-item main-nav" href="/" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/" ? (<><IoHome size={24} /><p className='is-underlined'>Inicio</p></>) : (<><IoHome size={24} /><p>Inicio</p></>)
+                            window.location.pathname === "/" ? (<><House size={24} /><p className='is-underlined txt-white'>Inicio</p></>) : (<><House size={24} /><p className='txt-white'>Inicio</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav" href="/favoritos" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/favoritos" ? (<><TiHeartFullOutline size={24} /><p className='is-underlined'>Favoritos</p></>) : (<><TiHeartFullOutline size={24} /><p>Favoritos</p></>)
+                            window.location.pathname === "/favoritos" ? (<><Heart size={24} /><p className='is-underlined txt-white'>Favoritos</p></>) : (<><Heart size={24} /><p className='txt-white'>Favoritos</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav" href="/pedidos" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/pedidos" ? (<><FaShoppingCart size={24} /><p className='is-underlined'>Pedidos</p></>) : (<><FaShoppingCart size={24} /><p>Pedidos</p></>)
+                            window.location.pathname === "/pedidos" ? (<><ShoppingCart size={24} /><p className='is-underlined txt-white'>Pedidos</p></>) : (<><ShoppingCart size={24} /><p className='txt-white'>Pedidos</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav" href="/perfil" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/perfil" ? (<><CgProfile size={24} /><p className='is-underlined'>Mi Perfil</p></>) : (<><CgProfile size={24} /><p> Mi Perfil</p></>)
+                            window.location.pathname === "/perfil" ? (<><UserRound size={24} /><p className='is-underlined txt-white'>Mi Perfil</p></>) : (<><UserRound size={24} /><p className='txt-white'>Mi Perfil</p></>)
                         }
                     </a>
                 </div>

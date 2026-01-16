@@ -1,5 +1,4 @@
-import { MdNavigateNext } from "react-icons/md";
-import { MdNavigateBefore } from "react-icons/md";
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const OfferSlider = () => {
     return (
@@ -12,8 +11,8 @@ const OfferSlider = () => {
             </div>
             <div style={{backgroundColor: '#9e9e9eff', height: '360px' }}>
                 <div style={{ width: '100%', display: 'flex', gap: '85%' , alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                    <MdNavigateBefore className="slider-btn" size={'3rem'} color="#000000" />
-                    <MdNavigateNext className="slider-btn" size={'3rem'} color="#000000" />
+                    <ArrowLeft className="slider-btn" size={'3rem'} color="#000000" />
+                    <ArrowRight className="slider-btn" size={'3rem'} color="#000000" />
                 </div>
             </div>
         </div>

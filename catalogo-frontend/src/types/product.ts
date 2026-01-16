@@ -11,6 +11,7 @@ export type Product = {
   categoria: number;
   created_at: string;
   updated_at: string;
+  disponible: boolean;
 };
 
 export type ProductCardVM = {

@@ -7,7 +7,7 @@ import Home from "./components/pages/Home.tsx";
 import SignUpPage from "./components/pages/SignUpPage.tsx";
 import LogInPage from "./components/pages/LogInPage.tsx";
 import ProfilePage from "./components/pages/ProfilePage.tsx";
-import ProductoPage from "./components/pages/ProductoPage.tsx";
+import ProductPage from "./components/pages/ProductPage.tsx";
 import NotFoundPage from "./components/pages/NotFoundPage.tsx";
 
 const router = createBrowserRouter([
@@ -16,7 +16,7 @@ const router = createBrowserRouter([
   { path: "/iniciar-sesion", element: <LogInPage /> },
   { path: "/perfil", element: <ProfilePage /> },
 
-  { path: "/producto/:id", element: <ProductoPage /> },
+  { path: "/producto/:id", element: <ProductPage /> },
 
   { path: "*", element: <NotFoundPage /> },
 ]);
