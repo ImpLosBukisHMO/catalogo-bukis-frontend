@@ -1,16 +1,81 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
-import { getProductById } from "../../services/product";
-import type { Product } from "../../types/product";
+import ProductCard from "../elements/ProductCard";
+
+import {
+  getProductById,
+  getProductImages,
+  getProducts,
+  type ProductImage,
+} from "../../services/product";
+
+import type { ProductDetail, Variant } from "../../types/product";
+import type { Product, ProductCardVM } from "../../types/product";
+
+function pickDefaultVariantId(variantes: Variant[]): number | null {
+  if (!variantes?.length) return null;
+  const firstDisponible = variantes.find((v) => v.disponible);
+  return (firstDisponible ?? variantes[0]).id;
+}
+
+function parseQty(raw: string): number | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const n = Number(t);
+  if (!Number.isFinite(n)) return null;
+  if (!Number.isInteger(n)) return null;
+  return n;
+}
 
 export default function ProductoPage() {
   const { id } = useParams();
-  const [product, setProduct] = useState<Product | null>(null);
+
+  const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+
+  const [images, setImages] = useState<ProductImage[]>([]);
+  const [activeImageId, setActiveImageId] = useState<number | null>(null);
+
+  const [qtyRaw, setQtyRaw] = useState("1");
+  const [qtyError, setQtyError] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
+  const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Más productos (mismo componente que Home)
+  const [moreProducts, setMoreProducts] = useState<ProductCardVM[]>([]);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
+
+  const selectedVariant = useMemo(() => {
+    if (!product || selectedVariantId == null) return null;
+    return product.variantes.find((v) => v.id === selectedVariantId) ?? null;
+  }, [product, selectedVariantId]);
+
+  const activeImage = useMemo(() => {
+    if (!images.length) return null;
+    return images.find((i) => i.id === activeImageId) ?? images[0];
+  }, [images, activeImageId]);
+
+  const stock = selectedVariant?.stock ?? 0;
+  const isDisponible = Boolean(selectedVariant?.disponible);
+  const qty = useMemo(() => parseQty(qtyRaw), [qtyRaw]);
+
+  const validation = useMemo(() => {
+    if (!selectedVariant) return { ok: false, msg: "Selecciona una variante." };
+    if (!isDisponible || stock <= 0) return { ok: false, msg: "Sin stock." };
+    if (qty == null) return { ok: false, msg: "Ingresa una cantidad." };
+    if (qty < 1) return { ok: false, msg: "La cantidad mínima es 1." };
+    if (qty > stock) return { ok: false, msg: `Stock insuficiente. Máximo ${stock}.` };
+    return { ok: true, msg: null as string | null };
+  }, [qty, selectedVariant, isDisponible, stock]);
+
+  const canBuy = validation.ok;
+
+  // Cargar producto
   useEffect(() => {
     (async () => {
       try {
@@ -18,13 +83,86 @@ export default function ProductoPage() {
           setError("No se recibió id de producto");
           return;
         }
+
         setLoading(true);
-        const data: Product = await getProductById(id);
+        setError(null);
+
+        const data = await getProductById(id);
         setProduct(data);
+
+        const defVariantId = pickDefaultVariantId(data.variantes);
+        setSelectedVariantId(defVariantId);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error desconocido");
       } finally {
         setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  // Reset cantidad al cambiar variante
+  useEffect(() => {
+    setQtyRaw("1");
+    setQtyError(null);
+  }, [selectedVariantId]);
+
+  // Cargar imágenes por variante (fallback por producto)
+  useEffect(() => {
+    (async () => {
+      if (!product) return;
+
+      try {
+        setImgLoading(true);
+
+        let imgs: ProductImage[] = [];
+
+        if (selectedVariantId != null) {
+          imgs = await getProductImages({ variante: selectedVariantId });
+        }
+
+        if (!imgs.length) {
+          imgs = await getProductImages({ producto: product.id });
+        }
+
+        setImages(imgs);
+
+        const principal = imgs.find((i) => i.es_principal) ?? imgs[0] ?? null;
+        setActiveImageId(principal?.id ?? null);
+      } catch {
+        setImages([]);
+        setActiveImageId(null);
+      } finally {
+        setImgLoading(false);
+      }
+    })();
+  }, [product, selectedVariantId]);
+
+  // Cargar “Más productos” usando el mismo ProductCard del Home
+  useEffect(() => {
+    (async () => {
+      try {
+        setMoreLoading(true);
+        setMoreError(null);
+
+        const data: Product[] = await getProducts();
+
+        const mapped: ProductCardVM[] = data
+          .filter((p: any) => String(p.id) !== String(id)) // evita repetir el mismo producto
+          .map((p: any) => ({
+            id: p.id,
+            nombre: p.nombre,
+            sku: p.item ?? p.sku ?? "",
+            precio: Number(p.precio),
+            imagenUrl: p.imagen ?? p.imagenUrl ?? null,
+            disponible: true,
+          }))
+          .slice(0, 8);
+
+        setMoreProducts(mapped);
+      } catch (e) {
+        setMoreError(e instanceof Error ? e.message : "Error desconocido");
+      } finally {
+        setMoreLoading(false);
       }
     })();
   }, [id]);
@@ -34,59 +172,302 @@ export default function ProductoPage() {
       <title>Producto | Importaciones Los Bukis</title>
       <NavBar />
 
-      <div className="container" style={{ padding: "2rem" }}>
-        {loading && <p>Cargando producto...</p>}
-        {error && <p style={{ color: "red" }}>{error}</p>}
+      <div
+        className="container is-fluid"
+        style={{
+          paddingLeft: "clamp(1rem, 3vw, 3rem)",
+          paddingRight: "clamp(1rem, 3vw, 3rem)",
+          paddingTop: "2rem",
+          paddingBottom: "2rem",
+        }}
+      >
+        <div style={{ maxWidth: 1600, margin: "0 auto" }}>
+          {loading && <p>Cargando producto...</p>}
+          {error && <p style={{ color: "red" }}>{error}</p>}
 
-        {!loading && !error && product && (
-          <div className="is-flex" style={{ gap: "2rem" }}>
-            <div style={{ flex: "0 0 380px" }}>
-              <img
-                src={product.imagen ?? "https://placehold.net/600x600.png"}
-                alt={product.nombre}
-                style={{
-                  width: "100%",
-                  borderRadius: 12,
-                  border: "1px solid #c3c3c3",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-                }}
-              />
-            </div>
+          {!loading && !error && product && (
+            <>
+              <div className="columns is-variable is-7 is-align-items-flex-start">
+                {/* Imagen */}
+                <div className="column is-5">
+                  <div className="box">
+                    {imgLoading && <p className="mb-3">Cargando imágenes...</p>}
 
-            <div style={{ flex: 1 }}>
-              <h1 className="has-text-weight-bold is-size-2" style={{ marginBottom: "0.5rem" }}>
-                {product.nombre}
-              </h1>
+                    <figure
+                      className="image is-square"
+                      style={{
+                        background: "#fff",
+                        borderRadius: 12,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <img
+                        src={
+                          activeImage?.imagen ??
+                          product.imagen ??
+                          "https://placehold.net/600x600.png"
+                        }
+                        alt={product.nombre}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                          display: "block",
+                        }}
+                      />
+                    </figure>
 
-              <p style={{ marginBottom: "0.5rem" }}>
-                <strong>No. ítem:</strong> {product.item}
-              </p>
+                    {images.length > 1 && (
+                      <div
+                        className="mt-4 is-flex is-flex-wrap-wrap"
+                        style={{ gap: "0.5rem" }}
+                      >
+                        {images.map((img) => (
+                          <button
+                            key={img.id}
+                            type="button"
+                            className={`button is-small ${
+                              img.id === activeImageId ? "is-dark" : ""
+                            }`}
+                            onClick={() => setActiveImageId(img.id)}
+                          >
+                            {img.orden}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-              <p style={{ marginBottom: "1rem" }}>
-                <strong>Precio:</strong> ${Number(product.precio).toFixed(2)} MXN
-              </p>
+                {/* Info */}
+                <div className="column is-5" style={{ color: "#222" }}>
+                  <h1
+                    className="title is-2"
+                    style={{ marginBottom: "0.5rem", color: "#111" }}
+                  >
+                    {product.nombre}
+                  </h1>
 
-              <p style={{ marginBottom: "1rem" }}>
-                <strong>Descripción:</strong> {product.descripcion}
-              </p>
+                  <hr style={{ margin: "0.75rem 0 1rem" }} />
 
-              <div className="content">
-                <p>
-                  <strong>Peso:</strong> {product.peso}
-                </p>
-                <p>
-                  <strong>Medidas:</strong> {product.medidas}
-                </p>
-                <p>
-                  <strong>Capacidad:</strong> {product.capacidad || "N/A"}
-                </p>
-                <p>
-                  <strong>Categoría (id):</strong> {product.categoria}
-                </p>
+                  {/* Datos: descripción primero, sin categoría */}
+                  <div style={{ color: "#333" }}>
+                    <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
+                      <div className="column is-3" style={{ color: "#555" }}>
+                        Descripción
+                      </div>
+                      <div className="column" style={{ color: "#111" }}>
+                        {product.descripcion}
+                      </div>
+                    </div>
+
+                    <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
+                      <div className="column is-3" style={{ color: "#555" }}>
+                        No. ítem
+                      </div>
+                      <div className="column" style={{ color: "#111" }}>
+                        {product.item}
+                      </div>
+                    </div>
+
+                    <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
+                      <div className="column is-3" style={{ color: "#555" }}>
+                        Precio
+                      </div>
+                      <div className="column" style={{ color: "#111" }}>
+                        ${Number(product.precio).toFixed(2)} MXN
+                      </div>
+                    </div>
+
+                    <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
+                      <div className="column is-3" style={{ color: "#555" }}>
+                        Peso
+                      </div>
+                      <div className="column" style={{ color: "#111" }}>
+                        {product.peso}
+                      </div>
+                    </div>
+
+                    <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
+                      <div className="column is-3" style={{ color: "#555" }}>
+                        Medidas
+                      </div>
+                      <div className="column" style={{ color: "#111" }}>
+                        {product.medidas}
+                      </div>
+                    </div>
+
+                    <div className="columns is-mobile">
+                      <div className="column is-3" style={{ color: "#555" }}>
+                        Capacidad
+                      </div>
+                      <div className="column" style={{ color: "#111" }}>
+                        {product.capacidad || "N/A"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sin divisor antes de color, directo abajo */}
+                  {product.variantes?.length > 0 && (
+                    <div style={{ marginTop: "1.25rem" }}>
+                      <div className="columns is-mobile" style={{ marginBottom: "0.5rem" }}>
+                        <div className="column is-3" style={{ color: "#555" }}>
+                          Color
+                        </div>
+                        <div className="column" style={{ color: "#111" }}>
+                          {selectedVariant?.color?.nombre ?? "Selecciona"}
+                        </div>
+                      </div>
+
+                      <div className="columns is-mobile" style={{ marginBottom: "0.75rem" }}>
+                        <div className="column is-3" style={{ color: "#555" }}>
+                          Stock
+                        </div>
+                        <div className="column" style={{ color: "#111" }}>
+                          {selectedVariant ? selectedVariant.stock : "-"}
+                        </div>
+                      </div>
+
+                      {/* Swatches: solo círculos */}
+                      <div className="is-flex" style={{ gap: 10, flexWrap: "wrap" }}>
+                        {product.variantes.map((v) => {
+                          const selected = v.id === selectedVariantId;
+                          const disabled = !v.disponible;
+
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => setSelectedVariantId(v.id)}
+                              disabled={disabled}
+                              title={disabled ? "Agotado" : "Disponible"}
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 999,
+                                border: selected ? "2px solid #111" : "1px solid #cfcfcf",
+                                outline: selected ? "3px solid rgba(0,0,0,0.12)" : "none",
+                                background: v.color.hex,
+                                opacity: disabled ? 0.35 : 1,
+                                cursor: disabled ? "not-allowed" : "pointer",
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Buy box */}
+                <div className="column is-2">
+                  <div
+                    className="box"
+                    style={{
+                      background: "rgba(0,0,0,0.88)",
+                      borderRadius: 12,
+                      position: "sticky",
+                      top: "1rem",
+                    }}
+                  >
+                    <p className={`mb-3 ${canBuy ? "has-text-success" : "has-text-danger"}`}>
+                      {canBuy ? "Disponible" : "Revisar stock"}
+                    </p>
+
+                    <div className="field">
+                      <label className="label has-text-grey-light">Cantidad</label>
+                      <div className="control">
+                        <input
+                          className="input"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          step={1}
+                          value={qtyRaw}
+                          onChange={(e) => {
+                            setQtyRaw(e.target.value);
+                            setQtyError(null);
+                          }}
+                          onBlur={() => {
+                            if (validation.ok) setQtyError(null);
+                            else setQtyError(validation.msg);
+                          }}
+                          disabled={!selectedVariant || !isDisponible || stock <= 0}
+                        />
+                      </div>
+
+                      {(qtyError || (!validation.ok && qtyRaw.trim() !== "")) && (
+                        <p className="help is-danger" style={{ marginTop: 8 }}>
+                          {qtyError ?? validation.msg}
+                        </p>
+                      )}
+
+                      {selectedVariant && isDisponible && stock > 0 && (
+                        <p className="help has-text-grey-light" style={{ marginTop: 8 }}>
+                          Stock disponible: {stock}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="field mt-3">
+                      <div className="control">
+                        <button
+                          className="button is-warning is-fullwidth"
+                          disabled={!validation.ok}
+                          onClick={() => {
+                            if (!validation.ok) {
+                              setQtyError(validation.msg);
+                              return;
+                            }
+                            if (!selectedVariant) return;
+
+                            const qtyFinal = qty as number;
+
+                            console.log("Add to cart payload", {
+                              variante_id: selectedVariant.id,
+                              cantidad: qtyFinal,
+                            });
+                          }}
+                        >
+                          Agregar al carrito
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="content mt-4">
+                      <p className="is-size-7 has-text-grey-light">
+                        Nota: aquí solo validamos payload. El endpoint lo conectamos después.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+
+              <hr />
+
+              {/* Más productos: mismo componente del Home, sin textos grises */}
+              <section style={{ paddingTop: "1.25rem" }}>
+                <h2 className="title is-3" style={{ color: "#111", marginBottom: "1rem" }}>
+                  Más productos
+                </h2>
+
+                {moreLoading && <p>Cargando productos...</p>}
+                {moreError && <p style={{ color: "red" }}>{moreError}</p>}
+
+                {!moreLoading && !moreError && (
+                  <div
+                    className="is-flex is-justify-content-center is-align-items-center"
+                    style={{ width: "100%", gap: "1rem", flexWrap: "wrap" }}
+                  >
+                    {moreProducts.map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </div>
       </div>
 
       <Footer />

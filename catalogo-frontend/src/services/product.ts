@@ -1,31 +1,52 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+// src/services/product.ts
+import type { Product, ProductDetail } from "../types/product";
 
-export async function getProducts() {
-  const url = `${API_BASE}/api/productos/`;
+const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+  "http://127.0.0.1:8000";
 
+async function requestJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, {
     headers: { Accept: "application/json" },
   });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Error al cargar productos (${res.status}). ${text}`);
+    throw new Error(`Request failed (${res.status}). ${text}`);
   }
 
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
-export async function getProductById(id: string | number) {
+export async function getProducts(): Promise<Product[]> {
+  const url = `${API_BASE}/api/productos/`;
+  return requestJSON<Product[]>(url);
+}
+
+export async function getProductById(id: string | number): Promise<ProductDetail> {
   const url = `${API_BASE}/api/productos/${id}/`;
+  return requestJSON<ProductDetail>(url);
+}
 
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-  });
+export type ProductImage = {
+  id: number;
+  producto: number;
+  variante: number | null;
+  imagen: string;
+  orden: number;
+  es_principal: boolean;
+  created_at: string;
+  updated_at: string;
+};
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Error al cargar producto (${res.status}). ${text}`);
-  }
+export async function getProductImages(params: {
+  producto?: number;
+  variante?: number;
+}): Promise<ProductImage[]> {
+  const qs = new URLSearchParams();
+  if (params.producto !== undefined) qs.set("producto", String(params.producto));
+  if (params.variante !== undefined) qs.set("variante", String(params.variante));
 
-  return res.json();
+  const url = `${API_BASE}/api/productos-imagenes/?${qs.toString()}`;
+  return requestJSON<ProductImage[]>(url);
 }
