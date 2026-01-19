@@ -8,6 +8,7 @@ import SignUpPage from "./components/pages/SignUpPage.tsx";
 import LogInPage from "./components/pages/LogInPage.tsx";
 import ProfilePage from "./components/pages/ProfilePage.tsx";
 import ProductoPage from "./components/pages/ProductoPage.tsx";
+import WorkerPage from "./components/pages/WorkerPage.tsx";
 import NotFoundPage from "./components/pages/NotFoundPage.tsx";
 
 const router = createBrowserRouter([
@@ -17,6 +18,7 @@ const router = createBrowserRouter([
   { path: "/perfil", element: <ProfilePage /> },
 
   { path: "/producto/:id", element: <ProductoPage /> },
+  { path: "/worker", element: <WorkerPage /> },
 
   { path: "*", element: <NotFoundPage /> },
 ]);
