@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
+
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import ProductCard from "../elements/ProductCard";
@@ -10,6 +11,8 @@ import {
   getProducts,
   type ProductImage,
 } from "../../services/product";
+
+import { addItem } from "../../services/carrito";
 
 import type { ProductDetail, Variant } from "../../types/product";
 import type { Product, ProductCardVM } from "../../types/product";
@@ -31,6 +34,7 @@ function parseQty(raw: string): number | null {
 
 export default function ProductoPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
@@ -45,7 +49,12 @@ export default function ProductoPage() {
   const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Más productos (mismo componente que Home)
+  // Agregar al carrito (UI)
+  const [adding, setAdding] = useState(false);
+  const [addMsg, setAddMsg] = useState<string | null>(null);
+  const [addErr, setAddErr] = useState<string | null>(null);
+
+  // Más productos
   const [moreProducts, setMoreProducts] = useState<ProductCardVM[]>([]);
   const [moreLoading, setMoreLoading] = useState(false);
   const [moreError, setMoreError] = useState<string | null>(null);
@@ -100,10 +109,12 @@ export default function ProductoPage() {
     })();
   }, [id]);
 
-  // Reset cantidad al cambiar variante
+  // Reset cantidad / mensajes al cambiar variante
   useEffect(() => {
     setQtyRaw("1");
     setQtyError(null);
+    setAddMsg(null);
+    setAddErr(null);
   }, [selectedVariantId]);
 
   // Cargar imágenes por variante (fallback por producto)
@@ -137,7 +148,7 @@ export default function ProductoPage() {
     })();
   }, [product, selectedVariantId]);
 
-  // Cargar “Más productos” usando el mismo ProductCard del Home
+  // Cargar “Más productos”
   useEffect(() => {
     (async () => {
       try {
@@ -147,7 +158,7 @@ export default function ProductoPage() {
         const data: Product[] = await getProducts();
 
         const mapped: ProductCardVM[] = data
-          .filter((p: any) => String(p.id) !== String(id)) // evita repetir el mismo producto
+          .filter((p: any) => String(p.id) !== String(id))
           .map((p: any) => ({
             id: p.id,
             nombre: p.nombre,
@@ -166,6 +177,35 @@ export default function ProductoPage() {
       }
     })();
   }, [id]);
+
+  async function handleAddToCart() {
+    setAddMsg(null);
+    setAddErr(null);
+
+    if (!validation.ok) {
+      setQtyError(validation.msg);
+      return;
+    }
+    if (!selectedVariant) return;
+
+    const qtyFinal = qty as number;
+
+    try {
+      setAdding(true);
+      await addItem(selectedVariant.id, qtyFinal);
+
+      setAddMsg("Listo. Se agregó al carrito.");
+      setAddErr(null);
+
+      // opcional: si quieres mandarlo al carrito al agregar
+      // navigate("/carrito");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al agregar al carrito";
+      setAddErr(msg);
+    } finally {
+      setAdding(false);
+    }
+  }
 
   return (
     <>
@@ -218,17 +258,12 @@ export default function ProductoPage() {
                     </figure>
 
                     {images.length > 1 && (
-                      <div
-                        className="mt-4 is-flex is-flex-wrap-wrap"
-                        style={{ gap: "0.5rem" }}
-                      >
+                      <div className="mt-4 is-flex is-flex-wrap-wrap" style={{ gap: "0.5rem" }}>
                         {images.map((img) => (
                           <button
                             key={img.id}
                             type="button"
-                            className={`button is-small ${
-                              img.id === activeImageId ? "is-dark" : ""
-                            }`}
+                            className={`button is-small ${img.id === activeImageId ? "is-dark" : ""}`}
                             onClick={() => setActiveImageId(img.id)}
                           >
                             {img.orden}
@@ -241,94 +276,62 @@ export default function ProductoPage() {
 
                 {/* Info */}
                 <div className="column is-5" style={{ color: "#222" }}>
-                  <h1
-                    className="title is-2"
-                    style={{ marginBottom: "0.5rem", color: "#111" }}
-                  >
+                  <h1 className="title is-2" style={{ marginBottom: "0.5rem", color: "#111" }}>
                     {product.nombre}
                   </h1>
 
                   <hr style={{ margin: "0.75rem 0 1rem" }} />
 
-                  {/* Datos: descripción primero, sin categoría */}
                   <div style={{ color: "#333" }}>
                     <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
-                      <div className="column is-3" style={{ color: "#555" }}>
-                        Descripción
-                      </div>
-                      <div className="column" style={{ color: "#111" }}>
-                        {product.descripcion}
-                      </div>
+                      <div className="column is-3" style={{ color: "#555" }}>Descripción</div>
+                      <div className="column" style={{ color: "#111" }}>{product.descripcion}</div>
                     </div>
 
                     <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
-                      <div className="column is-3" style={{ color: "#555" }}>
-                        No. ítem
-                      </div>
-                      <div className="column" style={{ color: "#111" }}>
-                        {product.item}
-                      </div>
+                      <div className="column is-3" style={{ color: "#555" }}>No. ítem</div>
+                      <div className="column" style={{ color: "#111" }}>{product.item}</div>
                     </div>
 
                     <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
-                      <div className="column is-3" style={{ color: "#555" }}>
-                        Precio
-                      </div>
+                      <div className="column is-3" style={{ color: "#555" }}>Precio</div>
                       <div className="column" style={{ color: "#111" }}>
                         ${Number(product.precio).toFixed(2)} MXN
                       </div>
                     </div>
 
                     <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
-                      <div className="column is-3" style={{ color: "#555" }}>
-                        Peso
-                      </div>
-                      <div className="column" style={{ color: "#111" }}>
-                        {product.peso}
-                      </div>
+                      <div className="column is-3" style={{ color: "#555" }}>Peso</div>
+                      <div className="column" style={{ color: "#111" }}>{product.peso}</div>
                     </div>
 
                     <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
-                      <div className="column is-3" style={{ color: "#555" }}>
-                        Medidas
-                      </div>
-                      <div className="column" style={{ color: "#111" }}>
-                        {product.medidas}
-                      </div>
+                      <div className="column is-3" style={{ color: "#555" }}>Medidas</div>
+                      <div className="column" style={{ color: "#111" }}>{product.medidas}</div>
                     </div>
 
                     <div className="columns is-mobile">
-                      <div className="column is-3" style={{ color: "#555" }}>
-                        Capacidad
-                      </div>
-                      <div className="column" style={{ color: "#111" }}>
-                        {product.capacidad || "N/A"}
-                      </div>
+                      <div className="column is-3" style={{ color: "#555" }}>Capacidad</div>
+                      <div className="column" style={{ color: "#111" }}>{product.capacidad || "N/A"}</div>
                     </div>
                   </div>
 
-                  {/* Sin divisor antes de color, directo abajo */}
                   {product.variantes?.length > 0 && (
                     <div style={{ marginTop: "1.25rem" }}>
                       <div className="columns is-mobile" style={{ marginBottom: "0.5rem" }}>
-                        <div className="column is-3" style={{ color: "#555" }}>
-                          Color
-                        </div>
+                        <div className="column is-3" style={{ color: "#555" }}>Color</div>
                         <div className="column" style={{ color: "#111" }}>
                           {selectedVariant?.color?.nombre ?? "Selecciona"}
                         </div>
                       </div>
 
                       <div className="columns is-mobile" style={{ marginBottom: "0.75rem" }}>
-                        <div className="column is-3" style={{ color: "#555" }}>
-                          Stock
-                        </div>
+                        <div className="column is-3" style={{ color: "#555" }}>Stock</div>
                         <div className="column" style={{ color: "#111" }}>
                           {selectedVariant ? selectedVariant.stock : "-"}
                         </div>
                       </div>
 
-                      {/* Swatches: solo círculos */}
                       <div className="is-flex" style={{ gap: 10, flexWrap: "wrap" }}>
                         {product.variantes.map((v) => {
                           const selected = v.id === selectedVariantId;
@@ -387,12 +390,14 @@ export default function ProductoPage() {
                           onChange={(e) => {
                             setQtyRaw(e.target.value);
                             setQtyError(null);
+                            setAddMsg(null);
+                            setAddErr(null);
                           }}
                           onBlur={() => {
                             if (validation.ok) setQtyError(null);
                             else setQtyError(validation.msg);
                           }}
-                          disabled={!selectedVariant || !isDisponible || stock <= 0}
+                          disabled={!selectedVariant || !isDisponible || stock <= 0 || adding}
                         />
                       </div>
 
@@ -413,30 +418,35 @@ export default function ProductoPage() {
                       <div className="control">
                         <button
                           className="button is-warning is-fullwidth"
-                          disabled={!validation.ok}
-                          onClick={() => {
-                            if (!validation.ok) {
-                              setQtyError(validation.msg);
-                              return;
-                            }
-                            if (!selectedVariant) return;
-
-                            const qtyFinal = qty as number;
-
-                            console.log("Add to cart payload", {
-                              variante_id: selectedVariant.id,
-                              cantidad: qtyFinal,
-                            });
-                          }}
+                          disabled={!validation.ok || adding}
+                          onClick={handleAddToCart}
                         >
-                          Agregar al carrito
+                          {adding ? "Agregando..." : "Agregar al carrito"}
                         </button>
                       </div>
                     </div>
 
+                    {addMsg && (
+                      <div className="mt-3">
+                        <p className="help has-text-success">{addMsg}</p>
+                        <button
+                          className="button is-small is-light mt-2"
+                          onClick={() => navigate("/carrito")}
+                        >
+                          Ver carrito
+                        </button>
+                      </div>
+                    )}
+
+                    {addErr && (
+                      <div className="mt-3">
+                        <p className="help is-danger">{addErr}</p>
+                      </div>
+                    )}
+
                     <div className="content mt-4">
                       <p className="is-size-7 has-text-grey-light">
-                        Nota: aquí solo validamos payload. El endpoint lo conectamos después.
+                        Si falla, casi siempre es token/credenciales o endpoint.
                       </p>
                     </div>
                   </div>
@@ -445,7 +455,7 @@ export default function ProductoPage() {
 
               <hr />
 
-              {/* Más productos: mismo componente del Home, sin textos grises */}
+              {/* Más productos */}
               <section style={{ paddingTop: "1.25rem" }}>
                 <h2 className="title is-3" style={{ color: "#111", marginBottom: "1rem" }}>
                   Más productos
