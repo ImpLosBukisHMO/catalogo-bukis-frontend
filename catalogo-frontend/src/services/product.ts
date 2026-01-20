@@ -28,25 +28,31 @@ export async function getProductById(id: string | number): Promise<ProductDetail
   return requestJSON<ProductDetail>(url);
 }
 
+/* =========================
+   IMAGENES (esto es lo que faltaba)
+   ========================= */
+
 export type ProductImage = {
   id: number;
-  producto: number;
-  variante: number | null;
-  imagen: string;
-  orden: number;
-  es_principal: boolean;
-  created_at: string;
-  updated_at: string;
+  imagen: string; // URL
+  es_principal?: boolean;
+  orden?: number;
+  producto?: number | null;
+  variante?: number | null;
 };
 
 export async function getProductImages(params: {
-  producto?: number;
-  variante?: number;
+  producto?: number | string;
+  variante?: number | string;
 }): Promise<ProductImage[]> {
   const qs = new URLSearchParams();
-  if (params.producto !== undefined) qs.set("producto", String(params.producto));
-  if (params.variante !== undefined) qs.set("variante", String(params.variante));
 
+  if (params.producto != null) qs.set("producto", String(params.producto));
+  if (params.variante != null) qs.set("variante", String(params.variante));
+
+  // Endpoint esperado por tu ProductoPage
+  // Si tu backend usa otro path, aquí se cambia (solo aquí).
   const url = `${API_BASE}/api/productos-imagenes/?${qs.toString()}`;
+
   return requestJSON<ProductImage[]>(url);
 }
