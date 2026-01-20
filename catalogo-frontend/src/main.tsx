@@ -10,6 +10,9 @@ import ProfilePage from "./components/pages/ProfilePage.tsx";
 import ProductoPage from "./components/pages/ProductoPage.tsx";
 import WorkerPage from "./components/pages/WorkerPage.tsx";
 import NotFoundPage from "./components/pages/NotFoundPage.tsx";
+import CarritoPage from "./components/pages/CarritoPage.tsx";
+
+
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -19,6 +22,7 @@ const router = createBrowserRouter([
 
   { path: "/producto/:id", element: <ProductoPage /> },
   { path: "/worker", element: <WorkerPage /> },
+  { path: "/carrito", element: <CarritoPage /> },
 
   { path: "*", element: <NotFoundPage /> },
 ]);
