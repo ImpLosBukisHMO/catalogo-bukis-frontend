@@ -1,113 +1,71 @@
-const cardStyle = {
-  backgroundColor: "#ffffff",
-  border: "1px solid #e5e7eb",
-  borderRadius: "12px",
-  padding: "20px",
-};
+// src/components/pages/WorkerOrdersPage.tsx
+import { useEffect, useMemo, useState } from "react";
+import Table from "../elements/Table";
+import type { WorkerPedido } from "../../types/worker";
+import { getWorkerPedidos } from "../../services/worker";
 
-const tableHeaderStyle = {
-  textAlign: "left" as const,
-  padding: "12px",
-  borderBottom: "1px solid #e5e7eb",
-  color: "#6b7280",
-  fontSize: "14px",
-};
+export default function WorkerOrdersPage() {
+  const [pedidos, setPedidos] = useState<WorkerPedido[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const tableCellStyle = {
-  padding: "12px",
-  borderBottom: "1px solid #f1f5f9",
-};
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
 
-const badgeStyle = (status: string) => {
-  const base = {
-    padding: "4px 10px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 500,
-    display: "inline-block",
-  };
+    getWorkerPedidos()
+      .then((data) => setPedidos(data))
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : "Error desconocido";
+        setError(msg);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  switch (status) {
-    case "pendiente":
-      return { ...base, backgroundColor: "#fef3c7", color: "#92400e" };
-    case "completado":
-      return { ...base, backgroundColor: "#dcfce7", color: "#166534" };
-    case "cancelado":
-      return { ...base, backgroundColor: "#fee2e2", color: "#991b1b" };
-    default:
-      return base;
-  }
-};
+  const columns = useMemo(
+    () => [
+      {
+        header: "ID",
+        render: (p: WorkerPedido) => p.public_id,
+      },
+      {
+        header: "Cliente",
+        render: (p: WorkerPedido) => p.cliente?.nombre ?? "-",
+      },
+      {
+        header: "Correo",
+        render: (p: WorkerPedido) => p.cliente?.correo ?? "-",
+      },
+      {
+        header: "Estado",
+        render: (p: WorkerPedido) => p.estado,
+      },
+      {
+        header: "Items",
+        render: (p: WorkerPedido) => p.items_count,
+      },
+      {
+        header: "Total",
+        render: (p: WorkerPedido) => {
+          const n = Number(p.precio_total);
+          return Number.isFinite(n) ? `$${n.toFixed(2)}` : p.precio_total;
+        },
+      },
+      {
+        header: "Fecha",
+        render: (p: WorkerPedido) => new Date(p.created_at).toLocaleString(),
+      },
+    ],
+    []
+  );
 
-const WorkerOrdersPage = () => {
+  if (loading) return <p>Cargando pedidos...</p>;
+  if (error) return <p>Error: {error}</p>;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Header */}
-      <div>
-        <h1 style={{ fontSize: "24px", fontWeight: 600 }}>Pedidos</h1>
-        <p style={{ color: "#6b7280" }}>
-          Historial y seguimiento de pedidos
-        </p>
-      </div>
-
-      {/* Resumen rápido */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "16px",
-        }}
-      >
-        <div style={cardStyle}>
-          <p style={{ color: "#6b7280" }}>Pedidos pendientes</p>
-          <h2 style={{ fontSize: "28px" }}>—</h2>
-        </div>
-
-        <div style={cardStyle}>
-          <p style={{ color: "#6b7280" }}>Pedidos completados</p>
-          <h2 style={{ fontSize: "28px" }}>—</h2>
-        </div>
-
-        <div style={cardStyle}>
-          <p style={{ color: "#6b7280" }}>Pedidos cancelados</p>
-          <h2 style={{ fontSize: "28px" }}>—</h2>
-        </div>
-      </div>
-
-      {/* Tabla de pedidos */}
-      <div style={cardStyle}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={tableHeaderStyle}>Pedido</th>
-              <th style={tableHeaderStyle}>Cliente</th>
-              <th style={tableHeaderStyle}>Fecha</th>
-              <th style={tableHeaderStyle}>Total</th>
-              <th style={tableHeaderStyle}>Estado</th>
-              <th style={tableHeaderStyle}>Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr>
-              <td style={tableCellStyle}>—</td>
-              <td style={tableCellStyle}>—</td>
-              <td style={tableCellStyle}>—</td>
-              <td style={tableCellStyle}>—</td>
-              <td style={tableCellStyle}>
-                <span style={badgeStyle("pendiente")}>Pendiente</span>
-              </td>
-              <td style={tableCellStyle}>Ver</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <p style={{ color: "#6b7280", marginTop: "16px" }}>
-          No hay pedidos para mostrar
-        </p>
-      </div>
+    <div>
+      <h1>Pedidos</h1>
+      <Table columns={columns} data={pedidos} />
     </div>
   );
-};
-
-export default WorkerOrdersPage;
+}

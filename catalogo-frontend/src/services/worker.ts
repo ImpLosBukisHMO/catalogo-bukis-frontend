@@ -1,34 +1,29 @@
-import type { WorkerVariant } from "../types/worker";
+import type { WorkerVariant, WorkerPedido } from "../types/worker";
 import { getAccessToken, refreshAccessToken } from "./auth";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+
+async function doFetch(url: string, accessToken: string | null) {
+  return fetch(url, {
+    headers: {
+      Accept: "application/json",
+      Authorization: accessToken ? `Bearer ${accessToken}` : "",
+    },
+  });
+}
 
 async function requestJSON<T>(url: string): Promise<T> {
   let access = getAccessToken();
+  let res = await doFetch(url, access);
 
-  let res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      Authorization: access ? `Bearer ${access}` : "",
-    },
-  });
-
-  // 🔁 Si el access token expiró, intentamos refresh automático
+  // si expira el access, refrescamos y reintentamos una vez
   if (res.status === 401) {
     try {
       access = await refreshAccessToken();
+      res = await doFetch(url, access);
     } catch {
-      throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
+      // dejamos que truene con el error original abajo
     }
-
-    // Reintento con nuevo access token
-    res = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${access}`,
-      },
-    });
   }
 
   if (!res.ok) {
@@ -40,7 +35,9 @@ async function requestJSON<T>(url: string): Promise<T> {
 }
 
 export async function getWorkerVariants(): Promise<WorkerVariant[]> {
-  return requestJSON<WorkerVariant[]>(
-    `${API_BASE}/api/worker/variants/`
-  );
+  return requestJSON<WorkerVariant[]>(`${API_BASE}/api/worker/variants/`);
+}
+
+export async function getWorkerPedidos(): Promise<WorkerPedido[]> {
+  return requestJSON<WorkerPedido[]>(`${API_BASE}/api/worker/pedidos/`);
 }
