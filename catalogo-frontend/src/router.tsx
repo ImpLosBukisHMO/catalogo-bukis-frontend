@@ -12,6 +12,8 @@ import WorkerLayout from "./components/elements/WorkerLayout";
 import WorkerDashboardPage from "./components/pages/WorkerDashboardPage";
 import WorkerOrdersPage from "./components/pages/WorkerOrdersPage";
 import WorkerProductsPage from "./components/pages/WorkerProductsPage";
+import ProductoPage from "./components/pages/ProductoPage";
+
 
 export default function AppRouter() {
   return (
@@ -22,6 +24,8 @@ export default function AppRouter() {
       <Route path="/carrito" element={<CarritoPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/producto/:id" element={<ProductoPage />} />
+
 
       {/* Worker (layout + sidebar) */}
       <Route path="/worker" element={<WorkerLayout />}>
