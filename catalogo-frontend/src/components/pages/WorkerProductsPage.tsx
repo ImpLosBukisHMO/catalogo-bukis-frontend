@@ -1,131 +1,97 @@
 import { useEffect, useMemo, useState } from "react";
 import Table from "../elements/Table";
-import { getProducts } from "../../services/product";
-import type { Product, VariantRow } from "../../types/product";
+import { getWorkerVariants } from "../../services/worker";
+import type { WorkerVariant } from "../../types/worker";
 
 export default function WorkerProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [variants, setVariants] = useState<WorkerVariant[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
 
-  /* =========================
-     Fetch
-     ========================= */
-
   useEffect(() => {
-    getProducts()
-      .then(setProducts)
+    getWorkerVariants()
+      .then(setVariants)
       .catch((err) => {
-        console.error("Error loading products:", err);
-        setProducts([]);
+        console.error("Error loading variants:", err);
+        setVariants([]);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  /* =========================
-     Categorías únicas
-     ========================= */
-
   const categories = useMemo(() => {
     const set = new Set<string>();
-    products.forEach((p) => {
-      if (p.categoria?.nombre) {
-        set.add(p.categoria.nombre);
-      }
-    });
+    variants.forEach((v) => set.add(v.producto.categoria));
     return Array.from(set).sort();
-  }, [products]);
+  }, [variants]);
 
-  /* =========================
-     Normalizar filas (ANTI-CRASH)
-     ========================= */
-
-  const rows: VariantRow[] = useMemo(() => {
-    return products.flatMap((product) => {
-      const variantes = product.variantes ?? [];
-
-      // Si no hay variantes, NO rompe
-      if (variantes.length === 0) return [];
-
-      return variantes.map((variant) => ({
-        id: variant.id,
-        producto: product.nombre,
-        categoria: product.categoria?.nombre ?? "Sin categoría",
-        color: variant.color?.nombre ?? "—",
-        stock: variant.stock,
-        disponible: variant.disponible,
-        precio: Number(product.precio),
-      }));
-    });
-  }, [products]);
-
-  /* =========================
-     Filtros
-     ========================= */
-
-  const filteredRows = useMemo(() => {
-    return rows.filter((r) => {
-      const matchName = r.producto
+  const filtered = useMemo(() => {
+    return variants.filter((v) => {
+      const matchName = v.producto.nombre
         .toLowerCase()
         .includes(search.toLowerCase());
 
       const matchCategory =
-        categoryFilter === "ALL" || r.categoria === categoryFilter;
+        categoryFilter === "ALL" ||
+        v.producto.categoria === categoryFilter;
 
       return matchName && matchCategory;
     });
-  }, [rows, search, categoryFilter]);
-
-  /* =========================
-     Columns
-     ========================= */
+  }, [variants, search, categoryFilter]);
 
   const columns = [
     {
       header: "Producto",
-      render: (r: VariantRow) => r.producto,
+      render: (v: WorkerVariant) => v.producto.nombre,
     },
     {
       header: "Categoría",
-      render: (r: VariantRow) => r.categoria,
+      render: (v: WorkerVariant) => v.producto.categoria,
     },
     {
       header: "Color",
-      render: (r: VariantRow) => r.color,
+      render: (v: WorkerVariant) => (
+        <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: v.color.hex,
+              border: "1px solid #ccc",
+            }}
+          />
+          {v.color.nombre}
+        </span>
+      ),
     },
     {
       header: "Stock",
-      render: (r: VariantRow) => r.stock,
+      render: (v: WorkerVariant) => v.stock,
     },
     {
-      header: "Disponible",
-      render: (r: VariantRow) =>
-        r.disponible ? "Sí" : "No",
+      header: "Activo",
+      render: (v: WorkerVariant) => (v.activo ? "Sí" : "No"),
     },
     {
       header: "Precio",
-      render: (r: VariantRow) => `$${r.precio.toFixed(2)}`,
+      render: (v: WorkerVariant) =>
+        `$${Number(v.producto.precio).toFixed(2)}`,
     },
   ];
 
-  /* =========================
-     Render
-     ========================= */
-
   return (
-    <div style={{ padding: 24 }}>
+    <div>
       <h2>Productos</h2>
       <p style={{ color: "#6b7280" }}>
-        Gestión de inventario por variante
+        Inventario por variante
       </p>
 
-      {/* Filtros */}
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
         <input
           className="custom-input"
-          placeholder="Buscar por nombre..."
+          placeholder="Buscar producto..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -144,11 +110,10 @@ export default function WorkerProductsPage() {
         </select>
       </div>
 
-      {/* Tabla */}
       {loading ? (
         <p>Cargando productos…</p>
       ) : (
-        <Table columns={columns} data={filteredRows} />
+        <Table columns={columns} data={filtered} />
       )}
     </div>
   );
