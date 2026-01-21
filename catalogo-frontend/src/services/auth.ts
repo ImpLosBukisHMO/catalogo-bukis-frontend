@@ -5,11 +5,14 @@ export type AuthTokens = {
   refresh: string;
 };
 
-export async function login(correo: string, contrasena: string): Promise<AuthTokens> {
+export async function login(correo: string, contrasena: string) {
   const res = await fetch(`${API_URL}/auth/login/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ correo, contrasena }),
+    body: JSON.stringify({
+      correo,
+      password: contrasena, // 👈 CLAVE
+    }),
   });
 
   if (!res.ok) {
@@ -17,13 +20,14 @@ export async function login(correo: string, contrasena: string): Promise<AuthTok
     throw new Error(`Login falló: ${res.status} ${txt}`);
   }
 
-  const data = (await res.json()) as AuthTokens;
+  const data = await res.json();
 
   localStorage.setItem("access", data.access);
   localStorage.setItem("refresh", data.refresh);
 
   return data;
 }
+
 
 export async function refreshAccessToken(): Promise<string> {
   const refresh = localStorage.getItem("refresh");
