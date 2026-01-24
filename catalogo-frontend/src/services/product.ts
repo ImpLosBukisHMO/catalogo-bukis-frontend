@@ -1,4 +1,3 @@
-import axios from "axios";
 import API from "../api";
 
 export async function getProducts() {
@@ -9,8 +8,7 @@ export async function getProducts() {
   if (res.status !== 200) {
     throw new Error(`Error al cargar productos (${res.status}).`);
   }
-
-  console.log("Respuesta de productos:", res.data);
+  
   return res.data;
 }
 

@@ -1,4 +1,3 @@
-import axios from "axios";
 import API from "../api";
 
 export async function getCategories() {
@@ -10,7 +9,6 @@ export async function getCategories() {
     throw new Error(`Error al cargar categorías (${res.status}).`);
   }
 
-  console.log("Respuesta de categorías:", res.data);
   return res.data;
 }
 

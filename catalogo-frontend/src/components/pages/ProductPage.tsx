@@ -184,7 +184,7 @@ export default function ProductPage({ onToggleFavorite }: Props) {
               </table>
 
               <div className="mt-3 product-attr is-flex">
-                <div className="is-flex">
+                <div className="is-flex mr-3">
                   <p className="mr-3 has-text-weight-semibold" style={{ margin: 'auto 0', }}>Cantidad</p>
                   <input className="buy-qty-input" type="number" min={product.disponible ? 1 : 0} defaultValue={qty2Buy} onChange={handleProductQty} disabled={!product.disponible} />
                 </div>

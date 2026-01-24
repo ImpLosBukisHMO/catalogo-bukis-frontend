@@ -16,7 +16,6 @@ function Home() {
       try {
         setLoading(true);
         const data: Product[] = await getProducts();
-        console.log("primer producto", data[0]);
 
         const mapped: ProductCardVM[] = data.map((p: any) => ({
           id: p.id,
@@ -30,7 +29,8 @@ function Home() {
 
         setProducts(mapped);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error desconocido");
+        console.error("Error al obtener los productos:", e);
+        setError(e instanceof Error ? e.message : "Error desconocido al cargar productos.");
       } finally {
         setLoading(false);
       }

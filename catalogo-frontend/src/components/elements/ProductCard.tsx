@@ -9,11 +9,7 @@ type Props = {
 
 const ProductCard = ({ product, onToggleFavorite }: Props) => {
   const navigate = useNavigate();
-
   const { id, nombre, sku, precio, imagenUrl, disponible } = product;
-
-  console.log("Rendering ProductCard for product:", product);
-
   const goToDetail = () => navigate(`/producto/${id}`);
 
   return (
