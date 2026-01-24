@@ -128,7 +128,7 @@ const SignUpPage = () => {
                                 </div>
                             </form>
                             <div className="mt-3 has-text-centered">
-                                <a href="/iniciar-sesion">¿Ya tienes cuenta? Inicia sesión</a>
+                                <a className="custom-link" href="/iniciar-sesion">¿Ya tienes cuenta? Inicia sesión</a>
                             </div>
                         </div>
                     </div>

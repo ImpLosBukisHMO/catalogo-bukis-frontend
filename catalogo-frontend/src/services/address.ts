@@ -8,39 +8,45 @@ export type Address = {
   estado: string | null;
   pais: string | null;
   usuario: number | null;
-}
+};
 
 export async function createUserAddress(data: Address) {
   await API.post("/api/direcciones/", data, {
     headers: { Accept: "application/json" },
-  }); 
+  });
 }
 
 export async function getUserAddress(id: number) {
-  const res = await API.get(`/api/direcciones/usuario/${id}/`, {
-    headers: { Accept: "application/json" },
-  });
-
-  if (res.status !== 200) {
-    return null;
+  try {
+    const res = await API.get(`/api/direcciones/usuario/${id}/`, {
+      headers: { Accept: "application/json" },
+    });
+    return res.data.datos[0];
+  } catch (error: any) {
+    // Si el error es 404, retornamos null para que updateUserAddress sepa que debe crearla
+    if (error.response && error.response.status === 404) {
+      return null;
+    }
+    throw error;
   }
-
-  return res.data.datos[0];
 }
 
 export async function updateUserAddress(data: Address) {
-  const detectedAddress = await getUserAddress(data.usuario);
+  try {
+    const detectedAddress = await getUserAddress(Number(data.usuario));
 
-  // Address found.
-  if (detectedAddress.status == 200) {
-    const addressData = detectedAddress.data.datos[0];
-    await API.put(`/api/direcciones/${addressData.id}/`, data, {
-      headers: { Accept: "application/json" },
-    });
-  }
-
-  // Address not found.
-  else if (detectedAddress.status == 404){
-    await createUserAddress(data);
+    // Address found.
+    if (detectedAddress) {
+      await API.put(`/api/direcciones/${detectedAddress.id}/`, data, {
+        headers: { Accept: "application/json" },
+      });
+    }
+    
+    // Address not found.
+    else {
+      await createUserAddress(data);
+    }
+  } catch (error) {
+    console.log(error);
   }
 }

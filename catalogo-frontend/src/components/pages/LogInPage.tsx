@@ -58,7 +58,7 @@ const LogInPage = () => {
                                     </div>
                                 )}
                                 <div className="field">
-                                    <div className="control">
+                                    <div className="mt-5">
                                         <button className="button custom-btn is-fullwidth" type="submit">
                                             Iniciar Sesión
                                         </button>
