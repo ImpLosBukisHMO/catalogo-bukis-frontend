@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signUp } from "../../services/user";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
+import { getLoggedUserData } from "../../services/user";
 
 const SignUpPage = () => {
     const [nombre, setNombre] = useState('');
@@ -11,6 +12,17 @@ const SignUpPage = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+
+    const fetchUserData = async () => {
+        try {
+            await getLoggedUserData();
+            history.back();                // User already logged in (valid token).
+        } catch (e: any) {
+            if (e.response?.status === 401) {
+                console.log("Es necesario registrarse o iniciar sesión.")
+            }
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,6 +37,10 @@ const SignUpPage = () => {
         }
     };
 
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
     return (
         <>
             <NavBar />
@@ -32,12 +48,12 @@ const SignUpPage = () => {
                 <div className="section">
                     <div className="columns is-centered">
                         <div className="column is-half">
-                            <h1 className="title has-text-centered" style={{color: '#000',}}>
+                            <h1 className="title has-text-centered" style={{ color: '#000', }}>
                                 Registrarse
                             </h1>
                             <form onSubmit={handleSubmit}>
                                 <div className="field">
-                                    <label className="label" style={{color: '#000',}}>Nombre</label>
+                                    <label className="label" style={{ color: '#000', }}>Nombre</label>
                                     <div className="control">
                                         <input
                                             className="input custom-input"
@@ -50,7 +66,7 @@ const SignUpPage = () => {
                                     </div>
                                 </div>
                                 <div className="field">
-                                    <label className="label" style={{color: '#000',}}>Apellido</label>
+                                    <label className="label" style={{ color: '#000', }}>Apellido</label>
                                     <div className="control">
                                         <input
                                             className="input custom-input"
@@ -63,7 +79,7 @@ const SignUpPage = () => {
                                     </div>
                                 </div>
                                 <div className="field">
-                                    <label className="label" style={{color: '#000',}}>Correo electrónico</label>
+                                    <label className="label" style={{ color: '#000', }}>Correo electrónico</label>
                                     <div className="control">
                                         <input
                                             className="input custom-input"
@@ -76,7 +92,7 @@ const SignUpPage = () => {
                                     </div>
                                 </div>
                                 <div className="field">
-                                    <label className="label" style={{color: '#000',}}>Teléfono</label>
+                                    <label className="label" style={{ color: '#000', }}>Teléfono</label>
                                     <div className="control">
                                         <input
                                             className="input custom-input"
@@ -89,7 +105,7 @@ const SignUpPage = () => {
                                     </div>
                                 </div>
                                 <div className="field">
-                                    <label className="label" style={{color: '#000',}}>Contraseña</label>
+                                    <label className="label" style={{ color: '#000', }}>Contraseña</label>
                                     <div className="control">
                                         <input
                                             className="input custom-input"
@@ -102,7 +118,7 @@ const SignUpPage = () => {
                                     </div>
                                 </div>
                                 <div className="field">
-                                    <label className="label" style={{color: '#000',}}>Confirmar Contraseña</label>
+                                    <label className="label" style={{ color: '#000', }}>Confirmar Contraseña</label>
                                     <div className="control">
                                         <input
                                             className="input custom-input"
@@ -134,7 +150,7 @@ const SignUpPage = () => {
                     </div>
                 </div>
             </div>
-            <Footer/>
+            <Footer />
         </>
     );
 }

@@ -1,21 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { logIn } from "../../services/user";
 import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
+import { getLoggedUserData } from "../../services/user";
 
 const LogInPage = () => {
     const [correo, setCorreo] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
+    const fetchUserData = async () => {
+
+        try {
+            await getLoggedUserData();
+            history.back()              // User already logged in (valid token).
+        } catch (e: any) {
+            if (e.response?.status === 401) {
+                console.log("Es necesario registrarse o iniciar sesión.")
+            }
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await logIn(correo, password);
-        } catch (e: any) {
+        } catch (error: any) {
             setError('Credenciales inválidas');
         }
     };
+
+    useEffect(() => {
+        fetchUserData();
+    }, []);
 
     return (
         <>
