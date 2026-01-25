@@ -1,15 +1,17 @@
 import API from "../api";
 
-type SignUpData = {
-  nombre: string;
-  apellido: string;
-  correo: string;
-  telefono: string;
-  password: string;
-};
+// User data. CAUTION: Privacy may be compromised, use carefully.
+export type Usuario = {
+  id: number | null;
+  nombre: string | null;
+  apellido: string | null;
+  correo: string | null;
+  telefono: string | null;
+  password: string | null;
+}
 
 
-export async function signUp(data: SignUpData) {
+export async function signUp(data: Usuario) {
   const res = await API.post("/api/signup/", data, {
     headers: { Accept: "application/json" },
   });
@@ -18,11 +20,12 @@ export async function signUp(data: SignUpData) {
     throw new Error(`Error al registrar un nuevo usuario (${res.status}).`);
   }
 
-  await logIn(data.correo, data.password)
+  await logIn(data.correo || "", data.password || "")
 }
 
+
 export async function logIn(correo: string, password: string) {
-  // Limpiamos cualquier token previo para evitar errores 401 por tokens expirados
+  // Remove token (especially if it's already expired).
   localStorage.removeItem("token");
 
   const data = {
@@ -34,18 +37,15 @@ export async function logIn(correo: string, password: string) {
     headers: { Accept: "application/json" },
   });
 
-  // Axios se encarga de lanzar un error para respuestas no-2xx.
-  // Si llegamos aquí, la respuesta es exitosa (ej. status 200).
+  // Successful log-in.
   if (res.data && res.data.token) {
     localStorage.setItem("token", res.data.token);
-    setTimeout(()=>{
-      window.location.href = '/';
-    }, 2000)
+    window.location.href = '/';
   } else {
-    console.error("Inicio de sesión exitoso pero no se recibió token.", res.data);
     throw new Error(`Error al iniciar sesión: no se recibió el token del servidor.`);
   }
 }
+
 
 export async function getLoggedUserData() {
   const res = await API.get("/api/mi_usuario/", {
@@ -57,4 +57,34 @@ export async function getLoggedUserData() {
   }
 
   return res.data;
+}
+
+
+export async function updateUserData(data: Usuario) {
+  if (!data.id) throw new Error("ID de usuario no válido.");
+
+  const payload: any = {
+    nombre: data.nombre,
+    apellido: data.apellido,
+    correo: data.correo,
+    telefono: data.telefono,
+  };
+
+  if (data.password && data.password.trim() !== "") {
+    payload.password = data.password;
+  }
+
+  const token = localStorage.getItem("token");
+
+  try {
+    await API.put(`/api/usuarios/${data.id}/`, payload, {
+      headers: { 
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+    });
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    throw new Error(`Error al actualizar los datos del usuario.`);
+  }
 }

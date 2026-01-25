@@ -7,6 +7,7 @@ TO DO:
 - Integrate with backend.
 - Add a search bar that redirects to another page dedicated to search 
   products.
+- Add log-out when user is authenticated.
 */
 
 const NavBar = () => {
@@ -40,22 +41,22 @@ const NavBar = () => {
                     </div>
                 </div>
                 <div className="navbar-end">
-                    <a className="navbar-item main-nav" href="/" style={{ color: "white" }}>
+                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/" style={{ color: "white" }}>
                         {
                             window.location.pathname === "/" ? (<><House size={24} /><p className='is-underlined txt-white'>Inicio</p></>) : (<><House size={24} /><p className='txt-white'>Inicio</p></>)
                         }
                     </a>
-                    <a className="navbar-item main-nav" href="/favoritos" style={{ color: "white" }}>
+                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/favoritos" style={{ color: "white" }}>
                         {
                             window.location.pathname === "/favoritos" ? (<><Heart size={24} /><p className='is-underlined txt-white'>Favoritos</p></>) : (<><Heart size={24} /><p className='txt-white'>Favoritos</p></>)
                         }
                     </a>
-                    <a className="navbar-item main-nav" href="/pedidos" style={{ color: "white" }}>
+                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/pedidos" style={{ color: "white" }}>
                         {
                             window.location.pathname === "/pedidos" ? (<><ShoppingCart size={24} /><p className='is-underlined txt-white'>Carrito</p></>) : (<><ShoppingCart size={24} /><p className='txt-white'>Carrito</p></>)
                         }
                     </a>
-                    <a className="navbar-item main-nav" href="/perfil" style={{ color: "white" }}>
+                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/perfil" style={{ color: "white" }}>
                         {
                             window.location.pathname === "/perfil" ? (<><UserRound size={24} /><p className='is-underlined txt-white'>Mi Perfil</p></>) : (<><UserRound size={24} /><p className='txt-white'>Mi Perfil</p></>)
                         }

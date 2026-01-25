@@ -200,7 +200,7 @@ img.product-img-sidebar{
 }
 
 a.custom-link {
-  color: #dc0000;
+  color: #000;
 }
 
 a.custom-link:hover {
@@ -208,5 +208,5 @@ a.custom-link:hover {
 }
 
 a.custom-link:active {
-  color: #b700dc;
+  color: #8700a2;
 }

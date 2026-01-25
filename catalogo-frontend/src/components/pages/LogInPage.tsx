@@ -3,14 +3,15 @@ import { logIn } from "../../services/user";
 import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
 import { getLoggedUserData } from "../../services/user";
+import HideShowPassword from "../elements/HideShowPassword";
 
 const LogInPage = () => {
     const [correo, setCorreo] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [passwordVisible, setPasswordVisibility] = useState<string>("password");
 
     const fetchUserData = async () => {
-
         try {
             await getLoggedUserData();
             history.back()              // User already logged in (valid token).
@@ -29,6 +30,14 @@ const LogInPage = () => {
             setError('Credenciales inválidas');
         }
     };
+
+    const togglePasswordVisibility = () => {
+        if (passwordVisible === "password") {
+            setPasswordVisibility("text");
+        } else {
+            setPasswordVisibility("password");
+        }
+    }
 
     useEffect(() => {
         fetchUserData();
@@ -58,10 +67,12 @@ const LogInPage = () => {
                                 </div>
                                 <div className="field">
                                     <label className="label" style={{color: '#000'}}>Contraseña</label>
-                                    <div className="control">
+                                    <div className="control is-flex">
+                                        <HideShowPassword passwordState={passwordVisible} className="mr-2"
+                                        passwordVisibilityAction={togglePasswordVisibility}/>
                                         <input
                                             className="input custom-input"
-                                            type="password"
+                                            type={passwordVisible}
                                             placeholder="Contraseña"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
@@ -70,9 +81,9 @@ const LogInPage = () => {
                                     </div>
                                 </div>
                                 {error && (
-                                    <div className="notification is-danger">
-                                        {error}
-                                    </div>
+                                    <p className="mt-5 has-text-centered" style={{color: "#dc0000"}}>
+                                        Error: {error}
+                                    </p>
                                 )}
                                 <div className="field">
                                     <div className="mt-5">

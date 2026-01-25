@@ -3,8 +3,14 @@ import { signUp } from "../../services/user";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import { getLoggedUserData } from "../../services/user";
+import HideShowPassword from "../elements/HideShowPassword";
 
 const SignUpPage = () => {
+    // Password visibility.
+    const [passwordVisible, setPasswordVisibility] = useState("password");
+    const [confirmPasswordVisible, setConfirmPasswordVisibility] = useState("password");
+
+    // New user data.
     const [nombre, setNombre] = useState('');
     const [apellido, setApellido] = useState('');
     const [correo, setCorreo] = useState('');
@@ -36,6 +42,22 @@ const SignUpPage = () => {
             setError('Error al registrar usuario');
         }
     };
+
+    const togglePasswordVisibility = () => {
+        if (passwordVisible === "password") {
+            setPasswordVisibility("text");
+        } else {
+            setPasswordVisibility("password");
+        }    
+    }
+
+    const toggleConfirmPasswordVisibility = () => {
+        if (confirmPasswordVisible === "password") {
+            setConfirmPasswordVisibility("text");
+        } else {
+            setConfirmPasswordVisibility("password");
+        }
+    }
 
     useEffect(() => {
         fetchUserData();
@@ -106,10 +128,12 @@ const SignUpPage = () => {
                                 </div>
                                 <div className="field">
                                     <label className="label" style={{ color: '#000', }}>Contraseña</label>
-                                    <div className="control">
+                                    <div className="control is-flex">
+                                        <HideShowPassword className="mr-2" passwordState={passwordVisible} 
+                                            passwordVisibilityAction={togglePasswordVisibility}/>
                                         <input
                                             className="input custom-input"
-                                            type="password"
+                                            type={passwordVisible}
                                             placeholder="Ingrese una contraseña."
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
@@ -119,10 +143,12 @@ const SignUpPage = () => {
                                 </div>
                                 <div className="field">
                                     <label className="label" style={{ color: '#000', }}>Confirmar Contraseña</label>
-                                    <div className="control">
+                                    <div className="control is-flex">
+                                        <HideShowPassword className="mr-2" passwordState={confirmPasswordVisible}
+                                            passwordVisibilityAction={toggleConfirmPasswordVisibility}/>
                                         <input
                                             className="input custom-input"
-                                            type="password"
+                                            type={confirmPasswordVisible}
                                             placeholder="Confirme su contraseña"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -131,9 +157,9 @@ const SignUpPage = () => {
                                     </div>
                                 </div>
                                 {error && (
-                                    <div className="notification is-danger">
-                                        {error}
-                                    </div>
+                                    <p className="mt-5 has-text-centered" style={{color: "#dc0000"}}>
+                                        Error: {error}
+                                    </p>
                                 )}
                                 <div className="field">
                                     <div className="control">
