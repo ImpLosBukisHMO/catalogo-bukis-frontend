@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { House, Heart, ShoppingCart, UserRound } from "lucide-react";
+import { House, Heart, ShoppingCart, UserRound, Search } from "lucide-react";
 import logoBukis from '/bukis_logo.png';
 
 /*
@@ -19,7 +19,7 @@ const NavBar = () => {
             <div className="navbar-brand">
                 <a className="navbar-item is-flex is-align-items-center main-nav" href="/">
                     <img src={logoBukis} alt="logo-los-bukis" style={{ maxHeight: "3rem" }} />
-                    <p className="subtitle is-hidden-mobile" style={{ color: "white", textAlign: 'center', fontSize: '1.1rem' }}>Importaciones<br />Los Bukis</p>
+                    <p className="subtitle" style={{ color: "white", textAlign: 'center', fontSize: '1.1rem' }}>Importaciones<br />Los Bukis</p>
                 </a>
                 <a 
                     role="button"
@@ -36,8 +36,14 @@ const NavBar = () => {
             </div>
             <div id="navbar-menu" className={`navbar-menu ${isOpen ? 'is-active' : ''}`} style={{backgroundColor:'#dd0000'}}>
                 <div className="navbar-start">
-                    <div className="navbar-item" style={{backgroundColor:'#dd0000'}}>
-                        <input className="input custom-input" type="text" placeholder="Busque un producto" />
+                    <div className="is-flex is-align-items-center"
+                         style={{backgroundColor:'#dd0000'}}>
+                        <div className="icon-container icon-container-search ml-5">
+                            <Search size={28}/>
+                        </div>
+                        <input className="input custom-input custom-input-search mr-5"
+                               type="text"
+                               placeholder="Busque un producto"/>
                     </div>
                 </div>
                 <div className="navbar-end">

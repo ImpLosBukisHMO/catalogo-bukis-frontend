@@ -210,3 +210,25 @@ a.custom-link:hover {
 a.custom-link:active {
   color: #8700a2;
 }
+
+.icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+  padding: 5px;
+  color: #7c7c7c;
+  background-color: #ddd;
+  border-radius: 10px;
+  border: 2px solid #7c7c7c;
+}
+
+.icon-container-search {
+  border-radius: 10px 0px 0px 10px;
+  border-right: 1px solid #7c7c7c;;
+}
+
+.custom-input-search {
+  border-radius: 0px 10px 10px 0px;
+  border-left: 1px solid #7c7c7c;;
+}

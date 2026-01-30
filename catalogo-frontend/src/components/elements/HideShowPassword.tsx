@@ -5,7 +5,9 @@ const HideShowPassword = (props: {className?: string, passwordVisibilityAction: 
         <>
             <button className={`button custom-btn ${props.className}`}
                 type="button"
-                style={{borderRadius: '10px'}}
+                style={{
+                    borderRadius: '10px',
+                }}
                 onClick={props.passwordVisibilityAction} 
                 disabled={props.disabled}
                 title={props.passwordState === "password"? "Ver contraseña" : "Ocultar contraseña"}
