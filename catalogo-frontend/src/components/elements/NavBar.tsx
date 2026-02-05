@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { House, Heart, ShoppingCart, UserRound, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
 import logoBukis from '/bukis_logo.png';
 
 /*
@@ -10,9 +10,26 @@ TO DO:
 - Add log-out when user is authenticated.
 */
 
-const NavBar = () => {
-    const [isOpen, setIsOpen] = useState(false)
-    const toggleNavMenu = () => setIsOpen(!isOpen)
+type NavBarProps = {
+    navBarQuery?: string | null;
+}
+
+const NavBar = ({navBarQuery}: NavBarProps) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const toggleNavMenu = () => setIsOpen(!isOpen);
+
+    const handleQuery = (e: Event) => {
+        e.preventDefault();
+        
+        if (searchQuery.length > 0) { 
+            window.location.href = `/productos?query=${searchQuery}`
+        } else {
+            window.location.href = "/productos";
+        }
+    }
+
+    useEffect(() => console.log(searchQuery), [searchQuery])
 
     return (
         <nav className="navbar mb-5 main-nav" style={{ zIndex: 2, position: 'sticky' }} role="navigation" aria-label="main navigation">
@@ -21,12 +38,12 @@ const NavBar = () => {
                     <img src={logoBukis} alt="logo-los-bukis" style={{ maxHeight: "3rem" }} />
                     <p className="subtitle" style={{ color: "white", textAlign: 'center', fontSize: '1.1rem' }}>Importaciones<br />Los Bukis</p>
                 </a>
-                <a 
+                <a
                     role="button"
                     className={`main-nav navbar-burger ${isOpen ? 'is-active' : ''}`}
-                    style={{color: '#fff'}}
+                    style={{ color: '#fff' }}
                     aria-label="menu"
-                    aria-expanded="false" 
+                    aria-expanded="false"
                     onClick={toggleNavMenu}>
                     <span aria-hidden="true"></span>
                     <span aria-hidden="true"></span>
@@ -34,22 +51,32 @@ const NavBar = () => {
                     <span aria-hidden="true"></span>
                 </a>
             </div>
-            <div id="navbar-menu" className={`navbar-menu ${isOpen ? 'is-active' : ''}`} style={{backgroundColor:'#dd0000'}}>
+            <div id="navbar-menu" className={`navbar-menu ${isOpen ? 'is-active' : ''}`} style={{ backgroundColor: '#dd0000' }}>
                 <div className="navbar-start">
                     <div className="is-flex is-align-items-center"
-                         style={{backgroundColor:'#dd0000'}}>
+                        style={{ backgroundColor: '#dd0000' }}>
                         <div className="icon-container icon-container-search ml-5">
-                            <Search size={28}/>
+                            <Search size={28} />
                         </div>
-                        <input className="input custom-input custom-input-search mr-5"
-                               type="text"
-                               placeholder="Busque un producto"/>
+                        <form className="mr-5" onSubmit={handleQuery} style={{width: '100%'}}>
+                            <input className="input custom-input custom-input-search mr-5"
+                                style={{ width: '100%' }}
+                                type="text"
+                                placeholder="Busque un producto"
+                                defaultValue={navBarQuery || searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)} />
+                        </form>
                     </div>
                 </div>
                 <div className="navbar-end">
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/" style={{ color: "white" }}>
                         {
                             window.location.pathname === "/" ? (<><House size={24} /><p className='is-underlined txt-white'>Inicio</p></>) : (<><House size={24} /><p className='txt-white'>Inicio</p></>)
+                        }
+                    </a>
+                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/productos" style={{ color: "white" }}>
+                        {
+                            window.location.pathname === "/productos" ? (<><Box size={24} /><p className='is-underlined txt-white'>Productos</p></>) : (<><Box size={24} /><p className='txt-white'>Productos</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/favoritos" style={{ color: "white" }}>

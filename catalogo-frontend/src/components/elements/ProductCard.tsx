@@ -4,42 +4,45 @@ import type { ProductCardVM } from "../../types/product";
 
 type Props = {
   product: ProductCardVM;
+  className?: string;
   onToggleFavorite?: (product: ProductCardVM) => void;
 };
 
-const ProductCard = ({ product, onToggleFavorite }: Props) => {
+const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
   const navigate = useNavigate();
   const { id, nombre, sku, precio, imagenUrl, disponible } = product;
   const goToDetail = () => navigate(`/producto/${id}`);
 
   return (
     <div
-      className="mx-2 p-5 is-flex is-flex-direction-column is-align-items-center"
-      style={{
-        borderRadius: 12,
-        border: "1px solid #c3c3c3",
-        boxShadow: "0 2px 5px rgba(0,0,0,0.35)",
-        backgroundColor: "#f5f5f5",
-      }}
+      className={`mx-2 p-5 is-flex is-flex-direction-column is-align-items-center ${className}}`}
+      style={
+          {
+            borderRadius: 12,
+            border: "1px solid #c3c3c3",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.35)",
+            backgroundColor: "#f5f5f5",
+          }
+      }
       tabIndex={0}
     >
       <div>
-            <img
-            src={imagenUrl || "https://placehold.net/600x600.png"}
-            alt={nombre}
-            onError={(e) => {
-                const img = e.currentTarget;
-                img.onerror = null; // evita loop infinito
-                img.src = "https://placehold.net/600x600.png";
-            }}
-            style={{
-                width: "auto",
-                height: 150,
-                borderRadius: 12,
-                border: "2px solid #c3c3c3",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.35)",
-            }}
-            />
+        <img
+          src={imagenUrl || "https://placehold.net/600x600.png"}
+          alt={nombre}
+          onError={(e) => {
+            const img = e.currentTarget;
+            img.onerror = null; // evita loop infinito
+            img.src = "https://placehold.net/600x600.png";
+          }}
+          style={{
+            width: "auto",
+            height: 150,
+            borderRadius: 12,
+            border: "2px solid #c3c3c3",
+            boxShadow: "0 4px 8px rgba(0,0,0,0.35)",
+          }}
+        />
       </div>
 
       <div className="mt-3" style={{ width: "100%" }}>

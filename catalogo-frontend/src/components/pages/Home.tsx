@@ -54,7 +54,7 @@ function Home() {
         </h1>
 
         {loading && <p style={{ textAlign: "center" }}>Cargando productos...</p>}
-        {error && <p style={{ textAlign: "center", color: "red" }}>{error}</p>}
+        {error && <p style={{ textAlign: "center", color: "#dc0000" }}>{error}</p>}
 
         <div className="is-flex is-justify-content-center is-align-items-center" style={{ width: "100%" }}>
           {products.map((p) => (

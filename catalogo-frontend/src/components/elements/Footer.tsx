@@ -14,14 +14,14 @@ const Footer = (props: { style?: React.CSSProperties }) => {
             <div className="content has-text-white py-2">
                 <div className="columns is-mobile is-centered is-vcentered is-variable is-8 px-6">
                     
-                    <div className="column is-narrow ml-6">
+                    <div className="column is-one-third is-narrow ml-6">
                         <p className="has-text-grey-light" style={{ fontSize: '0.90rem' }}>Teléfono:</p>
                         <a style={{ fontSize: '0.90rem' }} href="tel:+526622629875">
                             (+52) 662 262 9875
                         </a>
                     </div>
 
-                    <div className="column is-narrow">
+                    <div className="column is-one-third is-narrow">
                         <p className="has-text-grey-light" style={{ fontSize: '0.90rem' }}>Encuéntranos en:</p>
                         <p className="txt-white" style={{ fontSize: '0.85rem' }}>
                             Blvd. Solidaridad 118 A, Raquet Club II, 83200 Hermosillo, Sonora, México.
@@ -29,10 +29,9 @@ const Footer = (props: { style?: React.CSSProperties }) => {
                     </div>
 
 
-                    <div className="column has-text-right pr-6 ">
-
-                        <div className="is-flex is-justify-content-flex-end is-align-items-center ">
-                            <p className="mr-3 mb-0 has-text-grey-light" style={{ lineHeight: '1', fontSize: '0.90rem' }}>
+                    <div className="column is-one-third has-text-right pr-6 ">
+                        <div className="is-justify-content-flex-end is-align-items-center ">
+                            <p className="has-text-grey-light" style={{ lineHeight: '1', fontSize: '0.90rem' }}>
                                 Redes sociales:
                             </p>
                             <Facebook
