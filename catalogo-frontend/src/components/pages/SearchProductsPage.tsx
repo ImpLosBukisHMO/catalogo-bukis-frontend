@@ -107,11 +107,12 @@ export default function SearchProductsPage() {
                         hasCategory = true;
                     }
 
-                    if (Number(p.precio) >= filterMinPrice! && Number(p.precio) <= filterMaxPrice!) {
+                    if ((Number(p.precio) >= filterMinPrice! && Number(p.precio) <= filterMaxPrice!) ||
+                        (Number(filterMinPrice) <= 0 && Number(filterMaxPrice) <= 0)) {
                         priceInRange = true;
                     }
 
-                    return (hasCategory || priceInRange) && hasProdQuery;
+                    return (hasCategory && (priceInRange || hasProdQuery));
                 }
 
                 // Only search query.
@@ -123,15 +124,15 @@ export default function SearchProductsPage() {
 
                 // Search without query.
                 else {
+                    if ((Number(p.precio) >= filterMinPrice! && Number(p.precio) <= filterMaxPrice!) ||
+                        (Number(filterMinPrice) <= 0 && Number(filterMaxPrice) <= 0)) {
+                        priceInRange = true;
+                    }
                     if (filterCategories.includes(p.categoria)) {
                         hasCategory = true;
                     }
 
-                    if (Number(p.precio) >= filterMinPrice! && Number(p.precio) <= filterMaxPrice!) {
-                        priceInRange = true;
-                    }
-
-                    return hasCategory || priceInRange;
+                    return hasCategory && priceInRange;
                 }
             });
             const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
