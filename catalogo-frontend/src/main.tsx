@@ -7,8 +7,13 @@ import Home from "./components/pages/Home.tsx";
 import SignUpPage from "./components/pages/SignUpPage.tsx";
 import LogInPage from "./components/pages/LogInPage.tsx";
 import ProfilePage from "./components/pages/ProfilePage.tsx";
+<<<<<<< HEAD
 import SearchProductsPage from "./components/pages/SearchProductsPage.tsx";
 import ProductPage from "./components/pages/ProductPage.tsx";
+=======
+import ProductoPage from "./components/pages/ProductoPage.tsx";
+import WorkerPage from "./components/pages/WorkerPage.tsx";
+>>>>>>> 581f622b76e2ccf7fdc81b5a9cce50283cf55830
 import NotFoundPage from "./components/pages/NotFoundPage.tsx";
 
 const router = createBrowserRouter([
@@ -16,8 +21,15 @@ const router = createBrowserRouter([
   { path: "/registro", element: <SignUpPage /> },
   { path: "/iniciar-sesion", element: <LogInPage /> },
   { path: "/perfil", element: <ProfilePage /> },
+<<<<<<< HEAD
   { path: "/productos/", element: <SearchProductsPage /> },
   { path: "/producto/:id", element: <ProductPage /> },
+=======
+
+  { path: "/producto/:id", element: <ProductoPage /> },
+  { path: "/worker", element: <WorkerPage /> },
+
+>>>>>>> 581f622b76e2ccf7fdc81b5a9cce50283cf55830
   { path: "*", element: <NotFoundPage /> },
 ]);
 

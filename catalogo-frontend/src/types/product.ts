@@ -22,3 +22,21 @@ export type ProductCardVM = {
   imagenUrl?: string | null;
   disponible: boolean;
 };
+
+export type ColorMini = {
+  id: number;
+  nombre: string;
+  hex: string;
+};
+
+export type Variant = {
+  id: number;
+  color: ColorMini;
+  stock: number;
+  activo: boolean;
+  disponible: boolean;
+};
+
+export type ProductDetail = Product & {
+  variantes: Variant[];
+};
