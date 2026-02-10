@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
 import logoBukis from '/bukis_logo.png';
+import { getLoggedUserData } from "../../services/user";
 
 /*
 TO DO:
@@ -16,6 +17,7 @@ type NavBarProps = {
 
 const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const toggleNavMenu = () => setIsOpen(!isOpen);
 
@@ -29,7 +31,18 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
         }
     }
 
-    useEffect(() => console.log(searchQuery), [searchQuery])
+    const fetchUserData = async () => {
+        try {
+            await getLoggedUserData();
+            setIsLoggedIn(true);
+        } catch (e: any) {
+            if (e.response?.status === 401) {
+                console.log("Es necesario registrarse o iniciar sesión.")
+            }
+        }
+    };
+
+    useEffect(() => { (async () => await fetchUserData())(); }, []);
 
     return (
         <nav className="navbar mb-5 main-nav" style={{ zIndex: 2, position: 'sticky' }} role="navigation" aria-label="main navigation">
@@ -91,7 +104,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                     </a>
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/perfil" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/perfil" ? (<><UserRound size={24} /><p className='is-underlined txt-white'>Mi Perfil</p></>) : (<><UserRound size={24} /><p className='txt-white'>Mi Perfil</p></>)
+                            window.location.pathname === "/perfil" ? (<><UserRound size={24} /><p className='is-underlined txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>) : (<><UserRound size={24} /><p className='txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>)
                         }
                     </a>
                 </div>
