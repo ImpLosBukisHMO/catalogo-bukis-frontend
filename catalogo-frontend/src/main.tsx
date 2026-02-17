@@ -10,6 +10,7 @@ import ProfilePage from "./components/pages/ProfilePage.tsx";
 import SearchProductsPage from "./components/pages/SearchProductsPage.tsx";
 import ProductPage from "./components/pages/ProductPage.tsx";
 import NotFoundPage from "./components/pages/NotFoundPage.tsx";
+import PedidoPage from "./components/pages/PedidoPage.tsx";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
   { path: "/perfil", element: <ProfilePage /> },
   { path: "/productos/", element: <SearchProductsPage /> },
   { path: "/producto/:id", element: <ProductPage /> },
+  { path: "/pedido", element: <PedidoPage /> },
 
   { path: "*", element: <NotFoundPage /> },
 ]);

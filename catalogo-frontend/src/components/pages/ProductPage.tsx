@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import ProductCard from "../elements/ProductCard";
+import { addItem } from "../../services/cart";
 
 import {
   getProductById,
@@ -414,20 +415,25 @@ export default function ProductPage() {
                         <button
                           className="button is-warning is-fullwidth"
                           disabled={!validation.ok}
-                          onClick={() => {
+                          onClick={async () => {
                             if (!validation.ok) {
                               setQtyError(validation.msg);
                               return;
                             }
-                            if (!selectedVariant) return;
 
-                            const qtyFinal = qty as number;
+                            if (!selectedVariant) {
+                              setQtyError("Selecciona una variante.");
+                              return;
+                            }
 
-                            console.log("Add to cart payload", {
-                              variante_id: selectedVariant.id,
-                              cantidad: qtyFinal,
-                            });
+                            try {
+                              await addItem(selectedVariant.id, qty as number);
+                              alert("Producto agregado al carrito");
+                            } catch (err) {
+                              alert("Error al agregar al carrito");
+                            }
                           }}
+ 
                         >
                           Agregar al carrito
                         </button>

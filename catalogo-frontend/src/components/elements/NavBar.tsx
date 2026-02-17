@@ -99,9 +99,9 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                             window.location.pathname === "/favoritos" ? (<><Heart size={iconSize} /><p className='is-underlined txt-white'>Favoritos</p></>) : (<><Heart size={iconSize} /><p className='txt-white'>Favoritos</p></>)
                         }
                     </a>
-                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/pedidos" style={{ color: "white" }}>
+                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/pedido" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/pedidos" ? (<><ShoppingCart size={iconSize} /><p className='is-underlined txt-white'>Carrito</p></>) : (<><ShoppingCart size={iconSize} /><p className='txt-white'>Carrito</p></>)
+                            window.location.pathname === "/pedido" ? (<><ShoppingCart size={iconSize} /><p className='is-underlined txt-white'>Carrito</p></>) : (<><ShoppingCart size={iconSize} /><p className='txt-white'>Carrito</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/perfil" style={{ color: "white" }}>
