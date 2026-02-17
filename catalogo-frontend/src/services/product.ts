@@ -1,5 +1,5 @@
-<<<<<<< HEAD
 import API from "../api";
+
 
 export async function getProducts() {
   const res = await API.get("/api/productos/", {
@@ -23,9 +23,20 @@ export async function getProductById(id: string | number) {
   }
 
   return res.data;
-=======
-// src/services/product.ts
-import type { Product, ProductDetail } from "../types/product";
+}
+
+/*
+
+export async function getProducts(): Promise<Product[]> {
+  const url = `${API_BASE}/api/productos/`;
+  return requestJSON<Product[]>(url);
+}
+
+export async function getProductById(id: string | number): Promise<ProductDetail> {
+  const url = `${API_BASE}/api/productos/${id}/`;
+  return requestJSON<ProductDetail>(url);
+}
+*/
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
@@ -42,16 +53,6 @@ async function requestJSON<T>(url: string): Promise<T> {
   }
 
   return res.json() as Promise<T>;
-}
-
-export async function getProducts(): Promise<Product[]> {
-  const url = `${API_BASE}/api/productos/`;
-  return requestJSON<Product[]>(url);
-}
-
-export async function getProductById(id: string | number): Promise<ProductDetail> {
-  const url = `${API_BASE}/api/productos/${id}/`;
-  return requestJSON<ProductDetail>(url);
 }
 
 export type ProductImage = {
@@ -75,5 +76,4 @@ export async function getProductImages(params: {
 
   const url = `${API_BASE}/api/productos-imagenes/?${qs.toString()}`;
   return requestJSON<ProductImage[]>(url);
->>>>>>> 581f622b76e2ccf7fdc81b5a9cce50283cf55830
 }

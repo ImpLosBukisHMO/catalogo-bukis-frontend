@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
 import logoBukis from '/bukis_logo.png';
-import { getLoggedUserData } from "../../services/user";
+import { getLoggedUserData, logOut } from "../../services/user";
+import { DoorOpen } from 'lucide-react';
 
 /*
 TO DO:
@@ -20,6 +21,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const toggleNavMenu = () => setIsOpen(!isOpen);
+    const iconSize = 22;
 
     const handleQuery = (e: Event) => {
         e.preventDefault();
@@ -84,29 +86,36 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                 <div className="navbar-end">
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/" ? (<><House size={24} /><p className='is-underlined txt-white'>Inicio</p></>) : (<><House size={24} /><p className='txt-white'>Inicio</p></>)
+                            window.location.pathname === "/" ? (<><House size={iconSize} /><p className='is-underlined txt-white'>Inicio</p></>) : (<><House size={iconSize} /><p className='txt-white'>Inicio</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/productos" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/productos" ? (<><Box size={24} /><p className='is-underlined txt-white'>Productos</p></>) : (<><Box size={24} /><p className='txt-white'>Productos</p></>)
+                            window.location.pathname === "/productos" ? (<><Box size={iconSize} /><p className='is-underlined txt-white'>Productos</p></>) : (<><Box size={iconSize} /><p className='txt-white'>Productos</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/favoritos" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/favoritos" ? (<><Heart size={24} /><p className='is-underlined txt-white'>Favoritos</p></>) : (<><Heart size={24} /><p className='txt-white'>Favoritos</p></>)
+                            window.location.pathname === "/favoritos" ? (<><Heart size={iconSize} /><p className='is-underlined txt-white'>Favoritos</p></>) : (<><Heart size={iconSize} /><p className='txt-white'>Favoritos</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/pedidos" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/pedidos" ? (<><ShoppingCart size={24} /><p className='is-underlined txt-white'>Carrito</p></>) : (<><ShoppingCart size={24} /><p className='txt-white'>Carrito</p></>)
+                            window.location.pathname === "/pedidos" ? (<><ShoppingCart size={iconSize} /><p className='is-underlined txt-white'>Carrito</p></>) : (<><ShoppingCart size={iconSize} /><p className='txt-white'>Carrito</p></>)
                         }
                     </a>
                     <a className="navbar-item main-nav is-flex is-justify-content-center" href="/perfil" style={{ color: "white" }}>
                         {
-                            window.location.pathname === "/perfil" ? (<><UserRound size={24} /><p className='is-underlined txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>) : (<><UserRound size={24} /><p className='txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>)
+                            window.location.pathname === "/perfil" ? (<><UserRound size={iconSize} /><p className='is-underlined txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>) : (<><UserRound size={iconSize} /><p className='txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>)
                         }
                     </a>
+                    {
+                        isLoggedIn && (
+                        <a className="navbar-item main-nav is-flex is-justify-content-center" onClick={async () => await logOut()} style={{ color: "white", cursor: 'pointer' }}>
+                            <DoorOpen size={iconSize} className="" />
+                            <p className='txt-white'>Cerrar Sesión</p>
+                        </a>)
+                    }
                 </div>
             </div>
         </nav>

@@ -46,6 +46,13 @@ export async function logIn(correo: string, password: string) {
   }
 }
 
+export async function logOut() {
+  await API.post("/api/logout/", {
+    headers: { Accept: "application/json" },
+  });
+  localStorage.removeItem("token");
+  window.location.href = '/';
+}
 
 export async function getLoggedUserData() {
   const res = await API.get("/api/mi_usuario/", {
