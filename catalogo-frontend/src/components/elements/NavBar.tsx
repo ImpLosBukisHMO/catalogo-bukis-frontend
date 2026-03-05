@@ -1,6 +1,6 @@
 import { IoHome } from "react-icons/io5";
 import { TiHeartFullOutline } from "react-icons/ti";
-import { FaShoppingCart } from "react-icons/fa";
+import { FaShoppingCart, FaClipboardList } from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
 import { Link, useLocation } from "react-router-dom";
 import logoBukis from "/bukis_logo.png";
@@ -56,7 +56,20 @@ const NavBar = () => {
             )}
           </Link>
 
-          {/* AQUI EL CAMBIO: antes /pedidos y texto Pedidos */}
+          <Link className="navbar-item main-nav" to="/pedidos" style={{ color: "white" }}>
+            {pathname.startsWith("/pedidos") ? (
+              <>
+                <FaClipboardList size={22} />
+                <p className="is-underlined">Pedidos</p>
+              </>
+            ) : (
+              <>
+                <FaClipboardList size={22} />
+                <p>Pedidos</p>
+              </>
+            )}
+          </Link>
+
           <Link className="navbar-item main-nav" to="/carrito" style={{ color: "white" }}>
             {pathname === "/carrito" ? (
               <>

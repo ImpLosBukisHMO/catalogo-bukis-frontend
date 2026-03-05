@@ -13,6 +13,8 @@ import {
 } from "../../services/product";
 
 import { addItem } from "../../services/carrito";
+import { addFavorito, removeFavorito, getFavoritos } from "../../services/favoritos";
+import { getAccessToken } from "../../services/auth";
 
 import type { ProductDetail, Variant } from "../../types/product";
 import type { Product, ProductCardVM } from "../../types/product";
@@ -53,6 +55,11 @@ export default function ProductoPage() {
   const [adding, setAdding] = useState(false);
   const [addMsg, setAddMsg] = useState<string | null>(null);
   const [addErr, setAddErr] = useState<string | null>(null);
+
+  // Favorito (UI)
+  const [favoritoId, setFavoritoId] = useState<number | null>(null);
+  const [favBusy, setFavBusy] = useState(false);
+  const isAuthenticated = Boolean(getAccessToken());
 
   // Más productos
   const [moreProducts, setMoreProducts] = useState<ProductCardVM[]>([]);
@@ -148,6 +155,23 @@ export default function ProductoPage() {
     })();
   }, [product, selectedVariantId]);
 
+  // Cargar estado de favorito al cambiar variante
+  useEffect(() => {
+    if (!isAuthenticated || selectedVariantId == null) {
+      setFavoritoId(null);
+      return;
+    }
+    (async () => {
+      try {
+        const favs = await getFavoritos();
+        const match = favs.find((f) => f.variante.id === selectedVariantId);
+        setFavoritoId(match?.id ?? null);
+      } catch {
+        setFavoritoId(null);
+      }
+    })();
+  }, [selectedVariantId, isAuthenticated]);
+
   // Cargar “Más productos”
   useEffect(() => {
     (async () => {
@@ -162,7 +186,7 @@ export default function ProductoPage() {
           .map((p: any) => ({
             id: p.id,
             nombre: p.nombre,
-            sku: p.item ?? p.sku ?? "",
+            sku: p.sku ?? "",
             precio: Number(p.precio),
             imagenUrl: p.imagen ?? p.imagenUrl ?? null,
             disponible: true,
@@ -204,6 +228,24 @@ export default function ProductoPage() {
       setAddErr(msg);
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function handleToggleFavorito() {
+    if (!selectedVariantId) return;
+    try {
+      setFavBusy(true);
+      if (favoritoId != null) {
+        await removeFavorito(favoritoId);
+        setFavoritoId(null);
+      } else {
+        const fav = await addFavorito(selectedVariantId);
+        setFavoritoId(fav.id);
+      }
+    } catch {
+      // silencioso
+    } finally {
+      setFavBusy(false);
     }
   }
 
@@ -276,9 +318,30 @@ export default function ProductoPage() {
 
                 {/* Info */}
                 <div className="column is-5" style={{ color: "#222" }}>
-                  <h1 className="title is-2" style={{ marginBottom: "0.5rem", color: "#111" }}>
-                    {product.nombre}
-                  </h1>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                    <h1 className="title is-2" style={{ margin: 0, color: "#111" }}>
+                      {product.nombre}
+                    </h1>
+                    {isAuthenticated && selectedVariantId != null && (
+                      <button
+                        type="button"
+                        title={favoritoId != null ? "Quitar de favoritos" : "Agregar a favoritos"}
+                        disabled={favBusy}
+                        onClick={handleToggleFavorito}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: favBusy ? "wait" : "pointer",
+                          fontSize: 26,
+                          lineHeight: 1,
+                          padding: 0,
+                          color: favoritoId != null ? "#e63946" : "#aaa",
+                        }}
+                      >
+                        {favoritoId != null ? "♥" : "♡"}
+                      </button>
+                    )}
+                  </div>
 
                   <hr style={{ margin: "0.75rem 0 1rem" }} />
 
@@ -286,11 +349,6 @@ export default function ProductoPage() {
                     <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
                       <div className="column is-3" style={{ color: "#555" }}>Descripción</div>
                       <div className="column" style={{ color: "#111" }}>{product.descripcion}</div>
-                    </div>
-
-                    <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>
-                      <div className="column is-3" style={{ color: "#555" }}>No. ítem</div>
-                      <div className="column" style={{ color: "#111" }}>{product.item}</div>
                     </div>
 
                     <div className="columns is-mobile" style={{ marginBottom: "0.25rem" }}>

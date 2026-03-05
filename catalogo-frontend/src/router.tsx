@@ -13,6 +13,9 @@ import WorkerDashboardPage from "./components/pages/WorkerDashboardPage";
 import WorkerOrdersPage from "./components/pages/WorkerOrdersPage";
 import WorkerProductsPage from "./components/pages/WorkerProductsPage";
 import ProductoPage from "./components/pages/ProductoPage";
+import FavoritosPage from "./components/pages/FavoritosPage";
+import MisPedidosPage from "./components/pages/MisPedidosPage";
+import PedidoDetallePage from "./components/pages/PedidoDetallePage";
 
 
 export default function AppRouter() {
@@ -22,6 +25,9 @@ export default function AppRouter() {
       <Route path="/" element={<Home />} />
       <Route path="/perfil" element={<ProfilePage />} />
       <Route path="/carrito" element={<CarritoPage />} />
+      <Route path="/favoritos" element={<FavoritosPage />} />
+      <Route path="/pedidos" element={<MisPedidosPage />} />
+      <Route path="/pedidos/:id" element={<PedidoDetallePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/producto/:id" element={<ProductoPage />} />

@@ -263,7 +263,7 @@ function WorkerPage() {
               >
                 {productos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.nombre} ({p.item})
+                    {p.nombre}
                   </option>
                 ))}
               </select>

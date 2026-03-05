@@ -22,7 +22,7 @@ function Home() {
         const mapped: ProductCardVM[] = data.map((p: any) => ({
           id: p.id,
           nombre: p.nombre,
-          sku: p.item ?? p.sku ?? "",
+          sku: p.sku ?? "",
           precio: Number(p.precio),
           imagenUrl: p.imagen ?? p.imagenUrl ?? null,
           disponible: true,
