@@ -1,16 +1,9 @@
 import { useEffect, useState } from "react";
-import { House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
+import { House, Heart, ShoppingCart, UserRound, Search, Box, ClipboardList } from "lucide-react";
+import { DoorOpen } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
 import { getLoggedUserData, logOut } from "../../services/user";
-import { DoorOpen } from 'lucide-react';
-
-/*
-TO DO:
-- Integrate with backend.
-- Add a search bar that redirects to another page dedicated to search 
-  products.
-- Add log-out when user is authenticated.
-*/
 
 type NavBarProps = {
     navBarQuery?: string | null;
@@ -20,18 +13,18 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const { pathname } = useLocation();
     const toggleNavMenu = () => setIsOpen(!isOpen);
     const iconSize = 22;
 
-    const handleQuery = (e: Event) => {
+    const handleQuery = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (searchQuery.length > 0) { 
-            window.location.href = `/productos?query=${searchQuery}`
+        if (searchQuery.length > 0) {
+            window.location.href = `/productos?query=${searchQuery}`;
         } else {
             window.location.href = "/productos";
         }
-    }
+    };
 
     const fetchUserData = async () => {
         try {
@@ -39,7 +32,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
             setIsLoggedIn(true);
         } catch (e: any) {
             if (e.response?.status === 401) {
-                console.log("Es necesario registrarse o iniciar sesión.")
+                console.log("Es necesario registrarse o iniciar sesión.");
             }
         }
     };
@@ -49,10 +42,10 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
     return (
         <nav className="navbar mb-5 main-nav" style={{ zIndex: 2, position: 'sticky' }} role="navigation" aria-label="main navigation">
             <div className="navbar-brand">
-                <a className="navbar-item is-flex is-align-items-center main-nav" href="/">
+                <Link className="navbar-item is-flex is-align-items-center main-nav" to="/">
                     <img src={logoBukis} alt="logo-los-bukis" style={{ maxHeight: "3rem" }} />
                     <p className="subtitle" style={{ color: "white", textAlign: 'center', fontSize: '1.1rem' }}>Importaciones<br />Los Bukis</p>
-                </a>
+                </Link>
                 <a
                     role="button"
                     className={`main-nav navbar-burger ${isOpen ? 'is-active' : ''}`}
@@ -68,8 +61,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
             </div>
             <div id="navbar-menu" className={`navbar-menu ${isOpen ? 'is-active' : ''}`} style={{ backgroundColor: '#dd0000' }}>
                 <div className="navbar-start">
-                    <div className="is-flex is-align-items-center"
-                        style={{ backgroundColor: '#dd0000' }}>
+                    <div className="is-flex is-align-items-center" style={{ backgroundColor: '#dd0000' }}>
                         <div className="icon-container icon-container-search ml-5">
                             <Search size={28} />
                         </div>
@@ -84,42 +76,42 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                     </div>
                 </div>
                 <div className="navbar-end">
-                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/" style={{ color: "white" }}>
-                        {
-                            window.location.pathname === "/" ? (<><House size={iconSize} /><p className='is-underlined txt-white'>Inicio</p></>) : (<><House size={iconSize} /><p className='txt-white'>Inicio</p></>)
-                        }
-                    </a>
-                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/productos" style={{ color: "white" }}>
-                        {
-                            window.location.pathname === "/productos" ? (<><Box size={iconSize} /><p className='is-underlined txt-white'>Productos</p></>) : (<><Box size={iconSize} /><p className='txt-white'>Productos</p></>)
-                        }
-                    </a>
-                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/favoritos" style={{ color: "white" }}>
-                        {
-                            window.location.pathname === "/favoritos" ? (<><Heart size={iconSize} /><p className='is-underlined txt-white'>Favoritos</p></>) : (<><Heart size={iconSize} /><p className='txt-white'>Favoritos</p></>)
-                        }
-                    </a>
-                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/pedido" style={{ color: "white" }}>
-                        {
-                            window.location.pathname === "/pedido" ? (<><ShoppingCart size={iconSize} /><p className='is-underlined txt-white'>Carrito</p></>) : (<><ShoppingCart size={iconSize} /><p className='txt-white'>Carrito</p></>)
-                        }
-                    </a>
-                    <a className="navbar-item main-nav is-flex is-justify-content-center" href="/perfil" style={{ color: "white" }}>
-                        {
-                            window.location.pathname === "/perfil" ? (<><UserRound size={iconSize} /><p className='is-underlined txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>) : (<><UserRound size={iconSize} /><p className='txt-white'>{isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}</p></>)
-                        }
-                    </a>
-                    {
-                        isLoggedIn && (
+                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/" style={{ color: "white" }}>
+                        <House size={iconSize} />
+                        <p className={pathname === "/" ? "is-underlined txt-white" : "txt-white"}>Inicio</p>
+                    </Link>
+                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/productos" style={{ color: "white" }}>
+                        <Box size={iconSize} />
+                        <p className={pathname === "/productos" ? "is-underlined txt-white" : "txt-white"}>Productos</p>
+                    </Link>
+                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/favoritos" style={{ color: "white" }}>
+                        <Heart size={iconSize} />
+                        <p className={pathname === "/favoritos" ? "is-underlined txt-white" : "txt-white"}>Favoritos</p>
+                    </Link>
+                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/pedidos" style={{ color: "white" }}>
+                        <ClipboardList size={iconSize} />
+                        <p className={pathname.startsWith("/pedidos") ? "is-underlined txt-white" : "txt-white"}>Mis Pedidos</p>
+                    </Link>
+                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/carrito" style={{ color: "white" }}>
+                        <ShoppingCart size={iconSize} />
+                        <p className={pathname === "/carrito" ? "is-underlined txt-white" : "txt-white"}>Carrito</p>
+                    </Link>
+                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/perfil" style={{ color: "white" }}>
+                        <UserRound size={iconSize} />
+                        <p className={pathname === "/perfil" ? "is-underlined txt-white" : "txt-white"}>
+                            {isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}
+                        </p>
+                    </Link>
+                    {isLoggedIn && (
                         <a className="navbar-item main-nav is-flex is-justify-content-center" onClick={async () => await logOut()} style={{ color: "white", cursor: 'pointer' }}>
-                            <DoorOpen size={iconSize} className="" />
+                            <DoorOpen size={iconSize} />
                             <p className='txt-white'>Cerrar Sesión</p>
-                        </a>)
-                    }
+                        </a>
+                    )}
                 </div>
             </div>
         </nav>
-    )
-}
+    );
+};
 
 export default NavBar;
