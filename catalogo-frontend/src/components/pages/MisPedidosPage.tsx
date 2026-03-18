@@ -6,7 +6,7 @@ import Footer from "../elements/Footer";
 
 import type { PedidoResumen } from "../../types/pedido";
 import { getMisPedidos } from "../../services/pedidos";
-import { getAccessToken } from "../../services/auth";
+
 
 const ESTADO_COLOR: Record<string, string> = {
   PENDING: "#f5a623",
@@ -51,7 +51,7 @@ export default function MisPedidosPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!getAccessToken()) {
+    if (!localStorage.getItem("access")) {
       navigate("/login");
       return;
     }

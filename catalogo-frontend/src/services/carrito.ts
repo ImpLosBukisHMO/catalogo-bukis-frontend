@@ -1,67 +1,27 @@
-// src/services/carrito.ts
 import type { CarritoResponse } from "../types/carrito";
-import { apiFetch } from "./apiFetch";
-
-const API_URL = "http://127.0.0.1:8000/api";
-
-function toJsonError(txt: string) {
-  try {
-    return JSON.parse(txt);
-  } catch {
-    return { detail: txt };
-  }
-}
+import API from "../api";
 
 export async function getCarritoActual(): Promise<CarritoResponse> {
-  const res = await apiFetch(`${API_URL}/carrito/`);
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(JSON.stringify(toJsonError(txt)));
-  }
-
-  return (await res.json()) as CarritoResponse;
+  const res = await API.get("/api/carrito/");
+  return res.data;
 }
 
 export async function addItem(variante_id: number, cantidad: number) {
-  const res = await apiFetch(`${API_URL}/carrito/items/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ variante_id, cantidad }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(JSON.stringify(toJsonError(txt)));
-  }
-
-  return await res.json();
+  const res = await API.post("/api/carrito/items/", { variante_id, cantidad });
+  return res.data;
 }
 
 export async function updateItemCantidad(item_id: number, cantidad: number) {
-  const res = await apiFetch(`${API_URL}/carrito/items/${item_id}/`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cantidad }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(JSON.stringify(toJsonError(txt)));
-  }
-
-  return await res.json();
+  const res = await API.patch(`/api/carrito/items/${item_id}/`, { cantidad });
+  return res.data;
 }
 
 export async function deleteItem(item_id: number) {
-  const res = await apiFetch(`${API_URL}/carrito/items/${item_id}/`, {
-    method: "DELETE",
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(JSON.stringify(toJsonError(txt)));
-  }
-
+  await API.delete(`/api/carrito/items/${item_id}/`);
   return true;
+}
+
+export async function checkoutCart() {
+  const res = await API.post("/api/carrito/checkout/");
+  return res.data;
 }

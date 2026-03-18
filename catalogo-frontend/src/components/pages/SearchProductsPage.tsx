@@ -9,7 +9,6 @@ import { getCategories, getCategoryById } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
 import { Category } from "../../services/category";
 import { addFavorito } from "../../services/favoritos";
-import { getAccessToken } from "../../services/auth";
 
 
 export default function SearchProductsPage() {
@@ -160,7 +159,7 @@ export default function SearchProductsPage() {
     }, [])
 
     const handleToggleFavorite = async (product: ProductCardVM) => {
-        if (!getAccessToken()) {
+        if (!localStorage.getItem("access")) {
             window.location.href = "/iniciar-sesion";
             return;
         }

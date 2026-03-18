@@ -5,10 +5,7 @@ import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 
 import type { CarritoResponse } from "../../types/carrito";
-import { getCarritoActual, updateItemCantidad, deleteItem } from "../../services/carrito";
-import { apiFetch } from "../../services/apiFetch";
-
-const API_URL = "http://127.0.0.1:8000/api";
+import { getCarritoActual, updateItemCantidad, deleteItem, checkoutCart } from "../../services/carrito";
 
 function money(n: number) {
   return new Intl.NumberFormat("es-MX", {
@@ -199,25 +196,10 @@ export default function CarritoPage() {
       setBusy("checkout");
       setError(null);
 
-      const res = await apiFetch(`${API_URL}/carrito/checkout/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nota_cliente: "" }),
-      });
+      const data = await checkoutCart();
 
-      const txt = await res.text();
-      const data = txt ? JSON.parse(txt) : null;
-
-      if (!res.ok) {
-        throw new Error(JSON.stringify(data ?? { detail: "Checkout falló" }));
-      }
-
-      // Puedes redirigir a un page de confirmación si luego lo haces
-      // Por ahora, recargamos carrito para que quede vacío
       await load();
 
-      // Si quieres: navega a /pedidos o /perfil más adelante
-      // navigate("/perfil");
       console.log("checkout ok", data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error en checkout");

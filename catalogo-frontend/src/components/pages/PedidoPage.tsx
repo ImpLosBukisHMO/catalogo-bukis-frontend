@@ -6,11 +6,11 @@ import API from "../../api";
 import { useEffect, useMemo, useState } from "react";
 import type { CartItemVM } from "../../types/cart";
 import {
-  getCart,
-  updateItem,
-  removeItem,
+  getCarritoActual as getCart,
+  updateItemCantidad as updateItem,
+  deleteItem as removeItem,
   checkoutCart,
-} from "../../services/cart";
+} from "../../services/carrito";
 
 
 

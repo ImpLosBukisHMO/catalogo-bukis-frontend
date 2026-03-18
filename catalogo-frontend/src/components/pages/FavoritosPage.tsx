@@ -7,7 +7,7 @@ import Footer from "../elements/Footer";
 import type { FavoritoVariante } from "../../types/favoritos";
 import { getFavoritos, removeFavorito } from "../../services/favoritos";
 import { addItem } from "../../services/carrito";
-import { getAccessToken } from "../../services/auth";
+
 
 function money(n: number) {
   return new Intl.NumberFormat("es-MX", {
@@ -27,7 +27,7 @@ export default function FavoritosPage() {
   const [msg, setMsg] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    if (!getAccessToken()) {
+    if (!localStorage.getItem("access")) {
       navigate("/iniciar-sesion");
       return;
     }

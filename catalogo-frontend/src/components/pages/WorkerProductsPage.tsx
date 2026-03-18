@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getWorkerVariants, crearVariante, subirImagen, crearProducto } from "../../services/worker";
-import { apiFetch } from "../../services/apiFetch";
+import API from "../../api";
 import type { WorkerVariant } from "../../types/worker";
 import {
   card,
@@ -167,8 +167,8 @@ export default function WorkerProductsPage() {
 
   useEffect(() => {
     reload();
-    apiFetch(`${API_BASE}/api/categorias/`)
-      .then((r) => r.json())
+    API.get("/api/categorias/")
+      .then((r) => r.data)
       .then((data) => setCategorias(Array.isArray(data) ? data : (data?.results ?? [])));
   }, []);
 
@@ -177,8 +177,8 @@ export default function WorkerProductsPage() {
     const normalize = (d: unknown) =>
       Array.isArray(d) ? d : (d as any)?.results ?? [];
     Promise.all([
-      apiFetch(`${API_BASE}/api/colores/`).then((r) => r.json()),
-      apiFetch(`${API_BASE}/api/productos/`).then((r) => r.json()),
+      API.get("/api/colores/").then((r) => r.data),
+      API.get("/api/productos/").then((r) => r.data),
     ]).then(([c, p]) => {
       setColores(normalize(c));
       setProductos(normalize(p));
@@ -222,12 +222,7 @@ export default function WorkerProductsPage() {
     if (editId === null) return;
     setSavingEdit(true);
     try {
-      const res = await apiFetch(`${API_BASE}/api/producto-variantes/${editId}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stock: Number(editStock), activo: editActivo }),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      await API.patch(`/api/producto-variantes/${editId}/`, { stock: Number(editStock), activo: editActivo });
       reload();
       setEditId(null);
     } catch {
@@ -523,7 +518,7 @@ export default function WorkerProductsPage() {
           <Seccion title="Colores">
             <CrearColorForm
               onCreated={() => {
-                apiFetch(`${API_BASE}/api/colores/`).then((r) => r.json()).then(setColores);
+                API.get("/api/colores/").then((r) => setColores(r.data));
               }}
             />
           </Seccion>
@@ -531,7 +526,7 @@ export default function WorkerProductsPage() {
           <Seccion title="Categorías">
             <CrearCategoriaForm
               onCreated={() => {
-                apiFetch(`${API_BASE}/api/categorias/`).then((r) => r.json()).then(setCategorias);
+                API.get("/api/categorias/").then((r) => setCategorias(r.data));
               }}
             />
           </Seccion>
@@ -541,7 +536,7 @@ export default function WorkerProductsPage() {
               categorias={categorias}
               onCreated={() => {
                 reload();
-                apiFetch(`${API_BASE}/api/productos/`).then((r) => r.json()).then(setProductos);
+                API.get("/api/productos/").then((r) => setProductos(r.data));
               }}
             />
           </Seccion>
@@ -572,12 +567,7 @@ function CrearColorForm({ onCreated }: { onCreated: () => void }) {
     e.preventDefault();
     setSaving(true); setError("");
     try {
-      const res = await apiFetch(`${API_BASE}/api/colores/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, hex, disponible }),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      await API.post("/api/colores/", { nombre, hex, disponible });
       setNombre(""); setHex("#000000"); setDisponible(true);
       onCreated();
     } catch (err) {
@@ -637,12 +627,7 @@ function CrearCategoriaForm({ onCreated }: { onCreated: () => void }) {
     e.preventDefault();
     setSaving(true); setError("");
     try {
-      const res = await apiFetch(`${API_BASE}/api/categorias/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre }),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      await API.post("/api/categorias/", { nombre });
       setNombre("");
       onCreated();
     } catch (err) {
