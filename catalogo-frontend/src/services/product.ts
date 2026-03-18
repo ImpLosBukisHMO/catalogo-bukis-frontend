@@ -1,58 +1,13 @@
 import API from "../api";
 
-
 export async function getProducts() {
-  const res = await API.get("/api/productos/", {
-    headers: { Accept: "application/json" },
-  });
-
-  if (res.status !== 200) {
-    throw new Error(`Error al cargar productos (${res.status}).`);
-  }
-  
+  const res = await API.get("/api/productos/");
   return res.data;
 }
 
 export async function getProductById(id: string | number) {
-  const res = await API.get(`/api/productos/${id}/`, {
-    headers: { Accept: "application/json" },
-  });
-
-  if (res.status !== 200) {
-    throw new Error(`Error al cargar producto (${res.status}).`);
-  }
-
+  const res = await API.get(`/api/productos/${id}/`);
   return res.data;
-}
-
-/*
-
-export async function getProducts(): Promise<Product[]> {
-  const url = `${API_BASE}/api/productos/`;
-  return requestJSON<Product[]>(url);
-}
-
-export async function getProductById(id: string | number): Promise<ProductDetail> {
-  const url = `${API_BASE}/api/productos/${id}/`;
-  return requestJSON<ProductDetail>(url);
-}
-*/
-
-const API_BASE =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://127.0.0.1:8000";
-
-async function requestJSON<T>(url: string): Promise<T> {
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Request failed (${res.status}). ${text}`);
-  }
-
-  return res.json() as Promise<T>;
 }
 
 export type ProductImage = {
@@ -74,6 +29,6 @@ export async function getProductImages(params: {
   if (params.producto !== undefined) qs.set("producto", String(params.producto));
   if (params.variante !== undefined) qs.set("variante", String(params.variante));
 
-  const url = `${API_BASE}/api/productos-imagenes/?${qs.toString()}`;
-  return requestJSON<ProductImage[]>(url);
+  const res = await API.get(`/api/productos-imagenes/?${qs.toString()}`);
+  return res.data;
 }
