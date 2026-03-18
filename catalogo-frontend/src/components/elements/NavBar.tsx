@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { House, Heart, ShoppingCart, UserRound, Search, Box, ClipboardList } from "lucide-react";
+import { House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
 import { DoorOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
@@ -88,11 +88,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                         <Heart size={iconSize} />
                         <p className={pathname === "/favoritos" ? "is-underlined txt-white" : "txt-white"}>Favoritos</p>
                     </Link>
-                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/pedidos" style={{ color: "white" }}>
-                        <ClipboardList size={iconSize} />
-                        <p className={pathname.startsWith("/pedidos") ? "is-underlined txt-white" : "txt-white"}>Mis Pedidos</p>
-                    </Link>
-                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/carrito" style={{ color: "white" }}>
+<Link className="navbar-item main-nav is-flex is-justify-content-center" to="/carrito" style={{ color: "white" }}>
                         <ShoppingCart size={iconSize} />
                         <p className={pathname === "/carrito" ? "is-underlined txt-white" : "txt-white"}>Carrito</p>
                     </Link>

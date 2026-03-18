@@ -28,7 +28,7 @@ export default function FavoritosPage() {
 
   useEffect(() => {
     if (!getAccessToken()) {
-      navigate("/login");
+      navigate("/iniciar-sesion");
       return;
     }
     load();

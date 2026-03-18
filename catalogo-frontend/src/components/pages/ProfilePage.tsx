@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import HideShowPassword from "../elements/HideShowPassword";
-import { Pencil, Save, Ban } from "lucide-react";
+import { Pencil, Save, Ban, ClipboardList } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { getLoggedUserData, updateUserData, type Usuario } from "../../services/user";
 import {
     type Address, getUserAddress,
@@ -42,6 +43,7 @@ const EditingButtons = (props: { isEditing: boolean, handleEditing: () => void, 
 
 
 const ProfilePage = () => {
+    const navigate = useNavigate();
     // Editing and address states
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [hasAddress, setHasAddress] = useState<boolean>(false);
@@ -273,6 +275,17 @@ const ProfilePage = () => {
                 </div>
                 <EditingButtons isEditing={isEditing} handleEditing={handleEditing} handleCancel={handleCancel} handleSave={handleSave} />
             </div>
+
+            <div className="mx-auto mt-4 mb-6" style={{ width: '80%' }}>
+                <button
+                    className="p-1 px-3 custom-btn is-flex is-align-items-center"
+                    onClick={() => navigate("/pedidos")}
+                >
+                    <ClipboardList size={22} />
+                    <p className="is-size-6 txt-white">&nbsp;Mis Pedidos</p>
+                </button>
+            </div>
+
             <Footer />
         </div>
     );

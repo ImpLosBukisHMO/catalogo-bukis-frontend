@@ -1,59 +1,112 @@
-export type Categoria = {
-  id: number;
-  nombre: string;
-  created_at: string;
-  updated_at: string;
+export type WorkerVariant = {
+  variant_id: number;
+  item: string;
+  producto: {
+    id: number;
+    nombre: string;
+    precio: string;
+    categorias: number[];
+  };
+  color: {
+    id: number;
+    nombre: string;
+    hex: string;
+  };
+  stock: number;
+  activo: boolean;
+  imagen_principal: string | null;
 };
 
-export type Color = {
+export type WorkerPedidoCliente = {
   id: number;
   nombre: string;
-  hex: string;
-  created_at: string;
-  updated_at: string;
+  correo: string;
 };
 
-export type Producto = {
+export type WorkerPedido = {
   id: number;
+  public_id: string;
+  cliente: WorkerPedidoCliente;
+  estado: string;
+  precio_total: string;
+  items_count: number;
+  created_at: string;
+};
+
+export type WorkerPedidoItem = {
+  cantidad: number;
   nombre: string;
   item: string;
+  color: string;
+  color_hex: string;
+  precio_unitario: string;
+  subtotal: string;
+  imagen: string;
+};
+
+export type WorkerPedidoDetalle = {
+  id: number;
+  public_id: string;
+  cliente: {
+    id: number;
+    nombre: string;
+    correo: string;
+    telefono: string;
+  };
+  estado: string;
+  precio_total: string;
+  subtotal_snapshot: string;
+  nota_cliente: string | null;
+  nota_worker: string | null;
+  denegado_razon: string | null;
+  aprobado_eta: string | null;
+  items: WorkerPedidoItem[];
+  created_at: string;
+};
+
+export type WorkerProducto = {
+  id: number;
+  nombre: string;
   imagen: string;
   descripcion: string;
   precio: string;
   peso: string;
   medidas: string;
   capacidad: string | null;
-  categoria: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type ProductoMini = {
-  id: number;
-  nombre: string;
-  imagen: string;
-  precio: string;
-  categoria: number;
-};
-
-export type ProductoVariante = {
-  id: number;
-  producto: ProductoMini;
-  color: { id: number; nombre: string; hex: string };
-  stock: number;
-  activo: boolean;
   disponible: boolean;
+  categorias: number[];
   created_at: string;
   updated_at: string;
 };
 
-export type ProductoImagen = {
-  id: number;
-  producto: number;
-  variante: number | null;
-  imagen: string;
-  orden: number;
-  es_principal: boolean;
-  created_at: string;
-  updated_at: string;
+export const ESTADOS_PEDIDO = [
+  "PENDING",
+  "APPROVED",
+  "DENIED",
+  "READY",
+  "SHIPPED",
+  "COMPLETED",
+  "CANCELED",
+] as const;
+
+export type EstadoPedido = (typeof ESTADOS_PEDIDO)[number];
+
+export const ESTADO_LABEL: Record<string, string> = {
+  PENDING: "Pendiente",
+  APPROVED: "Aprobado",
+  DENIED: "Denegado",
+  READY: "Listo",
+  SHIPPED: "Enviado",
+  COMPLETED: "Completado",
+  CANCELED: "Cancelado",
+};
+
+export const TRANSICIONES_VALIDAS: Record<string, string[]> = {
+  PENDING: ["APPROVED", "DENIED"],
+  APPROVED: ["READY"],
+  READY: ["SHIPPED"],
+  SHIPPED: ["COMPLETED"],
+  DENIED: [],
+  COMPLETED: [],
+  CANCELED: [],
 };
