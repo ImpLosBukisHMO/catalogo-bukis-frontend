@@ -88,7 +88,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                         <Heart size={iconSize} />
                         <p className={pathname === "/favoritos" ? "is-underlined txt-white" : "txt-white"}>Favoritos</p>
                     </Link>
-<Link className="navbar-item main-nav is-flex is-justify-content-center" to="/carrito" style={{ color: "white" }}>
+                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/carrito" style={{ color: "white" }}>
                         <ShoppingCart size={iconSize} />
                         <p className={pathname === "/carrito" ? "is-underlined txt-white" : "txt-white"}>Carrito</p>
                     </Link>
