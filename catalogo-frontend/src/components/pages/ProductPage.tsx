@@ -3,7 +3,7 @@ import { useParams } from "react-router";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import ProductCard from "../elements/ProductCard";
-import { addItem } from "../../services/cart";
+import { addItem } from "../../services/carrito";
 
 import {
   getProductById,

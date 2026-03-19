@@ -4,10 +4,11 @@ import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
 import ProductCard from "../elements/ProductCard";
 import { Search } from "lucide-react";
-import { getProducts } from "../../services/product";
+import { getProducts, getProductById } from "../../services/product";
 import { getCategories, getCategoryById } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
 import { Category } from "../../services/category";
+import { addFavorito } from "../../services/favoritos";
 
 
 export default function SearchProductsPage() {
@@ -22,6 +23,7 @@ export default function SearchProductsPage() {
     const [filterMaxPrice, setFilterMaxPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [favMsg, setFavMsg] = useState<string | null>(null);
 
     const fetchProductData = async () => {
         try {
@@ -156,9 +158,45 @@ export default function SearchProductsPage() {
         })();
     }, [])
 
+    const handleToggleFavorite = async (product: ProductCardVM) => {
+        if (!localStorage.getItem("access")) {
+            window.location.href = "/iniciar-sesion";
+            return;
+        }
+        try {
+            const detail = await getProductById(product.id);
+            const variantes = detail.variantes ?? [];
+            const varianteId = (variantes.find((v: any) => v.disponible) ?? variantes[0])?.id;
+            if (!varianteId) {
+                setFavMsg("Este producto no tiene variantes disponibles.");
+                setTimeout(() => setFavMsg(null), 3000);
+                return;
+            }
+            await addFavorito(varianteId);
+            setFavMsg(`"${product.nombre}" agregado a favoritos.`);
+        } catch {
+            setFavMsg("Error al agregar a favoritos.");
+        }
+        setTimeout(() => setFavMsg(null), 3000);
+    };
+
     return (
         <>
             <NavBar navBarQuery={productQuery || ""} />
+            {favMsg && (
+                <div
+                    className="notification"
+                    style={{
+                        position: "fixed", bottom: "1.5rem", right: "1.5rem",
+                        zIndex: 999, maxWidth: 320,
+                        background: favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "#ffe0e0" : "#e6f9ee",
+                        color: favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "#c0392b" : "#1a7a3f",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    }}
+                >
+                    {favMsg}
+                </div>
+            )}
             <div className="columns is-flex ml-4 mr-1 is-aligned-items-center" style={{ height: '100%' }}>
                 <div className="column is-one-fourth is-one-fifth generic-container"
                     style={{ marginRight: 0, flex: '0 0 20%' }}>
@@ -286,7 +324,7 @@ export default function SearchProductsPage() {
                                 <div className="grid" style={{ overflow: "scroll", maxHeight: '95vh', padding: '5px' }}>
                                     {
                                         products.map((p) => (
-                                            <ProductCard key={p.id} product={p} />
+                                            <ProductCard key={p.id} product={p} onToggleFavorite={handleToggleFavorite} />
                                         ))
                                     }
                                 </div>

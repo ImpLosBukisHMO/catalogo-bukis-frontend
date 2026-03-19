@@ -1,5 +1,14 @@
 import API from "../api";
 
+/*
+Use if needed:
+
+const TOKEN_NAME: string = import.meta.env.VITE_TOKEN_NAME;
+const ACCESS_NAME: string = import.meta.env.VITE_ACCESS_NAME;
+const REFRESH_NAME: string = import.meta.env.VITE_REFRESH_NAME;
+const ME_NAME: string = import.meta.env.VITE_ME_NAME;
+*/
+
 // User data. CAUTION: Privacy may be compromised, use carefully.
 export type Usuario = {
   id: number | null;
@@ -27,6 +36,8 @@ export async function signUp(data: Usuario) {
 export async function logIn(correo: string, password: string) {
   // Remove token (especially if it's already expired).
   localStorage.removeItem("token");
+  localStorage.removeItem("access");
+  localStorage.removeItem("me");
 
   const data = {
     correo: correo,
@@ -47,11 +58,25 @@ export async function logIn(correo: string, password: string) {
 }
 
 export async function logOut() {
-  await API.post("/api/logout/", {
-    headers: { Accept: "application/json" },
-  });
-  localStorage.removeItem("token");
-  window.location.href = '/';
+  const token = localStorage.getItem("token");
+  try {
+    // El segundo argumento es el body (vacío), el tercero es la configuración (headers)
+    await API.post("/api/logout/", {}, {
+      headers: { 
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+    });
+  } catch (error) {
+    console.error("Error al cerrar sesión en el servidor:", error);
+  } finally {
+    // Aseguramos borrar el token localmente pase lo que pase en el servidor
+    localStorage.removeItem("token");
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("me");
+    window.location.href = '/';
+  }
 }
 
 export async function getLoggedUserData() {

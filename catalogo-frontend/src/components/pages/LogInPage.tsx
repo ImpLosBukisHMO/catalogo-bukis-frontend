@@ -1,52 +1,65 @@
 import { useState, useEffect } from "react";
-import { logIn } from "../../services/user";
+import { useNavigate } from "react-router-dom";
 import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
-import { getLoggedUserData } from "../../services/user";
 import HideShowPassword from "../elements/HideShowPassword";
+import { logIn, getLoggedUserData } from "../../services/user";
+import { login, getMe, isWorker } from "../../services/auth";
 
 const LogInPage = () => {
+    const navigate = useNavigate();
     const [correo, setCorreo] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const [passwordVisible, setPasswordVisibility] = useState<string>("password");
 
-    const fetchUserData = async () => {
+    // Si ya tiene sesión activa, redirigir
+    const checkSession = async () => {
         try {
             await getLoggedUserData();
-            history.back()              // User already logged in (valid token).
+            navigate(-1 as any);
         } catch (e: any) {
-            if (e.response?.status === 401) {
-                console.log("Es necesario registrarse o iniciar sesión.")
-            }
+            // No hay sesión, mostrar formulario
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
+        setError('');
         try {
-            await logIn(correo, password);
-        } catch (error: any) {
+            // Login con JWT (access + refresh) para los servicios nuevos
+            await login(correo, password);
+            // También hacer login con el sistema legacy para compatibilidad con axios/user.ts
+            try { await logIn(correo, password); } catch (_) { /* continuar aunque falle el legacy */ }
+
+            // Detectar si es worker y redirigir
+            const me = await getMe();
+            if (isWorker(me)) {
+                navigate("/worker");
+            } else {
+                navigate("/");
+            }
+        } catch (err: any) {
             setError('Credenciales inválidas');
+        } finally {
+            setLoading(false);
         }
     };
 
     const togglePasswordVisibility = () => {
-        if (passwordVisible === "password") {
-            setPasswordVisibility("text");
-        } else {
-            setPasswordVisibility("password");
-        }
-    }
+        setPasswordVisibility(prev => prev === "password" ? "text" : "password");
+    };
 
     useEffect(() => {
-        fetchUserData();
+        checkSession();
     }, []);
 
     return (
         <>
             <NavBar />
-            <div className="my-6 container generic-container" style={{width: '85%',}}>
+            <div className="my-6 container generic-container" style={{width: '85%'}}>
                 <div className="section">
                     <div className="columns is-centered">
                         <div className="column is-half">
@@ -87,8 +100,12 @@ const LogInPage = () => {
                                 )}
                                 <div className="field">
                                     <div className="mt-5">
-                                        <button className="button custom-btn is-fullwidth" type="submit">
-                                            Iniciar Sesión
+                                        <button
+                                            className="button custom-btn is-fullwidth"
+                                            type="submit"
+                                            disabled={loading}
+                                        >
+                                            {loading ? "Iniciando sesión…" : "Iniciar Sesión"}
                                         </button>
                                     </div>
                                 </div>
@@ -103,6 +120,6 @@ const LogInPage = () => {
             <Footer />
         </>
     );
-}
+};
 
 export default LogInPage;
