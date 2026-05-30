@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
+import { Briefcase, House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
 import { DoorOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
@@ -12,6 +12,7 @@ type NavBarProps = {
 const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isStaff, setIsStaff] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { pathname } = useLocation();
     const toggleNavMenu = () => setIsOpen(!isOpen);
@@ -28,8 +29,9 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
 
     const fetchUserData = async () => {
         try {
-            await getLoggedUserData();
+            const userData = await getLoggedUserData();
             setIsLoggedIn(true);
+            setIsStaff(Boolean(userData.is_staff));
         } catch (e: any) {
             if (e.response?.status === 401) {
                 console.log("Es necesario registrarse o iniciar sesión.");
@@ -98,6 +100,12 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                             {isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}
                         </p>
                     </Link>
+                    {isLoggedIn && isStaff && (
+                        <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/worker" style={{ color: "white" }}>
+                            <Briefcase size={iconSize} />
+                            <p className={pathname.startsWith("/worker") ? "is-underlined txt-white" : "txt-white"}>Panel de Trabajo</p>
+                        </Link>
+                    )}
                     {isLoggedIn && (
                         <a className="navbar-item main-nav is-flex is-justify-content-center" onClick={async () => await logOut()} style={{ color: "white", cursor: 'pointer' }}>
                             <DoorOpen size={iconSize} />
