@@ -1,7 +1,10 @@
-import { Component, type ReactNode } from "react";
-import { Outlet } from "react-router-dom";
+import { Component, type ReactNode, useEffect, useState } from "react";
+import { Navigate, Outlet } from "react-router-dom";
 import WorkerSidebar from "./WorkerSidebar";
 import { surface, sp, r, semantic, btn } from "./workerTheme";
+import { getLoggedUserData } from "../../services/user";
+
+type GuardStatus = "loading" | "authorized" | "unauthorized" | "forbidden";
 
 class PageErrorBoundary extends Component<
   { children: ReactNode },
@@ -49,6 +52,34 @@ class PageErrorBoundary extends Component<
 }
 
 const WorkerLayout = () => {
+  const [status, setStatus] = useState<GuardStatus>("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const userData = await getLoggedUserData();
+        if (cancelled) return;
+        if (userData?.is_staff) {
+          setStatus("authorized");
+        } else {
+          setStatus("forbidden");
+        }
+      } catch {
+        if (!cancelled) setStatus("unauthorized");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (status === "loading") return null;
+  if (status === "unauthorized") return <Navigate to="/iniciar-sesion" replace />;
+  if (status === "forbidden") return <Navigate to="/" replace />;
+
   return (
     <div
       style={{
