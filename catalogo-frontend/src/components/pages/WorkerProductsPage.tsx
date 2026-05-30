@@ -17,8 +17,6 @@ import {
   pageHeaderRow,
 } from "../elements/workerTheme";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
-
 // ─── local types ─────────────────────────────────────────────────
 type Color     = { id: number; nombre: string; hex: string };
 type Categoria = { id: number; nombre: string };
