@@ -211,21 +211,21 @@ const ProfilePage = () => {
                     <div className="column">
                         <div>
                             <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Nombre</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre completo." value={nombre} onChange={(e) => setNombre(e.target.value)} disabled={!isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Nombre completo." value={nombre ?? ''} onChange={(e) => setNombre(e.target.value)} disabled={!isEditing} />
                         </div>
                         <div>
                             <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Apellidos</p>
-                            <input className="input custom-input" type="text" placeholder="Apellidos completos." value={apellidos} onChange={(e) => setApellidos(e.target.value)} disabled={!isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Apellidos completos." value={apellidos ?? ''} onChange={(e) => setApellidos(e.target.value)} disabled={!isEditing} />
                         </div>
                     </div>
                     <div className="column">
                         <div>
                             <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Correo electrónico</p>
-                            <input className="input custom-input" type="text" placeholder="Ej.: usuario@correo.com" value={correo} disabled={true} />
+                            <input className="input custom-input" type="text" placeholder="Ej.: usuario@correo.com" value={correo ?? ''} disabled={true} />
                         </div>
                         <div>
                             <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Teléfono</p>
-                            <input className="input custom-input" type="text" placeholder="Ej: (+00) 000-000-0000" value={telefono} onChange={(e) => setTelefono(e.target.value)} disabled={!isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Ej: (+00) 000-000-0000" value={telefono ?? ''} onChange={(e) => setTelefono(e.target.value)} disabled={!isEditing} />
                         </div>
                     </div>
                 </div>
@@ -244,30 +244,30 @@ const ProfilePage = () => {
                     <div className="column">
                         <div>
                             <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Calle</p>
-                            <input className="input custom-input" type="text" placeholder="Ej.: Nombre de la calle, número exterior." value={calle} onChange={(e) => setCalle(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Ej.: Nombre de la calle, número exterior." value={calle ?? ''} onChange={(e) => setCalle(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                         <div>
                             <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Colonia / Fraccionamiento / Residencial</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre de colonia, fraccionamiento o residencial." value={colonia} onChange={(e) => setColonia(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Nombre de colonia, fraccionamiento o residencial." value={colonia ?? ''} onChange={(e) => setColonia(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                         <div>
                             <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Código Postal (C.P.)</p>
-                            <input className="input custom-input" type="number" placeholder="Ej.: 0000" value={codigoPostal} onChange={(e) => setCodigoPostal(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <input className="input custom-input" type="number" placeholder="Ej.: 0000" value={codigoPostal ?? ''} onChange={(e) => setCodigoPostal(e.target.value === '' ? null : Number(e.target.value))} disabled={!hasAddress || !isEditing} />
                         </div>
                     </div>
                     <div className="column">
                         <div>
                             <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Estado</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre del estado." value={estado} onChange={(e) => setEstado(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Nombre del estado." value={estado ?? ''} onChange={(e) => setEstado(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
         
                         <div>
                             <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Ciudad / Municipio</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre de la ciudad o municipio." value={ciudad} onChange={(e) => setCiudad(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Nombre de la ciudad o municipio." value={ciudad ?? ''} onChange={(e) => setCiudad(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                         <div>
                             <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>País</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre del país." value={pais} onChange={(e) => setPais(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <input className="input custom-input" type="text" placeholder="Nombre del país." value={pais ?? ''} onChange={(e) => setPais(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                     </div>
                 </div>

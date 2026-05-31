@@ -58,7 +58,14 @@ export default function PedidoPage() {
   useEffect(() => {
     getCart()
       .then(cart => {
-        setItems(cart.items);
+        setItems(cart.items.map(item => ({
+          id: item.id,
+          variante: item.color_nombre ?? null,
+          nombre: item.producto_nombre,
+          precio: Number(item.precio_unitario),
+          cantidad: item.cantidad,
+          imagen: item.imagen ?? '',
+        })));
       })
       .finally(() => setLoading(false));
   }, []);

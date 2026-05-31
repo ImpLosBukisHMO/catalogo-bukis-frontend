@@ -37,7 +37,7 @@ const SignUpPage = () => {
             return;
         }
         try {
-            await signUp({ nombre, apellido, correo, telefono, password });
+            await signUp({ id: null, nombre, apellido, correo, telefono, password });
         } catch {
             setError('Error al registrar usuario');
         }

@@ -745,7 +745,6 @@ function CrearVarianteForm({
     setSaving(true); setError(""); setSuccess("");
     try {
       await crearVariante(Number(productoId), {
-        item,
         color: Number(colorId),
         stock: Number(stock),
         activo,

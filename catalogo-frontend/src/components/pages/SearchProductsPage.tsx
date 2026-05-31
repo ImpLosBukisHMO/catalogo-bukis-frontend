@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import { getProducts, getProductById } from "../../services/product";
 import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
-import { Category } from "../../services/category";
+import type { Category } from "../../services/category";
 import { addFavorito } from "../../services/favoritos";
 
 
@@ -230,6 +230,7 @@ export default function SearchProductsPage() {
                                     <label key={c.id} className="checkbox is-flex my-3" style={{ display: 'block' }}>
                                         <input
                                             onChange={() => {
+                                                if (c.id === null) return;
                                                 if (!filterCategories.includes(c.id)) {
                                                     setFilterCategories([...filterCategories, c.id])
                                                 } else {
