@@ -23,8 +23,8 @@ const SignUpPage = () => {
         try {
             await getLoggedUserData();
             history.back();                // User already logged in (valid token).
-        } catch (e: any) {
-            if (e.response?.status === 401) {
+        } catch (e: unknown) {
+            if ((e as { response?: { status?: number } }).response?.status === 401) {
                 console.log("Es necesario registrarse o iniciar sesión.")
             }
         }
@@ -38,7 +38,7 @@ const SignUpPage = () => {
         }
         try {
             await signUp({ nombre, apellido, correo, telefono, password });
-        } catch (e: any) {
+        } catch {
             setError('Error al registrar usuario');
         }
     };

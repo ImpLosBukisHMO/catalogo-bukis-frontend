@@ -95,7 +95,7 @@ export async function getLoggedUserData() {
 export async function updateUserData(data: Usuario) {
   if (!data.id) throw new Error("ID de usuario no válido.");
 
-  const payload: any = {
+  const payload: Record<string, unknown> = {
     nombre: data.nombre,
     apellido: data.apellido,
     correo: data.correo,

@@ -152,9 +152,9 @@ const ProfilePage = () => {
             setPrevCorreo(userData.correo);
             setPrevTelefono(userData.telefono);
             setPrevPassword(null)
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.log(e);
-            if (e.response?.status === 401) {
+            if ((e as { response?: { status?: number } }).response?.status === 401) {
                 window.location.href = "/iniciar-sesion";
             }
         }
@@ -179,17 +179,17 @@ const ProfilePage = () => {
                 setPrevEstado(addressData.estado);
                 setPrevPais(addressData.pais);
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.log(e);
         }
     };
 
     useEffect(() => {
-        fetchUserData();
-
-        if (id) {
-            fetchAddress();
-        }
+        const load = async () => {
+            await fetchUserData();
+            if (id) await fetchAddress();
+        };
+        load();
 
         if (!isEditing) {
             // Reset password inputs.

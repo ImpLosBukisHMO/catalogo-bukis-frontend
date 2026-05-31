@@ -148,13 +148,13 @@ export default function ProductPage() {
         const data: Product[] = await getProducts();
 
         const mapped: ProductCardVM[] = data
-          .filter((p: any) => String(p.id) !== String(id)) // evita repetir el mismo producto
-          .map((p: any) => ({
+          .filter((p) => String(p.id) !== String(id)) // evita repetir el mismo producto
+          .map((p) => ({
             id: p.id,
             nombre: p.nombre,
-            sku: p.item ?? p.sku ?? "",
+            sku: p.item ?? "",
             precio: Number(p.precio),
-            imagenUrl: p.imagen ?? p.imagenUrl ?? null,
+            imagenUrl: p.imagen ?? null,
             disponible: true,
           }))
           .slice(0, 8);
@@ -429,7 +429,7 @@ export default function ProductPage() {
                             try {
                               await addItem(selectedVariant.id, qty as number);
                               alert("Producto agregado al carrito");
-                            } catch (err) {
+                            } catch {
                               alert("Error al agregar al carrito");
                             }
                           }}

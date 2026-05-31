@@ -5,14 +5,14 @@ import NavBar from "../elements/NavBar";
 import ProductCard from "../elements/ProductCard";
 import { Search } from "lucide-react";
 import { getProducts, getProductById } from "../../services/product";
-import { getCategories, getCategoryById } from "../../services/category";
+import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
 import { Category } from "../../services/category";
 import { addFavorito } from "../../services/favoritos";
 
 
 export default function SearchProductsPage() {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const productQuery = searchParams.get("query") || "";
 
     const [sideBarSearch, setSideBarSearch] = useState<string>('');
@@ -166,7 +166,7 @@ export default function SearchProductsPage() {
         try {
             const detail = await getProductById(product.id);
             const variantes = detail.variantes ?? [];
-            const varianteId = (variantes.find((v: any) => v.disponible) ?? variantes[0])?.id;
+            const varianteId = (variantes.find((v: unknown) => (v as { disponible: boolean }).disponible) ?? variantes[0])?.id;
             if (!varianteId) {
                 setFavMsg("Este producto no tiene variantes disponibles.");
                 setTimeout(() => setFavMsg(null), 3000);

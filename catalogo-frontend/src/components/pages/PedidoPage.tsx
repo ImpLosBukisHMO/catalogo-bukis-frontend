@@ -9,7 +9,6 @@ import {
   getCarritoActual as getCart,
   updateItemCantidad as updateItem,
   deleteItem as removeItem,
-  checkoutCart,
 } from "../../services/carrito";
 
 

@@ -22,9 +22,9 @@ export async function getUserAddress(id: number) {
       headers: { Accept: "application/json" },
     });
     return res.data.datos[0];
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Si el error es 404, retornamos null para que updateUserAddress sepa que debe crearla
-    if (error.response && error.response.status === 404) {
+    if ((error as { response?: { status?: number } }).response?.status === 404) {
       return null;
     }
     throw error;

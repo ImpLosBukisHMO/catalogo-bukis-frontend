@@ -143,7 +143,7 @@ export default function WorkerProductsPage() {
   const [editId, setEditId]           = useState<number | null>(null);
   const [editStock, setEditStock]     = useState("");
   const [editActivo, setEditActivo]   = useState(false);
-  const [savingEdit, setSavingEdit]   = useState(false);
+  const [, setSavingEdit]             = useState(false);
   const [confirmEdit, setConfirmEdit] = useState(false);
 
   const [colores, setColores]         = useState<Color[]>([]);
@@ -173,7 +173,7 @@ export default function WorkerProductsPage() {
   useEffect(() => {
     if (!panelOpen) return;
     const normalize = (d: unknown) =>
-      Array.isArray(d) ? d : (d as any)?.results ?? [];
+      Array.isArray(d) ? d : (d as { results?: unknown[] })?.results ?? [];
     Promise.all([
       API.get("/api/colores/").then((r) => r.data),
       API.get("/api/productos/").then((r) => r.data),
