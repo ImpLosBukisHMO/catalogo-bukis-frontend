@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd catalogo-frontend && npm ci && npm run build"
+
+[deploy]
+startCommand = "cd catalogo-frontend && npm start"
+healthcheckPath = "/"
