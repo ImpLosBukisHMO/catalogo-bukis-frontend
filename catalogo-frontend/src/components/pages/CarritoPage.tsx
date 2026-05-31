@@ -15,91 +15,99 @@ function money(n: number) {
   }).format(n);
 }
 
-function toNumber(v: any, fallback = 0) {
+type CartItem = Record<string, unknown>;
+
+function toNumber(v: unknown, fallback = 0) {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function getProductId(item: any): number | null {
-  return (
-    item?.producto?.id ??
-    item?.producto_id ??
-    item?.productoId ??
-    item?.variante?.producto?.id ??
-    item?.variante?.producto_id ??
-    null
-  );
+function nested(obj: unknown, ...keys: string[]): unknown {
+  let cur: unknown = obj;
+  for (const k of keys) {
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[k];
+  }
+  return cur;
 }
 
-function getProductName(item: any): string {
-  return (
-    item?.producto?.nombre ??
-    item?.producto_nombre ??
-    item?.nombre_producto ??
-    item?.nombre ??
+function getProductId(item: CartItem): number | null {
+  const id =
+    nested(item, "producto", "id") ??
+    item.producto_id ??
+    item.productoId ??
+    nested(item, "variante", "producto", "id") ??
+    nested(item, "variante", "producto_id") ??
+    null;
+  return id != null ? Number(id) : null;
+}
+
+function getProductName(item: CartItem): string {
+  return String(
+    nested(item, "producto", "nombre") ??
+    item.producto_nombre ??
+    item.nombre_producto ??
+    item.nombre ??
     "Producto"
   );
 }
 
-function getProductDesc(item: any): string {
-  return (
-    item?.producto?.descripcion ??
-    item?.descripcion_producto ??
-    item?.descripcion ??
+function getProductDesc(item: CartItem): string {
+  return String(
+    nested(item, "producto", "descripcion") ??
+    item.descripcion_producto ??
+    item.descripcion ??
     ""
   );
 }
 
-function getColorName(item: any): string {
-  return (
-    item?.color?.nombre ??
-    item?.variante?.color?.nombre ??
-    item?.variante?.color_nombre ??
-    item?.color_nombre ??
+function getColorName(item: CartItem): string {
+  return String(
+    nested(item, "color", "nombre") ??
+    nested(item, "variante", "color", "nombre") ??
+    nested(item, "variante", "color_nombre") ??
+    item.color_nombre ??
     ""
   );
 }
 
-function getColorHex(item: any): string | null {
-  return (
-    item?.color?.hex ??
-    item?.variante?.color?.hex ??
-    item?.variante?.color_hex ??
-    item?.color_hex ??
-    null
-  );
+function getColorHex(item: CartItem): string | null {
+  const hex =
+    nested(item, "color", "hex") ??
+    nested(item, "variante", "color", "hex") ??
+    nested(item, "variante", "color_hex") ??
+    item.color_hex ??
+    null;
+  return hex != null ? String(hex) : null;
 }
 
-function getUnitPrice(item: any): number {
-  // Prioridad
-  // 1) precio_unitario del item
-  // 2) precio de la variante
-  // 3) precio del producto
+function getUnitPrice(item: CartItem): number {
+  // Priority: precio_unitario → variante.precio → producto.precio → precio
   return toNumber(
-    item?.precio_unitario ??
-      item?.variante?.precio ??
-      item?.producto?.precio ??
-      item?.precio,
+    item.precio_unitario ??
+      nested(item, "variante", "precio") ??
+      nested(item, "producto", "precio") ??
+      item.precio,
     0
   );
 }
 
-function getQty(item: any): number {
-  return toNumber(item?.cantidad, 1);
+function getQty(item: CartItem): number {
+  return toNumber(item.cantidad, 1);
 }
 
-function getImageSrc(item: any): string {
-  // Intentamos varias rutas comunes para no pelear con el backend
-  return (
-    item?.imagen ??
-    item?.imagenUrl ??
-    item?.producto?.imagen ??
-    item?.producto_imagen ??
-    item?.variante?.imagen ??
-    item?.variante?.producto?.imagen ??
-    item?.variante?.producto_imagen ??
-    "https://placehold.net/600x600.png"
-  );
+function getImageSrc(item: CartItem): string {
+  // Try common paths to avoid fighting the backend shape
+  const src =
+    item.imagen ??
+    item.imagenUrl ??
+    nested(item, "producto", "imagen") ??
+    item.producto_imagen ??
+    nested(item, "variante", "imagen") ??
+    nested(item, "variante", "producto", "imagen") ??
+    nested(item, "variante", "producto_imagen") ??
+    "https://placehold.net/600x600.png";
+  return String(src);
 }
 
 export default function CarritoPage() {
@@ -113,14 +121,13 @@ export default function CarritoPage() {
   // cantidad editable por item
   const [qtyDraft, setQtyDraft] = useState<Record<number, string>>({});
 
-  const items = (carrito as any)?.items ?? [];
+  const items: CartItem[] = (carrito?.items ?? []) as CartItem[];
 
   const total = useMemo(() => {
     // si backend trae subtotal total, lo usamos; si no, lo calculamos
-    const backendSubtotal = (carrito as any)?.subtotal;
-    if (backendSubtotal != null) return toNumber(backendSubtotal, 0);
+    if (carrito?.subtotal != null) return toNumber(carrito.subtotal, 0);
 
-    return items.reduce((acc: number, it: any) => {
+    return items.reduce((acc: number, it: CartItem) => {
       const unit = getUnitPrice(it);
       const qty = getQty(it);
       return acc + unit * qty;
@@ -136,13 +143,13 @@ export default function CarritoPage() {
 
       // inicializa drafts con cantidades actuales
       const next: Record<number, string> = {};
-      (data as any)?.items?.forEach((it: any) => {
-        if (it?.id != null) next[Number(it.id)] = String(getQty(it));
+      (data?.items ?? []).forEach((it) => {
+        if (it?.id != null) next[Number(it.id)] = String(getQty(it as CartItem));
       });
       setQtyDraft(next);
 
       // Debug útil: aquí sí existe la variable
-      console.log("carrito item example", (data as any)?.items?.[0]);
+      console.log("carrito item example", data?.items?.[0]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error cargando carrito");
       setCarrito(null);
@@ -155,7 +162,7 @@ export default function CarritoPage() {
     load();
   }, []);
 
-  async function onApplyQty(item: any) {
+  async function onApplyQty(item: CartItem) {
     const itemId = Number(item?.id);
     const raw = (qtyDraft[itemId] ?? "").trim();
     const n = Number(raw);
@@ -177,7 +184,7 @@ export default function CarritoPage() {
     }
   }
 
-  async function onRemove(item: any) {
+  async function onRemove(item: CartItem) {
     const itemId = Number(item?.id);
     try {
       setBusy(itemId);
@@ -250,7 +257,7 @@ export default function CarritoPage() {
           {!loading && items && items.length > 0 && (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                {items.map((item: any) => {
+                {items.map((item: CartItem) => {
                   const itemId = Number(item?.id);
                   const productId = getProductId(item);
 

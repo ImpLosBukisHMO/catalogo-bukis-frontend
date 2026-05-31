@@ -18,8 +18,8 @@ const LogInPage = () => {
     const checkSession = async () => {
         try {
             await getLoggedUserData();
-            navigate(-1 as any);
-        } catch (e: any) {
+            navigate(-1);
+        } catch {
             // No hay sesión, mostrar formulario
         }
     };
@@ -32,7 +32,7 @@ const LogInPage = () => {
             // Login con JWT (access + refresh) para los servicios nuevos
             await login(correo, password);
             // También hacer login con el sistema legacy para compatibilidad con axios/user.ts
-            try { await logIn(correo, password); } catch (_) { /* continuar aunque falle el legacy */ }
+            try { await logIn(correo, password); } catch { /* continuar aunque falle el legacy */ }
 
             // Detectar si es worker y redirigir
             const me = await getMe();
@@ -41,7 +41,7 @@ const LogInPage = () => {
             } else {
                 navigate("/");
             }
-        } catch (err: any) {
+        } catch {
             setError('Credenciales inválidas');
         } finally {
             setLoading(false);

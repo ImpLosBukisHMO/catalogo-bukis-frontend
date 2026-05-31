@@ -188,15 +188,13 @@ const ProfilePage = () => {
         const load = async () => {
             await fetchUserData();
             if (id) await fetchAddress();
+            if (!isEditing) {
+                // Reset password inputs.
+                setPassword(null);
+                setPrevPassword(null);
+            }
         };
         load();
-
-        if (!isEditing) {
-            // Reset password inputs.
-            setPassword(null);
-            setPrevPassword(null);
-            console.log(password)
-        }
     }, [id]);
 
 

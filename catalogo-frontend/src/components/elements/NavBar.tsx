@@ -32,8 +32,8 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
             const userData = await getLoggedUserData();
             setIsLoggedIn(true);
             setIsStaff(Boolean(userData.is_staff));
-        } catch (e: any) {
-            if (e.response?.status === 401) {
+        } catch (e: unknown) {
+            if ((e as { response?: { status?: number } }).response?.status === 401) {
                 console.log("Es necesario registrarse o iniciar sesión.");
             }
         }

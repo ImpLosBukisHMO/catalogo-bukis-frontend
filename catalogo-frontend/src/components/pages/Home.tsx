@@ -17,12 +17,12 @@ function Home() {
         setLoading(true);
         const data: Product[] = await getProducts();
 
-        const mapped: ProductCardVM[] = data.map((p: any) => ({
+        const mapped: ProductCardVM[] = data.map((p: Product) => ({
           id: p.id,
           nombre: p.nombre,
-          sku: p.item ?? p.sku ?? "",
+          sku: p.item ?? "",
           precio: Number(p.precio),
-          imagenUrl: p.imagen ?? p.imagenUrl ?? null,
+          imagenUrl: p.imagen ?? null,
           disponible: true,
         }));
 
