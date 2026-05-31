@@ -3,15 +3,10 @@ import { getWorkerPedidos, getWorkerVariants } from "../../services/worker";
 import type { WorkerPedido, WorkerVariant } from "../../types/worker";
 import { ESTADO_LABEL } from "../../types/worker";
 import {
-  card,
   surface,
   ink,
   semantic,
   statusColor,
-  typo,
-  sp,
-  r,
-  pageHeaderRow,
 } from "../elements/workerTheme";
 
 const STOCK_BAJO = 5;
@@ -20,14 +15,26 @@ export default function WorkerDashboardPage() {
   const [pedidos, setPedidos] = useState<WorkerPedido[]>([]);
   const [variants, setVariants] = useState<WorkerVariant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     Promise.all([getWorkerPedidos(), getWorkerVariants()])
       .then(([p, v]) => {
+        if (cancelled) return;
         setPedidos(p);
         setVariants(v);
       })
-      .finally(() => setLoading(false));
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Error al cargar el dashboard");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, []);
 
   const pendientes = pedidos.filter((p) => p.estado === "PENDING");
@@ -36,174 +43,178 @@ export default function WorkerDashboardPage() {
   const recientes = [...pendientes].slice(0, 5);
 
   if (loading)
-    return <p style={typo.small}>Cargando dashboard…</p>;
+    return <p className="has-text-grey">Cargando dashboard…</p>;
+
+  if (error)
+    return (
+      <div className="notification is-danger is-light">
+        {error}
+      </div>
+    );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: sp["3xl"] }}>
-
+    <>
       {/* ── Page header ── */}
-      <div style={pageHeaderRow}>
-        <div>
-          <h1 style={typo.pageTitle}>Dashboard</h1>
-          <p style={typo.subtitle}>Resumen general de pedidos e inventario</p>
+      <div className="level mb-5">
+        <div className="level-left">
+          <div>
+            <h1 className="title is-4">Dashboard</h1>
+            <p className="subtitle is-6">Resumen general de pedidos e inventario</p>
+          </div>
         </div>
       </div>
 
       {/* ── KPIs ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: sp.lg }}>
-        <KpiCard
-          label="Pedidos pendientes"
-          value={pendientes.length}
-          accentColor={semantic.danger.fg}
-        />
-        <KpiCard
-          label="En proceso"
-          value={enProceso.length}
-          accentColor={semantic.warning.fg}
-        />
-        <KpiCard
-          label={`Stock bajo (≤ ${STOCK_BAJO})`}
-          value={sinStock.length}
-          accentColor={semantic.warning.fg}
-        />
+      <div className="columns is-multiline mb-5">
+        <div className="column is-4">
+          <KpiCard
+            label="Pedidos pendientes"
+            value={pendientes.length}
+            accentColor={semantic.danger.fg}
+          />
+        </div>
+        <div className="column is-4">
+          <KpiCard
+            label="En proceso"
+            value={enProceso.length}
+            accentColor={semantic.warning.fg}
+          />
+        </div>
+        <div className="column is-4">
+          <KpiCard
+            label={`Stock bajo (≤ ${STOCK_BAJO})`}
+            value={sinStock.length}
+            accentColor={semantic.warning.fg}
+          />
+        </div>
       </div>
 
       {/* ── Body ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: sp.lg }}>
+      <div className="columns mb-5">
 
         {/* Pedidos recientes pendientes */}
-        <div style={card}>
-          <h2 style={{ ...typo.sectionTitle, marginBottom: sp.lg }}>
-            Últimos pedidos pendientes
-          </h2>
-          {recientes.length === 0 ? (
-            <p style={typo.small}>Sin pedidos pendientes</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
-              {recientes.map((p) => (
-                <div
-                  key={p.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: `${sp.sm}px ${sp.md}px`,
-                    borderRadius: r.md,
-                    background: surface.inset,
-                    border: `1px solid ${surface.border}`,
-                  }}
-                >
-                  <div>
-                    <p style={{ fontWeight: 500, margin: 0, fontSize: 14, color: ink.primary }}>
-                      {p.cliente.nombre}
-                    </p>
-                    <p style={{ ...typo.micro, margin: 0 }}>
-                      {p.items_count} {p.items_count === 1 ? "artículo" : "artículos"}
-                    </p>
+        <div className="column is-8">
+          <div className="box">
+            <h2 className="title is-6 mb-4">Últimos pedidos pendientes</h2>
+            {recientes.length === 0 ? (
+              <p className="has-text-grey">Sin pedidos pendientes</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {recientes.map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      background: surface.inset,
+                      border: `1px solid ${surface.border}`,
+                    }}
+                  >
+                    <div>
+                      <p style={{ fontWeight: 500, margin: 0, fontSize: 14, color: ink.primary }}>
+                        {p.cliente.nombre}
+                      </p>
+                      <p style={{ fontSize: 12, color: ink.tertiary, margin: 0 }}>
+                        {p.items_count} {p.items_count === 1 ? "artículo" : "artículos"}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ fontWeight: 600, margin: 0, fontSize: 14, color: ink.primary }}>
+                        ${Number(p.precio_total).toFixed(2)}
+                      </p>
+                      <p style={{ fontSize: 12, color: ink.tertiary, margin: 0 }}>
+                        {new Date(p.created_at).toLocaleDateString("es-MX")}
+                      </p>
+                    </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ fontWeight: 600, margin: 0, fontSize: 14, color: ink.primary }}>
-                      ${Number(p.precio_total).toFixed(2)}
-                    </p>
-                    <p style={{ ...typo.micro, margin: 0 }}>
-                      {new Date(p.created_at).toLocaleDateString("es-MX")}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Alertas stock bajo */}
-        <div style={card}>
-          <h2 style={{ ...typo.sectionTitle, marginBottom: sp.lg }}>
-            Alertas de stock
-          </h2>
-          {sinStock.length === 0 ? (
-            <p style={{ ...typo.small, color: semantic.success.fg }}>Todo en orden</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
-              {sinStock.slice(0, 8).map((v) => {
-                const isEmpty = v.stock === 0;
-                const sem = isEmpty ? semantic.danger : semantic.warning;
-                return (
-                  <div
-                    key={v.variant_id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: sp.sm,
-                      padding: `${sp.sm}px ${sp.md}px`,
-                      borderRadius: r.md,
-                      background: sem.bg,
-                      border: `1px solid ${sem.border}`,
-                    }}
-                  >
-                    <span
+        <div className="column is-4">
+          <div className="box">
+            <h2 className="title is-6 mb-4">Alertas de stock</h2>
+            {sinStock.length === 0 ? (
+              <p style={{ fontSize: 13, color: semantic.success.fg }}>Todo en orden</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {sinStock.slice(0, 8).map((v) => {
+                  const isEmpty = v.stock === 0;
+                  const sem = isEmpty ? semantic.danger : semantic.warning;
+                  return (
+                    <div
+                      key={v.variant_id}
                       style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: v.color.hex,
-                        border: `1px solid ${surface.borderMid}`,
-                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        background: sem.bg,
+                        border: `1px solid ${sem.border}`,
                       }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p
+                    >
+                      <span
                         style={{
-                          margin: 0,
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: ink.primary,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: v.color.hex,
+                          border: `1px solid ${surface.borderMid}`,
+                          flexShrink: 0,
                         }}
-                      >
-                        {v.producto.nombre}
-                      </p>
-                      <p style={{ ...typo.micro, margin: 0 }}>{v.color.nombre}</p>
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: ink.primary,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {v.producto.nombre}
+                        </p>
+                        <p style={{ fontSize: 12, color: ink.tertiary, margin: 0 }}>{v.color.nombre}</p>
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: sem.fg }}>
+                        {v.stock}
+                      </span>
                     </div>
-                    <span style={{ fontWeight: 700, fontSize: 13, color: sem.fg }}>
-                      {v.stock}
-                    </span>
-                  </div>
-                );
-              })}
-              {sinStock.length > 8 && (
-                <p style={{ ...typo.small, textAlign: "center" }}>
-                  +{sinStock.length - 8} más
-                </p>
-              )}
-            </div>
-          )}
+                  );
+                })}
+                {sinStock.length > 8 && (
+                  <p style={{ fontSize: 13, color: ink.secondary, textAlign: "center" }}>
+                    +{sinStock.length - 8} más
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── Resumen por estado ── */}
-      <div style={card}>
-        <h2 style={{ ...typo.sectionTitle, marginBottom: sp.lg }}>
-          Resumen por estado
-        </h2>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: sp.sm }}>
+      <div className="box">
+        <h2 className="title is-6 mb-4">Resumen por estado</h2>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {Object.entries(ESTADO_LABEL).map(([key, label]) => {
             const count = pedidos.filter((p) => p.estado === key).length;
             const color = statusColor[key];
             return (
-              <div
+              <span
                 key={key}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: sp.xs,
-                  padding: `${sp.xs}px ${sp.md}px`,
-                  borderRadius: 20,
-                  background: surface.inset,
-                  border: `1px solid ${surface.border}`,
-                  fontSize: 13,
-                }}
+                className="tag"
+                style={{ backgroundColor: surface.inset, border: `1px solid ${surface.border}`, color: ink.secondary, gap: 4 }}
               >
                 <span
                   style={{
@@ -212,17 +223,17 @@ export default function WorkerDashboardPage() {
                     borderRadius: "50%",
                     background: color,
                     flexShrink: 0,
+                    display: "inline-block",
                   }}
                 />
-                <span style={{ color: ink.secondary }}>{label}:</span>
-                <span style={{ fontWeight: 600, color: ink.primary }}>{count}</span>
-              </div>
+                {label}:{" "}
+                <strong style={{ color: ink.primary }}>{count}</strong>
+              </span>
             );
           })}
         </div>
       </div>
-
-    </div>
+    </>
   );
 }
 
@@ -236,25 +247,11 @@ function KpiCard({
   accentColor: string;
 }) {
   return (
-    <div
-      style={{
-        ...card,
-        borderTop: `3px solid ${accentColor}`,
-        paddingTop: sp.xl - 3, // compensate for extra border
-      }}
-    >
-      <p style={{ ...typo.label, margin: 0 }}>{label}</p>
-      <h2
-        style={{
-          fontSize: 36,
-          fontWeight: 700,
-          margin: `${sp.sm}px 0 0`,
-          color: accentColor,
-          letterSpacing: "-0.03em",
-        }}
-      >
+    <div className="box" style={{ borderTop: `3px solid ${accentColor}` }}>
+      <p className="heading">{label}</p>
+      <p className="title is-2" style={{ color: accentColor }}>
         {value}
-      </h2>
+      </p>
     </div>
   );
 }

@@ -1,86 +1,71 @@
-import { NavLink } from "react-router-dom";
-import { brand, surface, ink, sp, r } from "./workerTheme";
-
-/**
- * Active nav link: brand red left-border as "you are here" indicator.
- * Same visual language used for selected order in WorkerOrdersPage.
- */
-const linkStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties => ({
-  display: "block",
-  padding: `${sp.sm}px ${sp.md}px`,
-  paddingLeft: isActive ? sp.md - 3 : sp.md, // compensate for 3px border
-  borderRadius: r.sm,
-  textDecoration: "none",
-  fontSize: 14,
-  fontWeight: isActive ? 600 : 400,
-  color: isActive ? ink.primary : ink.secondary,
-  backgroundColor: isActive ? surface.card : "transparent",
-  borderLeft: isActive ? `3px solid ${brand}` : "3px solid transparent",
-  transition: "background-color 0.1s, color 0.1s",
-});
+import { Link, NavLink } from "react-router-dom";
+import { logOut } from "../../services/user";
 
 const WorkerSidebar = () => {
   return (
-    <aside
-      style={{
-        width: 240,
-        flexShrink: 0,
-        padding: `${sp["2xl"]}px`,
-        borderRight: `1px solid ${surface.border}`,
-        backgroundColor: surface.canvas,
-        display: "flex",
-        flexDirection: "column",
-        gap: sp["3xl"],
-      }}
-    >
-      {/* Brand identity */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: sp.sm, marginBottom: sp.xs }}>
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              backgroundColor: brand,
-              flexShrink: 0,
-            }}
-          />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              color: brand,
-              textTransform: "uppercase",
-            }}
-          >
-            Los Bukis
-          </span>
-        </div>
-        <p
-          style={{
-            fontSize: 16,
-            fontWeight: 700,
-            color: ink.primary,
-            margin: 0,
-          }}
-        >
+    <aside className="worker-sidebar">
+      {/* Brand header */}
+      <div style={{ padding: "1.5rem 1rem 1rem" }}>
+        <p className="menu-label" style={{ fontSize: "0.7rem", marginBottom: "0.25rem" }}>
+          Los Bukis
+        </p>
+        <p style={{ fontSize: "1rem", fontWeight: 700, color: "#f1f5f9", margin: 0 }}>
           Panel Operaciones
         </p>
       </div>
 
+      {/* Back-to-store link */}
+      <div style={{ padding: "0.25rem 1rem 0.5rem" }}>
+        <Link
+          to="/"
+          style={{
+            display: "block",
+            fontSize: "0.8rem",
+            color: "#94a3b8",
+            textDecoration: "none",
+          }}
+        >
+          ← Volver a la tienda
+        </Link>
+      </div>
+
       {/* Navigation */}
-      <nav style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <NavLink to="/worker" end style={linkStyle}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/worker/products" style={linkStyle}>
-          Productos
-        </NavLink>
-        <NavLink to="/worker/orders" style={linkStyle}>
-          Pedidos
-        </NavLink>
+      <nav className="menu" style={{ padding: "0.5rem 0" }}>
+        <p className="menu-label">Navegación</p>
+        <ul className="menu-list">
+          <li>
+            <NavLink to="/worker" end className={({ isActive }) => (isActive ? "is-active" : "")}>
+              Dashboard
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/worker/products"
+              className={({ isActive }) => (isActive ? "is-active" : "")}
+            >
+              Productos
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/worker/orders"
+              className={({ isActive }) => (isActive ? "is-active" : "")}
+            >
+              Pedidos
+            </NavLink>
+          </li>
+        </ul>
       </nav>
+
+      {/* Logout */}
+      <div className="worker-sidebar-footer">
+        <button
+          className="button is-danger is-outlined is-fullwidth"
+          onClick={() => { logOut().catch((err: unknown) => console.error("Error al cerrar sesión:", err)); }}
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </aside>
   );
 };

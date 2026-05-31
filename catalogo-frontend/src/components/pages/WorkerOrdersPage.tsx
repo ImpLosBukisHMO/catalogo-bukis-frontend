@@ -7,17 +7,10 @@ import {
 import type { WorkerPedido, WorkerPedidoDetalle } from "../../types/worker";
 import { ESTADO_LABEL, TRANSICIONES_VALIDAS } from "../../types/worker";
 import {
-  brand,
-  card,
   surface,
   ink,
   semantic,
   statusColor,
-  typo,
-  btn,
-  control,
-  sp,
-  r,
 } from "../elements/workerTheme";
 
 export default function WorkerOrdersPage() {
@@ -33,11 +26,16 @@ export default function WorkerOrdersPage() {
   const [nota, setNota]               = useState("");
   const [saving, setSaving]           = useState(false);
   const [saveError, setSaveError]     = useState<string | null>(null);
+  const [listError, setListError]     = useState<string | null>(null);
 
   function cargarPedidos(estado?: string) {
     setLoading(true);
+    setListError(null);
     getWorkerPedidos(estado || undefined)
       .then(setPedidos)
+      .catch((err: unknown) =>
+        setListError(err instanceof Error ? err.message : "Error al cargar pedidos")
+      )
       .finally(() => setLoading(false));
   }
 
@@ -93,135 +91,118 @@ export default function WorkerOrdersPage() {
   const handlePrint = () => window.print();
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 80px)", gap: 0 }}>
+    <div className="columns is-gapless worker-split-panel">
 
       {/* ── Left panel: order list ── */}
-      <div
-        style={{
-          width: 320,
-          flexShrink: 0,
-          overflowY: "auto",
-          borderRight: `1px solid ${surface.border}`,
-          padding: `${sp.lg}px ${sp.md}px`,
-          display: "flex",
-          flexDirection: "column",
-          gap: sp.sm,
-          backgroundColor: surface.canvas,
-        }}
-      >
-        <h1 style={{ ...typo.pageTitle, fontSize: 20, paddingLeft: sp.xs, marginBottom: sp.sm }}>
+      <div className="column is-narrow worker-split-left" style={{ borderRight: `1px solid ${surface.border}`, padding: "1rem 0.75rem" }}>
+        <h1 className="title is-5" style={{ paddingLeft: "0.25rem", marginBottom: "0.5rem" }}>
           Pedidos
         </h1>
 
         {/* Status filter */}
-        <select
-          value={filtroEstado}
-          onChange={(e) => {
-            setFiltroEstado(e.target.value);
-            cargarPedidos(e.target.value || undefined);
-          }}
-          style={{ ...control, marginBottom: sp.xs }}
-        >
-          <option value="">Todos los estados</option>
-          {Object.entries(ESTADO_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
+        <div className="field">
+          <div className="control">
+            <div className="select is-fullwidth" style={{ marginBottom: "0.25rem" }}>
+              <select
+                value={filtroEstado}
+                onChange={(e) => {
+                  setFiltroEstado(e.target.value);
+                  cargarPedidos(e.target.value || undefined);
+                }}
+              >
+                <option value="">Todos los estados</option>
+                {Object.entries(ESTADO_LABEL).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
-        {loading && <p style={typo.small}>Cargando…</p>}
-        {!loading && pedidos.length === 0 && (
-          <p style={{ ...typo.small, paddingLeft: sp.xs }}>Sin pedidos</p>
+        {loading && <p style={{ fontSize: 13, color: ink.secondary }}>Cargando…</p>}
+        {listError && !loading && (
+          <div className="notification is-danger is-light" style={{ fontSize: 13, marginBottom: "0.5rem" }}>
+            {listError}
+          </div>
+        )}
+        {!loading && !listError && pedidos.length === 0 && (
+          <p style={{ fontSize: 13, color: ink.secondary, paddingLeft: "0.25rem" }}>Sin pedidos</p>
         )}
 
-        {pedidos.map((p) => {
-          const isSelected = selected?.id === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => handleSelectPedido(p.id)}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                padding: `${sp.md}px`,
-                borderRadius: r.lg,
-                border: `1px solid ${isSelected ? "rgba(221,0,0,0.25)" : surface.border}`,
-                borderLeft: isSelected ? `3px solid ${brand}` : `1px solid ${surface.border}`,
-                paddingLeft: isSelected ? sp.md - 2 : sp.md,
-                background: isSelected ? "#fff5f5" : surface.card,
-                cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
-              }}
-            >
-              <span style={{ fontWeight: 600, fontSize: 14, color: ink.primary }}>
-                {p.cliente.nombre}
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 500, color: statusColor[p.estado] ?? ink.secondary }}>
-                {ESTADO_LABEL[p.estado] ?? p.estado}
-              </span>
-              <span style={typo.micro}>
-                {new Date(p.created_at).toLocaleString("es-MX")}
-              </span>
-            </button>
-          );
-        })}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {pedidos.map((p) => {
+            const isSelected = selected?.id === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => handleSelectPedido(p.id)}
+                className="box"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  padding: "0.75rem",
+                  borderLeft: isSelected ? `3px solid ${semantic.danger.fg}` : "3px solid transparent",
+                  background: isSelected ? semantic.danger.bg : undefined,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  width: "100%",
+                  marginBottom: 0,
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: 14, color: ink.primary }}>
+                  {p.cliente.nombre}
+                </span>
+                <span
+                  className="tag"
+                  style={{
+                    backgroundColor: statusColor[p.estado] ?? ink.secondary,
+                    color: "#fff",
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  {ESTADO_LABEL[p.estado] ?? p.estado}
+                </span>
+                <span style={{ fontSize: 12, color: ink.tertiary }}>
+                  {new Date(p.created_at).toLocaleString("es-MX")}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Right panel: order detail ── */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: `${sp["2xl"]}px ${sp["3xl"]}px`,
-          backgroundColor: surface.canvas,
-        }}
-      >
+      <div className="column" style={{ overflowY: "auto", padding: "1.5rem 2rem" }}>
         {!selected && !loadingDetail && !detailError && (
           <div style={{ color: ink.tertiary, marginTop: 80, textAlign: "center", fontSize: 14 }}>
             Selecciona un pedido para ver el detalle
           </div>
         )}
 
-        {loadingDetail && <p style={typo.small}>Cargando detalle…</p>}
+        {loadingDetail && <p style={{ fontSize: 13, color: ink.secondary }}>Cargando detalle…</p>}
 
         {detailError && !loadingDetail && (
-          <div
-            style={{
-              background: semantic.danger.bg,
-              border: `1px solid ${semantic.danger.border}`,
-              borderRadius: r.lg,
-              padding: `${sp.lg}px ${sp.xl}px`,
-              color: "#991b1b",
-              fontSize: 14,
-            }}
-          >
+          <div className="notification is-danger is-light">
             <strong>Error al cargar el pedido:</strong>
-            <pre style={{ marginTop: sp.sm, whiteSpace: "pre-wrap", fontSize: 12 }}>
+            <pre style={{ marginTop: 8, whiteSpace: "pre-wrap", fontSize: 12 }}>
               {detailError}
             </pre>
           </div>
         )}
 
         {selected && !loadingDetail && (
-          <div style={{ maxWidth: 640, display: "flex", flexDirection: "column", gap: sp.xl }}>
+          <div style={{ maxWidth: 640, display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
             {/* Customer info */}
-            <div
-              style={{
-                ...card,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}
-            >
+            <div className="box" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <h2 style={{ ...typo.pageTitle, fontSize: 18 }}>{selected.cliente.nombre}</h2>
-                <p style={{ margin: "4px 0 0", ...typo.small }}>{selected.cliente.correo}</p>
-                <p style={{ margin: "2px 0 0", ...typo.small }}>{selected.cliente.telefono}</p>
+                <h2 className="title is-5" style={{ marginBottom: 4 }}>{selected.cliente.nombre}</h2>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: ink.secondary }}>{selected.cliente.correo}</p>
+                <p style={{ margin: "2px 0 0", fontSize: 13, color: ink.secondary }}>{selected.cliente.telefono}</p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p style={{ ...typo.micro, margin: 0 }}>
+                <p style={{ fontSize: 12, color: ink.tertiary, margin: 0 }}>
                   {new Date(selected.created_at).toLocaleString("es-MX")}
                 </p>
                 <p style={{ margin: "4px 0 0", fontWeight: 700, fontSize: 18, color: ink.primary }}>
@@ -231,53 +212,61 @@ export default function WorkerOrdersPage() {
             </div>
 
             {/* Status + state change */}
-            <div style={card}>
-              <div style={{ display: "flex", alignItems: "center", gap: sp.md, marginBottom: sp.lg }}>
+            <div className="box">
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <span style={{ fontWeight: 600, fontSize: 14, color: ink.primary }}>Estado:</span>
                 <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: statusColor[selected.estado] ?? ink.secondary,
-                    padding: `2px ${sp.md}px`,
-                    borderRadius: 20,
-                    background: surface.inset,
-                  }}
+                  className="tag is-medium"
+                  style={{ backgroundColor: statusColor[selected.estado] ?? ink.secondary, color: "#fff" }}
                 >
                   {ESTADO_LABEL[selected.estado] ?? selected.estado}
                 </span>
               </div>
 
               {transicionesDisponibles.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
-                  <select
-                    value={nuevoEstado}
-                    onChange={(e) => setNuevoEstado(e.target.value)}
-                    style={control}
-                  >
-                    <option value="">Cambiar estado…</option>
-                    {transicionesDisponibles.map((e) => (
-                      <option key={e} value={e}>{ESTADO_LABEL[e] ?? e}</option>
-                    ))}
-                  </select>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="field">
+                    <div className="control">
+                      <div className="select is-fullwidth">
+                        <select
+                          value={nuevoEstado}
+                          onChange={(e) => setNuevoEstado(e.target.value)}
+                        >
+                          <option value="">Cambiar estado…</option>
+                          {transicionesDisponibles.map((e) => (
+                            <option key={e} value={e}>{ESTADO_LABEL[e] ?? e}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
 
                   {nuevoEstado === "DENIED" && (
-                    <textarea
-                      placeholder="Razón del rechazo (obligatorio)"
-                      value={razon}
-                      onChange={(e) => setRazon(e.target.value)}
-                      rows={2}
-                      style={{ ...control, resize: "vertical" }}
-                    />
+                    <div className="field">
+                      <div className="control">
+                        <textarea
+                          className="textarea"
+                          placeholder="Razón del rechazo (obligatorio)"
+                          value={razon}
+                          onChange={(e) => setRazon(e.target.value)}
+                          rows={2}
+                          style={{ resize: "vertical" }}
+                        />
+                      </div>
+                    </div>
                   )}
 
-                  <input
-                    type="text"
-                    placeholder="Nota para el cliente (opcional)"
-                    value={nota}
-                    onChange={(e) => setNota(e.target.value)}
-                    style={control}
-                  />
+                  <div className="field">
+                    <div className="control">
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="Nota para el cliente (opcional)"
+                        value={nota}
+                        onChange={(e) => setNota(e.target.value)}
+                      />
+                    </div>
+                  </div>
 
                   {saveError && (
                     <p style={{ color: semantic.danger.fg, fontSize: 13, margin: 0 }}>
@@ -287,13 +276,9 @@ export default function WorkerOrdersPage() {
 
                   <div>
                     <button
+                      className="button is-dark"
                       onClick={handleCambiarEstado}
                       disabled={saving || !nuevoEstado || (nuevoEstado === "DENIED" && !razon)}
-                      style={
-                        saving || !nuevoEstado || (nuevoEstado === "DENIED" && !razon)
-                          ? btn.disabled
-                          : btn.primary
-                      }
                     >
                       {saving ? "Guardando…" : "Confirmar cambio"}
                     </button>
@@ -302,35 +287,35 @@ export default function WorkerOrdersPage() {
               )}
 
               {selected.nota_worker && (
-                <p style={{ marginTop: sp.md, ...typo.small }}>
+                <p style={{ marginTop: 12, fontSize: 13, color: ink.secondary }}>
                   <strong>Nota worker:</strong> {selected.nota_worker}
                 </p>
               )}
               {selected.denegado_razon && (
-                <p style={{ marginTop: sp.xs, ...typo.small, color: semantic.danger.fg }}>
+                <p style={{ marginTop: 4, fontSize: 13, color: semantic.danger.fg }}>
                   <strong>Razón:</strong> {selected.denegado_razon}
                 </p>
               )}
             </div>
 
             {/* Order items */}
-            <div style={card}>
-              <h2 style={{ ...typo.sectionTitle, marginBottom: sp.lg }}>
+            <div className="box">
+              <h2 className="title is-6" style={{ marginBottom: 16 }}>
                 Artículos ({selected.items.length})
               </h2>
               {selected.items.length === 0 ? (
-                <p style={typo.small}>Sin artículos</p>
+                <p style={{ fontSize: 13, color: ink.secondary }}>Sin artículos</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {selected.items.map((item, i) => (
                     <div
                       key={i}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: sp.lg,
-                        padding: `${sp.md}px`,
-                        borderRadius: r.md,
+                        gap: 16,
+                        padding: "12px",
+                        borderRadius: 8,
                         border: `1px solid ${surface.border}`,
                         background: surface.inset,
                       }}
@@ -340,7 +325,7 @@ export default function WorkerOrdersPage() {
                         style={{
                           width: 52,
                           height: 52,
-                          borderRadius: r.sm,
+                          borderRadius: 6,
                           overflow: "hidden",
                           background: surface.card,
                           border: `1px solid ${surface.border}`,
@@ -389,16 +374,16 @@ export default function WorkerOrdersPage() {
                               flexShrink: 0,
                             }}
                           />
-                          <span style={typo.micro}>{item.color}</span>
+                          <span style={{ fontSize: 12, color: ink.tertiary }}>{item.color}</span>
                         </div>
-                        <p style={{ margin: "4px 0 0", ...typo.micro }}>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: ink.tertiary }}>
                           ${Number(item.precio_unitario).toFixed(2)} c/u
                         </p>
                       </div>
 
                       {/* Qty + subtotal */}
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <p style={{ margin: 0, ...typo.micro, marginBottom: 2 }}>× {item.cantidad}</p>
+                        <p style={{ margin: 0, fontSize: 12, color: ink.tertiary, marginBottom: 2 }}>× {item.cantidad}</p>
                         <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: ink.primary }}>
                           ${Number(item.subtotal).toFixed(2)}
                         </p>
@@ -413,14 +398,14 @@ export default function WorkerOrdersPage() {
                 style={{
                   display: "flex",
                   justifyContent: "flex-end",
-                  marginTop: sp.lg,
-                  paddingTop: sp.md,
+                  marginTop: 16,
+                  paddingTop: 12,
                   borderTop: `1px solid ${surface.border}`,
-                  gap: sp.md,
+                  gap: 12,
                   alignItems: "center",
                 }}
               >
-                <span style={{ ...typo.small }}>Total del pedido:</span>
+                <span style={{ fontSize: 13, color: ink.secondary }}>Total del pedido:</span>
                 <span style={{ fontWeight: 700, fontSize: 16, color: ink.primary }}>
                   ${Number(selected.precio_total).toFixed(2)}
                 </span>
@@ -429,11 +414,12 @@ export default function WorkerOrdersPage() {
               {selected.nota_cliente && (
                 <p
                   style={{
-                    marginTop: sp.md,
-                    ...typo.small,
-                    padding: `${sp.sm}px ${sp.md}px`,
+                    marginTop: 12,
+                    fontSize: 13,
+                    color: ink.secondary,
+                    padding: "8px 12px",
                     background: surface.inset,
-                    borderRadius: r.sm,
+                    borderRadius: 6,
                     border: `1px solid ${surface.border}`,
                   }}
                 >
@@ -442,7 +428,7 @@ export default function WorkerOrdersPage() {
               )}
 
               {selected.aprobado_eta && (
-                <p style={{ marginTop: sp.sm, ...typo.small }}>
+                <p style={{ marginTop: 8, fontSize: 13, color: ink.secondary }}>
                   <strong>Entrega estimada:</strong>{" "}
                   {new Date(selected.aprobado_eta).toLocaleDateString("es-MX", {
                     year: "numeric",
@@ -455,7 +441,7 @@ export default function WorkerOrdersPage() {
 
             {/* Print */}
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button onClick={handlePrint} style={btn.secondary}>
+              <button className="button is-outlined" onClick={handlePrint}>
                 Imprimir
               </button>
             </div>

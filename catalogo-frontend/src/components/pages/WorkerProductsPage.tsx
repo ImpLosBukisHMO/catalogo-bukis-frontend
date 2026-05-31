@@ -4,17 +4,9 @@ import { getWorkerVariants, crearVariante, subirImagen, crearProducto } from "..
 import API from "../../api";
 import type { WorkerVariant } from "../../types/worker";
 import {
-  card,
   surface,
   ink,
   semantic,
-  btn,
-  control,
-  tableHead,
-  typo,
-  sp,
-  r,
-  pageHeaderRow,
 } from "../elements/workerTheme";
 
 // ─── local types ─────────────────────────────────────────────────
@@ -34,7 +26,7 @@ function Seccion({ title, children }: { title: string; children: React.ReactNode
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: `${sp.md}px ${sp.lg}px`,
+          padding: "12px 16px",
           background: "none",
           border: "none",
           cursor: "pointer",
@@ -50,7 +42,7 @@ function Seccion({ title, children }: { title: string; children: React.ReactNode
         </span>
       </button>
       {open && (
-        <div style={{ padding: `0 ${sp.lg}px ${sp.lg}px` }}>
+        <div style={{ padding: "0 16px 16px" }}>
           {children}
         </div>
       )}
@@ -66,17 +58,19 @@ function Field({
   type?: string; required?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-      <label style={typo.label}>
+    <div className="field">
+      <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>
         {label}{required && " *"}
       </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        style={control}
-      />
+      <div className="control">
+        <input
+          className="input"
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+        />
+      </div>
     </div>
   );
 }
@@ -87,7 +81,8 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
     <button
       type="submit"
       disabled={loading}
-      style={{ ...(loading ? btn.disabled : btn.primary), alignSelf: "flex-end", marginTop: sp.xs }}
+      className={`button is-dark${loading ? " is-loading" : ""}`}
+      style={{ alignSelf: "flex-end", marginTop: 4 }}
     >
       {loading ? "Guardando…" : label}
     </button>
@@ -111,19 +106,19 @@ function ConfirmModal({
       }}
     >
       <div
+        className="box"
         style={{
-          ...card,
           maxWidth: 360,
           width: "90%",
           display: "flex",
           flexDirection: "column",
-          gap: sp.lg,
+          gap: 16,
         }}
       >
         <p style={{ margin: 0, fontWeight: 500, color: ink.primary, fontSize: 14 }}>{msg}</p>
-        <div style={{ display: "flex", gap: sp.sm, justifyContent: "flex-end" }}>
-          <button onClick={onCancel} style={btn.secondary}>Cancelar</button>
-          <button onClick={onConfirm} style={btn.primary}>Confirmar</button>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button className="button is-outlined" onClick={onCancel}>Cancelar</button>
+          <button className="button is-dark" onClick={onConfirm}>Confirmar</button>
         </div>
       </div>
     </div>
@@ -143,7 +138,8 @@ export default function WorkerProductsPage() {
   const [editId, setEditId]           = useState<number | null>(null);
   const [editStock, setEditStock]     = useState("");
   const [editActivo, setEditActivo]   = useState(false);
-  const [, setSavingEdit]             = useState(false);
+  const [savingEdit, setSavingEdit]   = useState(false);
+  const [editError, setEditError]     = useState<string | null>(null);
   const [confirmEdit, setConfirmEdit] = useState(false);
 
   const [colores, setColores]         = useState<Color[]>([]);
@@ -152,10 +148,10 @@ export default function WorkerProductsPage() {
 
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const reload = () => {
+  const reload = (): Promise<void> => {
     setLoading(true);
     setFetchError(null);
-    getWorkerVariants()
+    return getWorkerVariants()
       .then(setVariants)
       .catch((e: unknown) =>
         setFetchError(e instanceof Error ? e.message : "Error al cargar variantes")
@@ -167,20 +163,29 @@ export default function WorkerProductsPage() {
     reload();
     API.get("/api/categorias/")
       .then((r) => r.data)
-      .then((data) => setCategorias(Array.isArray(data) ? data : (data?.results ?? [])));
+      .then((data) => setCategorias(Array.isArray(data) ? data : (data?.results ?? [])))
+      .catch((err: unknown) => console.error("Error cargando categorías:", err));
   }, []);
 
   useEffect(() => {
     if (!panelOpen) return;
+    let cancelled = false;
     const normalize = (d: unknown) =>
       Array.isArray(d) ? d : (d as { results?: unknown[] })?.results ?? [];
     Promise.all([
       API.get("/api/colores/").then((r) => r.data),
       API.get("/api/productos/").then((r) => r.data),
-    ]).then(([c, p]) => {
-      setColores(normalize(c));
-      setProductos(normalize(p));
-    });
+    ])
+      .then(([c, p]) => {
+        if (cancelled) return;
+        setColores(normalize(c));
+        setProductos(normalize(p));
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        console.error("Error cargando datos del panel:", err);
+      });
+    return () => { cancelled = true; };
   }, [panelOpen]);
 
   const categories = useMemo(() => {
@@ -214,17 +219,18 @@ export default function WorkerProductsPage() {
     setEditActivo(v.activo);
   };
 
-  const cancelEdit = () => setEditId(null);
+  const cancelEdit = () => { setEditId(null); setEditError(null); };
 
   const handleSaveEdit = async () => {
     if (editId === null) return;
     setSavingEdit(true);
+    setEditError(null);
     try {
       await API.patch(`/api/producto-variantes/${editId}/`, { stock: Number(editStock), activo: editActivo });
-      reload();
+      await reload();
       setEditId(null);
-    } catch {
-      alert("Error al guardar cambios");
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Error al guardar cambios");
     } finally {
       setSavingEdit(false);
       setConfirmEdit(false);
@@ -232,56 +238,59 @@ export default function WorkerProductsPage() {
   };
 
   return (
-    <div style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%" }}>
+    <div className="worker-page" style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%" }}>
 
       {/* ── Page header ── */}
-      <div style={pageHeaderRow}>
-        <div>
-          <h1 style={typo.pageTitle}>Productos</h1>
-          <p style={typo.subtitle}>Inventario por variante</p>
+      <div className="level" style={{ marginBottom: "1.5rem" }}>
+        <div className="level-left">
+          <div>
+            <h1 className="title is-4">Productos</h1>
+            <p className="subtitle is-6">Inventario por variante</p>
+          </div>
         </div>
-        <button
-          onClick={() => setPanelOpen((o) => !o)}
-          style={btn.primary}
-        >
-          Utilidades
-        </button>
+        <div className="level-right">
+          <button
+            className="button is-dark"
+            onClick={() => setPanelOpen((o) => !o)}
+          >
+            Utilidades
+          </button>
+        </div>
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ display: "flex", gap: sp.md, marginBottom: sp.lg }}>
-        <input
-          placeholder="Buscar producto…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ ...control, flex: 1, width: "auto" }}
-        />
-        <select
-          value={catFilter}
-          onChange={(e) => setCatFilter(e.target.value)}
-          style={{ ...control, width: "auto" }}
-        >
-          <option value="ALL">Todas las categorías</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+      <div className="field is-grouped" style={{ marginBottom: "1rem" }}>
+        <div className="control is-expanded">
+          <input
+            className="input"
+            placeholder="Buscar producto…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="control">
+          <div className="select">
+            <select
+              value={catFilter}
+              onChange={(e) => setCatFilter(e.target.value)}
+            >
+              <option value="ALL">Todas las categorías</option>
+              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
+
+      {/* ── Edit error ── */}
+      {editError && (
+        <div className="notification is-danger is-light" style={{ marginBottom: "1rem" }}>
+          <p className="has-text-danger">{editError}</p>
+        </div>
+      )}
 
       {/* ── Fetch error ── */}
       {fetchError && (
-        <div
-          style={{
-            background: semantic.danger.bg,
-            border: `1px solid ${semantic.danger.border}`,
-            borderRadius: r.md,
-            padding: `${sp.md}px ${sp.lg}px`,
-            color: semantic.danger.fg,
-            fontSize: 13,
-            display: "flex",
-            alignItems: "center",
-            gap: sp.md,
-            marginBottom: sp.lg,
-          }}
-        >
+        <div className="notification is-danger is-light" style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: 12 }}>
           <span>
             {fetchError.includes("401") || fetchError.includes("403")
               ? "No autenticado. Inicia sesión como worker para ver los productos."
@@ -289,8 +298,9 @@ export default function WorkerProductsPage() {
           </span>
           {(fetchError.includes("401") || fetchError.includes("403")) && (
             <button
-              onClick={() => navigate("/login")}
-              style={{ ...btn.danger, fontSize: 13, padding: `6px ${sp.md}px`, whiteSpace: "nowrap" }}
+              className="button is-danger is-small"
+              onClick={() => navigate("/iniciar-sesion")}
+              style={{ whiteSpace: "nowrap", flexShrink: 0 }}
             >
               Ir al login
             </button>
@@ -300,19 +310,19 @@ export default function WorkerProductsPage() {
 
       {/* ── Table ── */}
       {loading ? (
-        <p style={typo.small}>Cargando…</p>
+        <p style={{ fontSize: 13, color: ink.secondary }}>Cargando…</p>
       ) : (
-        <div style={{ overflowX: "auto", borderRadius: r.lg, border: `1px solid ${surface.border}` }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
+        <div style={{ overflowX: "auto" }}>
+          <table className="table is-striped is-hoverable is-fullwidth">
+            <thead className="worker-table-header">
               <tr>
                 {["Imagen", "Nombre", "No.Item", "Color", "Stock", "Activo", ""].map((h) => (
-                  <th key={h} style={tableHead}>{h}</th>
+                  <th key={h} style={{ padding: "10px 14px", whiteSpace: "nowrap", color: "#fff", fontWeight: 600, fontSize: 13 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((v, i) => {
+              {filtered.map((v) => {
                 const isEditing = editId === v.variant_id;
                 const stockColor =
                   v.stock === 0
@@ -322,20 +332,14 @@ export default function WorkerProductsPage() {
                     : ink.primary;
 
                 return (
-                  <tr
-                    key={v.variant_id}
-                    style={{
-                      background: i % 2 === 0 ? surface.card : surface.inset,
-                      borderBottom: `1px solid ${surface.border}`,
-                    }}
-                  >
+                  <tr key={v.variant_id}>
                     {/* Image */}
-                    <td style={{ padding: `${sp.sm}px ${sp.lg}px` }}>
+                    <td style={{ padding: "8px 16px" }}>
                       {v.imagen_principal ? (
                         <img
                           src={v.imagen_principal}
                           alt=""
-                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: r.sm }}
+                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }}
                         />
                       ) : (
                         <div
@@ -343,7 +347,7 @@ export default function WorkerProductsPage() {
                             width: 40,
                             height: 40,
                             background: surface.inset,
-                            borderRadius: r.sm,
+                            borderRadius: 6,
                             border: `1px solid ${surface.border}`,
                           }}
                         />
@@ -351,18 +355,18 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Name */}
-                    <td style={{ padding: `${sp.sm}px ${sp.lg}px`, fontWeight: 500, color: ink.primary }}>
+                    <td style={{ padding: "8px 16px", fontWeight: 500, color: ink.primary }}>
                       {v.producto.nombre}
                     </td>
 
                     {/* Item # */}
-                    <td style={{ padding: `${sp.sm}px ${sp.lg}px`, ...typo.small }}>
+                    <td style={{ padding: "8px 16px", fontSize: 13, color: ink.secondary }}>
                       {v.item}
                     </td>
 
                     {/* Color */}
-                    <td style={{ padding: `${sp.sm}px ${sp.lg}px` }}>
-                      <span style={{ display: "flex", gap: sp.sm, alignItems: "center", fontSize: 13 }}>
+                    <td style={{ padding: "8px 16px" }}>
+                      <span style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
                         <span
                           style={{
                             width: 12,
@@ -378,14 +382,15 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Stock */}
-                    <td style={{ padding: `${sp.sm}px ${sp.lg}px` }}>
+                    <td style={{ padding: "8px 16px" }}>
                       {isEditing ? (
                         <input
+                          className="input"
                           type="number"
                           value={editStock}
                           min={0}
                           onChange={(e) => setEditStock(e.target.value)}
-                          style={{ ...control, width: 72, padding: "4px 8px" }}
+                          style={{ width: 72, padding: "4px 8px" }}
                         />
                       ) : (
                         <span style={{ fontWeight: 500, color: stockColor, fontSize: 14 }}>
@@ -395,7 +400,7 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Active */}
-                    <td style={{ padding: `${sp.sm}px ${sp.lg}px` }}>
+                    <td style={{ padding: "8px 16px" }}>
                       {isEditing ? (
                         <input
                           type="checkbox"
@@ -405,10 +410,10 @@ export default function WorkerProductsPage() {
                         />
                       ) : (
                         <span
+                          className="tag"
                           style={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                            color: v.activo ? semantic.success.fg : ink.tertiary,
+                            backgroundColor: v.activo ? semantic.success.fg : ink.tertiary,
+                            color: "#fff",
                           }}
                         >
                           {v.activo ? "Sí" : "No"}
@@ -417,27 +422,29 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Actions */}
-                    <td style={{ padding: `${sp.sm}px ${sp.lg}px` }}>
+                    <td style={{ padding: "8px 16px" }}>
                       {isEditing ? (
-                        <div style={{ display: "flex", gap: sp.sm }}>
+                        <div style={{ display: "flex", gap: 8 }}>
                           <button
+                            className="button is-dark is-small"
                             onClick={() => setConfirmEdit(true)}
-                            style={{ ...btn.primary, fontSize: 13, padding: `5px ${sp.md}px` }}
+                            disabled={savingEdit}
                           >
                             Guardar
                           </button>
                           <button
+                            className="button is-outlined is-small"
                             onClick={cancelEdit}
-                            style={{ ...btn.secondary, fontSize: 13, padding: `5px ${sp.md}px` }}
                           >
                             Cancelar
                           </button>
                         </div>
                       ) : (
                         <button
+                          className="button is-ghost"
                           onClick={() => startEdit(v)}
                           title="Editar"
-                          style={btn.ghost}
+                          style={{ fontSize: 18 }}
                         >
                           ✏️
                         </button>
@@ -452,7 +459,7 @@ export default function WorkerProductsPage() {
                   <td
                     colSpan={7}
                     style={{
-                      padding: sp["3xl"],
+                      padding: 32,
                       textAlign: "center",
                       color: ink.tertiary,
                       fontSize: 14,
@@ -476,38 +483,35 @@ export default function WorkerProductsPage() {
         />
       )}
 
-      {/* ── Utilities panel ── */}
+      {/* ── Drawer overlay ── */}
+      {panelOpen && (
+        <div
+          className="worker-drawer-overlay"
+          onClick={() => setPanelOpen(false)}
+        />
+      )}
+
+      {/* ── Utilities drawer ── */}
       {panelOpen && (
         <div
           ref={panelRef}
-          style={{
-            position: "fixed",
-            top: 0,
-            right: 0,
-            width: 380,
-            height: "100vh",
-            background: surface.card,
-            boxShadow: "-2px 0 20px rgba(15,23,42,0.10)",
-            zIndex: 500,
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-          }}
+          className="worker-drawer"
         >
-          {/* Panel header */}
+          {/* Drawer header */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: `${sp.lg}px ${sp.xl}px`,
+              padding: "16px 20px",
               borderBottom: `1px solid ${surface.border}`,
             }}
           >
-            <h3 style={typo.sectionTitle}>Utilidades</h3>
+            <h3 className="title is-6" style={{ margin: 0 }}>Utilidades</h3>
             <button
+              className="button is-ghost"
               onClick={() => setPanelOpen(false)}
-              style={btn.ghost}
+              style={{ fontSize: 18 }}
             >
               ✕
             </button>
@@ -576,33 +580,36 @@ function CrearColorForm({ onCreated }: { onCreated: () => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <Field label="Nombre" value={nombre} onChange={setNombre} required />
-      <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <label style={typo.label}>HEX *</label>
-        <div style={{ display: "flex", gap: sp.sm, alignItems: "center" }}>
-          <input
-            type="color"
-            value={hex}
-            onChange={(e) => setHex(e.target.value)}
-            style={{
-              width: 40,
-              height: 34,
-              border: `1px solid ${surface.borderMid}`,
-              borderRadius: r.sm,
-              cursor: "pointer",
-              padding: 2,
-            }}
-          />
-          <input
-            type="text"
-            value={hex}
-            onChange={(e) => setHex(e.target.value)}
-            style={{ ...control, flex: 1, width: "auto" }}
-          />
+      <div className="field">
+        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>HEX *</label>
+        <div className="control">
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="color"
+              value={hex}
+              onChange={(e) => setHex(e.target.value)}
+              style={{
+                width: 40,
+                height: 34,
+                border: `1px solid ${surface.borderMid}`,
+                borderRadius: 6,
+                cursor: "pointer",
+                padding: 2,
+              }}
+            />
+            <input
+              className="input"
+              type="text"
+              value={hex}
+              onChange={(e) => setHex(e.target.value)}
+              style={{ flex: 1 }}
+            />
+          </div>
         </div>
       </div>
-      <label style={{ display: "flex", gap: sp.sm, alignItems: "center", fontSize: 13, color: ink.secondary }}>
+      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: ink.secondary }}>
         <input
           type="checkbox"
           checked={disponible}
@@ -636,7 +643,7 @@ function CrearCategoriaForm({ onCreated }: { onCreated: () => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <Field label="Nombre" value={nombre} onChange={setNombre} required />
       {error && <p style={{ color: semantic.danger.fg, fontSize: 12, margin: 0 }}>{error}</p>}
       <SaveBtn loading={saving} />
@@ -676,8 +683,8 @@ function CrearProductoForm({ categorias, onCreated }: { categorias: Categoria[];
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: sp.sm }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <Field label="Nombre"   value={form.nombre}   onChange={set("nombre")}   required />
         <Field label="Precio"   value={form.precio}   onChange={set("precio")}   type="number" required />
         <Field label="Peso"     value={form.peso}     onChange={set("peso")}     type="number" required />
@@ -685,38 +692,46 @@ function CrearProductoForm({ categorias, onCreated }: { categorias: Categoria[];
         <Field label="Capacidad" value={form.capacidad} onChange={set("capacidad")} />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <label style={typo.label}>Descripción</label>
-        <textarea
-          value={form.descripcion}
-          onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
-          rows={2}
-          style={{ ...control, resize: "vertical" }}
-        />
+      <div className="field">
+        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Descripción</label>
+        <div className="control">
+          <textarea
+            className="textarea"
+            value={form.descripcion}
+            onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
+            rows={2}
+            style={{ resize: "vertical" }}
+          />
+        </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <label style={typo.label}>Categoría</label>
-        <select
-          value={form.categoria}
-          onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
-          style={control}
-        >
-          <option value="">Sin categoría</option>
-          {categorias.map((c) => (
-            <option key={c.id} value={String(c.id)}>{c.nombre}</option>
-          ))}
-        </select>
+      <div className="field">
+        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Categoría</label>
+        <div className="control">
+          <div className="select is-fullwidth">
+            <select
+              value={form.categoria}
+              onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+            >
+              <option value="">Sin categoría</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={String(c.id)}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <label style={typo.label}>Imagen *</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setImagen(e.target.files?.[0] ?? null)}
-          style={{ fontSize: 13, color: ink.secondary }}
-        />
+      <div className="field">
+        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Imagen *</label>
+        <div className="control">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImagen(e.target.files?.[0] ?? null)}
+            style={{ fontSize: 13, color: ink.secondary }}
+          />
+        </div>
       </div>
 
       {error && <p style={{ color: semantic.danger.fg, fontSize: 12, margin: 0 }}>{error}</p>}
@@ -734,10 +749,17 @@ function CrearVarianteForm({
   const [stock, setStock]           = useState("0");
   const [activo, setActivo]         = useState(true);
   const [imagenes, setImagenes]     = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [esPrincipal, setEsPrincipal] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState("");
   const [success, setSuccess]       = useState("");
+
+  useEffect(() => {
+    const urls = imagenes.map((f) => URL.createObjectURL(f));
+    setPreviewUrls(urls);
+    return () => { urls.forEach((url) => URL.revokeObjectURL(url)); };
+  }, [imagenes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -748,6 +770,7 @@ function CrearVarianteForm({
         color: Number(colorId),
         stock: Number(stock),
         activo,
+        item,
       });
 
       for (let i = 0; i < imagenes.length; i++) {
@@ -770,42 +793,48 @@ function CrearVarianteForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: sp.sm }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <label style={typo.label}>Producto base *</label>
-        <select
-          value={productoId}
-          onChange={(e) => setProductoId(e.target.value)}
-          required
-          style={control}
-        >
-          <option value="">Selecciona el producto base</option>
-          {productos.map((p) => (
-            <option key={p.id} value={String(p.id)}>{p.nombre}</option>
-          ))}
-        </select>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="field">
+        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Producto base *</label>
+        <div className="control">
+          <div className="select is-fullwidth">
+            <select
+              value={productoId}
+              onChange={(e) => setProductoId(e.target.value)}
+              required
+            >
+              <option value="">Selecciona el producto base</option>
+              {productos.map((p) => (
+                <option key={p.id} value={String(p.id)}>{p.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <label style={typo.label}>Color *</label>
-        <select
-          value={colorId}
-          onChange={(e) => setColorId(e.target.value)}
-          required
-          style={control}
-        >
-          <option value="">Selecciona un color</option>
-          {colores.map((c) => (
-            <option key={c.id} value={String(c.id)}>{c.nombre} ({c.hex})</option>
-          ))}
-        </select>
+      <div className="field">
+        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Color *</label>
+        <div className="control">
+          <div className="select is-fullwidth">
+            <select
+              value={colorId}
+              onChange={(e) => setColorId(e.target.value)}
+              required
+            >
+              <option value="">Selecciona un color</option>
+              {colores.map((c) => (
+                <option key={c.id} value={String(c.id)}>{c.nombre} ({c.hex})</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <Field label="No. Item (SKU)" value={item} onChange={setItem} required />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: sp.sm, alignItems: "end" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, alignItems: "end" }}>
         <Field label="Stock" value={stock} onChange={setStock} type="number" required />
-        <label style={{ display: "flex", gap: sp.sm, alignItems: "center", fontSize: 13, color: ink.secondary, paddingBottom: 2 }}>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: ink.secondary, paddingBottom: 2 }}>
           <input
             type="checkbox"
             checked={activo}
@@ -815,17 +844,19 @@ function CrearVarianteForm({
         </label>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: sp.xs }}>
-        <label style={typo.label}>Imágenes (opcional)</label>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => setImagenes(Array.from(e.target.files ?? []))}
-          style={{ fontSize: 13, color: ink.secondary }}
-        />
+      <div className="field">
+        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Imágenes (opcional)</label>
+        <div className="control">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => setImagenes(Array.from(e.target.files ?? []))}
+            style={{ fontSize: 13, color: ink.secondary }}
+          />
+        </div>
         {imagenes.length > 0 && (
-          <label style={{ display: "flex", gap: sp.sm, alignItems: "center", fontSize: 13, color: ink.secondary }}>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: ink.secondary, marginTop: 4 }}>
             <input
               type="checkbox"
               checked={esPrincipal}
@@ -835,17 +866,17 @@ function CrearVarianteForm({
           </label>
         )}
         {imagenes.length > 0 && (
-          <div style={{ display: "flex", gap: sp.sm, flexWrap: "wrap", marginTop: sp.xs }}>
-            {imagenes.map((f, i) => (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+            {imagenes.map((_, i) => (
               <img
                 key={i}
-                src={URL.createObjectURL(f)}
+                src={previewUrls[i]}
                 alt=""
                 style={{
                   width: 52,
                   height: 52,
                   objectFit: "cover",
-                  borderRadius: r.sm,
+                  borderRadius: 6,
                   border: `1px solid ${surface.border}`,
                 }}
               />
