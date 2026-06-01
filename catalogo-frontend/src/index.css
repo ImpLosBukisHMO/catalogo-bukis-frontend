@@ -1,4 +1,4 @@
-html, #root {
+:root, html, #root {
   width: 100%;
   height: 100%;
   margin: 0;
@@ -232,4 +232,96 @@ a.custom-link:active {
 .custom-input-search {
   border-radius: 0px 10px 10px 0px;
   border-left: 1px solid #7c7c7c;;
+}
+
+/* =========================================================
+   Worker Panel — custom CSS classes
+   Bulma bridges: sidebar brand accent, split-panel,
+   drawer overlay, dark table header, global table override
+   ========================================================= */
+
+.worker-sidebar {
+  --worker-brand: #dd0000;
+  width: 240px;
+  min-height: 100vh;
+  background-color: #1e293b;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.worker-sidebar .menu-label {
+  color: #94a3b8;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  padding: 0 1rem;
+}
+
+.worker-sidebar .menu-list a {
+  color: #cbd5e1;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+}
+
+.worker-sidebar .menu-list a:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.worker-sidebar .menu-list a.is-active {
+  background-color: rgba(221, 0, 0, 0.15);
+  border-left: 3px solid var(--worker-brand);
+  color: var(--worker-brand);
+  font-weight: 600;
+}
+
+.worker-sidebar-footer {
+  margin-top: auto;
+  padding: 1rem;
+}
+
+/* Prevent global `table { border: 2px solid #656565 }` from bleeding
+   into Bulma .table.is-striped inside the worker panel */
+.worker-main table,
+.worker-page table {
+  border: none;
+}
+
+/* Split-panel layout (OrdersPage — Phase C) */
+.worker-split-panel {
+  height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+.worker-split-left {
+  width: 380px;
+  min-width: 380px;
+  max-width: 380px;
+  overflow-y: auto;
+}
+
+/* Drawer (ProductsPage — Phase C) */
+.worker-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 380px;
+  height: 100vh;
+  z-index: 500;
+  background-color: #fff;
+  overflow-y: auto;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+}
+
+.worker-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 499;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Dark table header (ProductsPage) */
+.worker-table-header {
+  background-color: #1e293b;
+  color: #fff;
 }
