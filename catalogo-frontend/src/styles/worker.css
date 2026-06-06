@@ -1,0 +1,220 @@
+@layer theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme) prefix(wk) source(none);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(wk) source(none);
+
+@source "../components/providers/**/*.{ts,tsx}";
+@source "../components/elements/WorkerLayout.tsx";
+@source "../components/elements/WorkerSidebar.tsx";
+@source "../components/pages/Worker*.tsx";
+@source "../components/ui/worker/**/*.{ts,tsx}";
+
+@theme {
+  --font-worker-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-worker-data: "Roboto Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+.worker-scope {
+  --worker-canvas: #f7f3ec;
+  --worker-shelf: #fffdf9;
+  --worker-bench: #f0e7da;
+  --worker-overlay: #fffaf2;
+
+  --worker-rail: #dd0000;
+  --worker-rail-hover: #b80000;
+  --worker-rail-soft: rgba(221, 0, 0, 0.1);
+  --worker-rail-border: rgba(221, 0, 0, 0.28);
+
+  --worker-ink: #18110d;
+  --worker-ink-secondary: #5f5148;
+  --worker-ink-tertiary: #8a7a70;
+  --worker-ink-muted: #a99b90;
+
+  --worker-border-soft: rgba(48, 36, 28, 0.08);
+  --worker-border: rgba(48, 36, 28, 0.14);
+  --worker-border-strong: rgba(48, 36, 28, 0.24);
+  --worker-focus: #dd0000;
+
+  --worker-control-bg: #fffaf2;
+  --worker-control-border: rgba(48, 36, 28, 0.22);
+  --worker-control-placeholder: #8a7a70;
+
+  --worker-inventory-fg: #15803d;
+  --worker-inventory-bg: #ecfdf3;
+  --worker-inventory-border: #bbf7d0;
+  --worker-dispatch-fg: #b45309;
+  --worker-dispatch-bg: #fffbeb;
+  --worker-dispatch-border: #fde68a;
+  --worker-error-fg: #b91c1c;
+  --worker-error-bg: #fef2f2;
+  --worker-error-border: #fecaca;
+  --worker-info-fg: #1d4ed8;
+  --worker-info-bg: #eff6ff;
+  --worker-info-border: #bfdbfe;
+
+  color-scheme: light;
+  font-variant-numeric: tabular-nums;
+}
+
+.worker-scope[data-worker-theme="dark"] {
+  --worker-canvas: #0f172a;
+  --worker-shelf: #162033;
+  --worker-bench: #1d2a40;
+  --worker-overlay: #223047;
+
+  --worker-rail: #ff4a4a;
+  --worker-rail-hover: #ff6b6b;
+  --worker-rail-soft: rgba(255, 74, 74, 0.14);
+  --worker-rail-border: rgba(255, 74, 74, 0.34);
+
+  --worker-ink: #f8fafc;
+  --worker-ink-secondary: #cbd5e1;
+  --worker-ink-tertiary: #94a3b8;
+  --worker-ink-muted: #64748b;
+
+  --worker-border-soft: rgba(226, 232, 240, 0.08);
+  --worker-border: rgba(226, 232, 240, 0.14);
+  --worker-border-strong: rgba(226, 232, 240, 0.24);
+  --worker-focus: #ff6b6b;
+
+  --worker-control-bg: #111827;
+  --worker-control-border: rgba(226, 232, 240, 0.22);
+  --worker-control-placeholder: #94a3b8;
+
+  --worker-inventory-fg: #86efac;
+  --worker-inventory-bg: rgba(22, 101, 52, 0.22);
+  --worker-inventory-border: rgba(134, 239, 172, 0.3);
+  --worker-dispatch-fg: #fbbf24;
+  --worker-dispatch-bg: rgba(146, 64, 14, 0.24);
+  --worker-dispatch-border: rgba(251, 191, 36, 0.3);
+  --worker-error-fg: #fca5a5;
+  --worker-error-bg: rgba(127, 29, 29, 0.28);
+  --worker-error-border: rgba(252, 165, 165, 0.32);
+  --worker-info-fg: #93c5fd;
+  --worker-info-bg: rgba(30, 64, 175, 0.24);
+  --worker-info-border: rgba(147, 197, 253, 0.3);
+
+  color-scheme: dark;
+}
+
+.worker-scope *,
+.worker-scope *::before,
+.worker-scope *::after {
+  box-sizing: border-box;
+}
+
+.worker-scope :focus-visible {
+  outline: 2px solid var(--worker-focus);
+  outline-offset: 2px;
+}
+
+/* Keep global public table borders from bleeding into worker surfaces. */
+.worker-scope table {
+  border: none;
+}
+
+/* ─── Portal token re-injection ─────────────────────────────────────────────
+   Radix portals (Dialog, Dropdown) render outside .worker-scope in <body>.
+   This class re-declares worker CSS variables so portaled content has the
+   same token values as inside the scope. Apply to every portaled Radix root.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.worker-overlay-portal {
+  --worker-canvas: #f7f3ec;
+  --worker-shelf: #fffdf9;
+  --worker-bench: #f0e7da;
+  --worker-overlay: #fffaf2;
+
+  --worker-rail: #dd0000;
+  --worker-rail-hover: #b80000;
+  --worker-rail-soft: rgba(221, 0, 0, 0.1);
+  --worker-rail-border: rgba(221, 0, 0, 0.28);
+
+  --worker-ink: #18110d;
+  --worker-ink-secondary: #5f5148;
+  --worker-ink-tertiary: #8a7a70;
+  --worker-ink-muted: #a99b90;
+
+  --worker-border-soft: rgba(48, 36, 28, 0.08);
+  --worker-border: rgba(48, 36, 28, 0.14);
+  --worker-border-strong: rgba(48, 36, 28, 0.24);
+  --worker-focus: #dd0000;
+
+  --worker-control-bg: #fffaf2;
+  --worker-control-border: rgba(48, 36, 28, 0.22);
+  --worker-control-placeholder: #8a7a70;
+
+  --worker-inventory-fg: #15803d;
+  --worker-inventory-bg: #ecfdf3;
+  --worker-inventory-border: #bbf7d0;
+  --worker-dispatch-fg: #b45309;
+  --worker-dispatch-bg: #fffbeb;
+  --worker-dispatch-border: #fde68a;
+  --worker-error-fg: #b91c1c;
+  --worker-error-bg: #fef2f2;
+  --worker-error-border: #fecaca;
+  --worker-info-fg: #1d4ed8;
+  --worker-info-bg: #eff6ff;
+  --worker-info-border: #bfdbfe;
+
+  color-scheme: light;
+  font-variant-numeric: tabular-nums;
+}
+
+.worker-overlay-portal[data-worker-theme="dark"] {
+  --worker-canvas: #0f172a;
+  --worker-shelf: #162033;
+  --worker-bench: #1d2a40;
+  --worker-overlay: #223047;
+
+  --worker-rail: #ff4a4a;
+  --worker-rail-hover: #ff6b6b;
+  --worker-rail-soft: rgba(255, 74, 74, 0.14);
+  --worker-rail-border: rgba(255, 74, 74, 0.34);
+
+  --worker-ink: #f8fafc;
+  --worker-ink-secondary: #cbd5e1;
+  --worker-ink-tertiary: #94a3b8;
+  --worker-ink-muted: #64748b;
+
+  --worker-border-soft: rgba(226, 232, 240, 0.08);
+  --worker-border: rgba(226, 232, 240, 0.14);
+  --worker-border-strong: rgba(226, 232, 240, 0.24);
+  --worker-focus: #ff6b6b;
+
+  --worker-control-bg: #111827;
+  --worker-control-border: rgba(226, 232, 240, 0.22);
+  --worker-control-placeholder: #94a3b8;
+
+  --worker-inventory-fg: #86efac;
+  --worker-inventory-bg: rgba(22, 101, 52, 0.22);
+  --worker-inventory-border: rgba(134, 239, 172, 0.3);
+  --worker-dispatch-fg: #fbbf24;
+  --worker-dispatch-bg: rgba(146, 64, 14, 0.24);
+  --worker-dispatch-border: rgba(251, 191, 36, 0.3);
+  --worker-error-fg: #fca5a5;
+  --worker-error-bg: rgba(127, 29, 29, 0.28);
+  --worker-error-border: rgba(252, 165, 165, 0.32);
+  --worker-info-fg: #93c5fd;
+  --worker-info-bg: rgba(30, 64, 175, 0.24);
+  --worker-info-border: rgba(147, 197, 253, 0.3);
+
+  color-scheme: dark;
+}
+
+.worker-overlay-portal *,
+.worker-overlay-portal *::before,
+.worker-overlay-portal *::after {
+  box-sizing: border-box;
+}
+
+.worker-overlay-portal :focus-visible {
+  outline: 2px solid var(--worker-focus);
+  outline-offset: 2px;
+}
+
+/* Radix highlighted-item hook — complement the onFocus handler */
+[data-radix-collection-item][data-highlighted] {
+  background-color: var(--worker-bench, rgba(48, 36, 28, 0.06));
+  outline: none;
+}
