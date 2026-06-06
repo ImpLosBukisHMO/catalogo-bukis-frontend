@@ -240,7 +240,6 @@ export default function WorkerProductsPage() {
 
   return (
     <div
-      className="worker-page"
       style={{
         position: "relative",
         display: "flex",

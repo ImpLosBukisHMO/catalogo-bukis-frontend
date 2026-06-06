@@ -124,7 +124,6 @@ const WorkerLayout = () => {
         }}
       >
         <div
-          className="worker-main"
           style={{
             padding: "24px 28px",
             maxWidth: "1400px",

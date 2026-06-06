@@ -108,6 +108,11 @@
   outline-offset: 2px;
 }
 
+/* Keep global public table borders from bleeding into worker surfaces. */
+.worker-scope table {
+  border: none;
+}
+
 /* ─── Portal token re-injection ─────────────────────────────────────────────
    Radix portals (Dialog, Dropdown) render outside .worker-scope in <body>.
    This class re-declares worker CSS variables so portaled content has the
