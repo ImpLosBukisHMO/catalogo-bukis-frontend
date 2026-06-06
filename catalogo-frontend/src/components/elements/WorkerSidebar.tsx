@@ -181,15 +181,13 @@ const WorkerSidebar = () => {
                   }
                 }}
               >
-                <span>{label}</span>
-                {/* Fulfillment rail label — contextual cue for active route */}
-                <NavLink
-                  to={to}
-                  end={end}
-                  tabIndex={-1}
-                  style={({ isActive }) =>
-                    isActive
-                      ? {
+                {({ isActive }) => (
+                  <>
+                    <span>{label}</span>
+                    {isActive && (
+                      <span
+                        aria-hidden="true"
+                        style={{
                           fontSize: "9px",
                           fontWeight: 700,
                           letterSpacing: "0.1em",
@@ -199,14 +197,13 @@ const WorkerSidebar = () => {
                           border: "1px solid var(--worker-rail-border)",
                           borderRadius: "4px",
                           padding: "2px 5px",
-                          textDecoration: "none",
-                          pointerEvents: "none",
-                        }
-                      : { display: "none" }
-                  }
-                >
-                  {railLabel}
-                </NavLink>
+                        }}
+                      >
+                        {railLabel}
+                      </span>
+                    )}
+                  </>
+                )}
               </NavLink>
             </li>
           ))}

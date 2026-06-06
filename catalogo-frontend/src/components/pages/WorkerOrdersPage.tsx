@@ -308,8 +308,8 @@ export default function WorkerOrdersPage() {
 
   return (
     <div
-      className="wk:flex wk:h-full worker-split-panel"
-      style={{ minHeight: 0 }}
+      className="wk:flex wk:h-full"
+      style={{ minHeight: 0, height: "calc(100vh - 80px)", overflow: "hidden" }}
     >
 
       {/* ── Left panel: order list ─────────────────────────────────────────── */}
