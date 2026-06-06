@@ -87,58 +87,9 @@ export function getStockColor(stock: number, lowThreshold = 3): string {
   }
 }
 
-// ─── Legacy named exports (kept for backward compatibility during migration) ──
-// These reference the same token system — pages can migrate incrementally.
-// Remove after WorkerOrdersPage and WorkerProductsPage are fully migrated.
-
-/** @deprecated Use getPedidoStatusColor() instead */
-export const statusColor: Record<string, string> = {
-  PENDING: "var(--worker-error-fg)",
-  APPROVED: "var(--worker-dispatch-fg)",
-  READY: "var(--worker-dispatch-fg)",
-  SHIPPED: "var(--worker-inventory-fg)",
-  COMPLETED: "var(--worker-ink-secondary)",
-  DENIED: "var(--worker-ink-muted)",
-  CANCELED: "var(--worker-ink-muted)",
-};
-
-/** @deprecated Static surface tokens live in CSS variables now — use var(--worker-*) directly */
-export const surface = {
-  canvas: "var(--worker-canvas)",
-  card: "var(--worker-shelf)",
-  inset: "var(--worker-bench)",
-  border: "var(--worker-border-soft)",
-  borderMid: "var(--worker-border)",
-  borderStrong: "var(--worker-border-strong)",
-} as const;
-
-/** @deprecated Static ink tokens live in CSS variables now — use var(--worker-*) directly */
-export const ink = {
-  primary: "var(--worker-ink)",
-  secondary: "var(--worker-ink-secondary)",
-  tertiary: "var(--worker-ink-tertiary)",
-} as const;
-
-/** @deprecated Static semantic tokens live in CSS variables now — use var(--worker-*) directly */
-export const semantic = {
-  danger: {
-    fg: "var(--worker-error-fg)",
-    bg: "var(--worker-error-bg)",
-    border: "var(--worker-error-border)",
-  },
-  warning: {
-    fg: "var(--worker-dispatch-fg)",
-    bg: "var(--worker-dispatch-bg)",
-    border: "var(--worker-dispatch-border)",
-  },
-  success: {
-    fg: "var(--worker-inventory-fg)",
-    bg: "var(--worker-inventory-bg)",
-    border: "var(--worker-inventory-border)",
-  },
-  info: {
-    fg: "var(--worker-info-fg)",
-    bg: "var(--worker-info-bg)",
-    border: "var(--worker-info-border)",
-  },
-} as const;
+// ─── Legacy named exports removed in PR 4 ────────────────────────────────────
+// statusColor, surface, ink, and semantic static exports were removed after
+// WorkerProductsPage (the last consumer) completed its React Query + token migration.
+// All static tokens now live in src/styles/worker.css under .worker-scope.
+// Runtime helpers above (getPedidoStatusColor, getPedidoStatusBg, getStockTone,
+// getStockColor) remain — they require dynamic computation and cannot be CSS-only.

@@ -59,3 +59,57 @@ export async function subirImagen(productoId: number, data: FormData): Promise<u
   });
   return res.data;
 }
+
+// ─── Variants ─────────────────────────────────────────────────────────────────
+
+export async function editarVariante(
+  variantId: number,
+  data: { stock?: number; activo?: boolean }
+): Promise<unknown> {
+  const res = await API.patch(`/api/producto-variantes/${variantId}/`, data);
+  return res.data;
+}
+
+// ─── Categories (public endpoint used by worker utility drawer) ───────────────
+
+export type WorkerCategoria = { id: number; nombre: string };
+
+export async function getWorkerCategorias(): Promise<WorkerCategoria[]> {
+  const res = await API.get("/api/categorias/");
+  const data = res.data;
+  return Array.isArray(data) ? data : (data?.results ?? []);
+}
+
+export async function crearCategoria(nombre: string): Promise<WorkerCategoria> {
+  const res = await API.post("/api/categorias/", { nombre });
+  return res.data;
+}
+
+// ─── Colors (public endpoint used by worker utility drawer) ───────────────────
+
+export type WorkerColor = { id: number; nombre: string; hex: string; disponible?: boolean };
+
+export async function getWorkerColores(): Promise<WorkerColor[]> {
+  const res = await API.get("/api/colores/");
+  const data = res.data;
+  return Array.isArray(data) ? data : (data?.results ?? []);
+}
+
+export async function crearColor(data: {
+  nombre: string;
+  hex: string;
+  disponible: boolean;
+}): Promise<WorkerColor> {
+  const res = await API.post("/api/colores/", data);
+  return res.data;
+}
+
+// ─── Productos list (public endpoint used by variant creation drawer) ─────────
+
+export type WorkerProductoSlim = { id: number; nombre: string };
+
+export async function getWorkerProductosSlim(): Promise<WorkerProductoSlim[]> {
+  const res = await API.get("/api/productos/");
+  const data = res.data;
+  return Array.isArray(data) ? data : (data?.results ?? []);
+}
