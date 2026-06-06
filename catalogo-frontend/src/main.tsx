@@ -18,6 +18,7 @@ import WorkerLayout from "./components/elements/WorkerLayout.tsx";
 import WorkerDashboardPage from "./components/pages/WorkerDashboardPage.tsx";
 import WorkerOrdersPage from "./components/pages/WorkerOrdersPage.tsx";
 import WorkerProductsPage from "./components/pages/WorkerProductsPage.tsx";
+import { WorkerProviders } from "./components/providers/WorkerProviders.tsx";
 
 // User features
 import CarritoPage from "./components/pages/CarritoPage.tsx";
@@ -44,7 +45,11 @@ const router = createBrowserRouter([
   // Worker panel (nested layout with sidebar)
   {
     path: "/worker",
-    element: <WorkerLayout />,
+    element: (
+      <WorkerProviders>
+        <WorkerLayout />
+      </WorkerProviders>
+    ),
     children: [
       { index: true, element: <WorkerDashboardPage /> },
       { path: "orders", element: <WorkerOrdersPage /> },
