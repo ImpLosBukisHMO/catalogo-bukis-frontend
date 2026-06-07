@@ -296,6 +296,8 @@ export default function WorkerProductsPage() {
           <button
             ref={createTriggerRef}
             onClick={() => setCreateOpen(true)}
+            aria-haspopup="dialog"
+            title="Crear producto con flujo optimizado para celular o escritorio"
             style={{
               padding: "8px 16px",
               fontSize: 13,

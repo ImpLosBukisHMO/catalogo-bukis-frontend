@@ -45,15 +45,31 @@ export async function editarProducto(id: number, data: FormData): Promise<Worker
   return res.data;
 }
 
+export type WorkerCreatedVariant = {
+  id: number;
+  item: string;
+  color: number;
+  stock: number;
+  activo: boolean;
+};
+
+export type WorkerUploadedImage = {
+  id: number;
+  variante: number | null;
+  imagen: string;
+  orden: number;
+  es_principal: boolean;
+};
+
 export async function crearVariante(
   productoId: number,
   data: { color: number; stock: number; activo: boolean; item?: string }
-): Promise<unknown> {
+): Promise<WorkerCreatedVariant> {
   const res = await API.post(`/api/worker/productos/${productoId}/variantes/`, data);
   return res.data;
 }
 
-export async function subirImagen(productoId: number, data: FormData): Promise<unknown> {
+export async function subirImagen(productoId: number, data: FormData): Promise<WorkerUploadedImage> {
   const res = await API.post(`/api/worker/productos/${productoId}/imagenes/`, data, {
     headers: { "Content-Type": "multipart/form-data" },
   });
