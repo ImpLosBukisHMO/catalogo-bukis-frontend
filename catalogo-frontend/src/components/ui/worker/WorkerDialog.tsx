@@ -42,14 +42,19 @@ type WorkerDialogContentProps = {
    * of the normal rail color. Use for deny/cancel/delete confirmations.
    */
   destructive?: boolean;
+  size?: "md" | "lg";
 };
 
 export const WorkerDialogContent = ({
   children,
   className = "",
   destructive = false,
+  size = "md",
 }: WorkerDialogContentProps) => {
   const { theme } = useWorkerTheme();
+  const width = size === "lg"
+    ? "min(640px, calc(100vw - 2rem))"
+    : "min(480px, calc(100vw - 2rem))";
 
   return (
     <RadixDialog.Portal>
@@ -76,7 +81,7 @@ export const WorkerDialogContent = ({
           left: "50%",
           transform: "translate(-50%, -50%)",
           zIndex: 9999,
-          width: "min(480px, calc(100vw - 2rem))",
+          width,
           backgroundColor: "var(--worker-overlay)",
           border: `1px solid var(--worker-border-strong)`,
           borderRadius: "14px",
@@ -161,10 +166,23 @@ export const WorkerDialogDescription = ({
 
 // ─── Body (optional generic slot between header/footer) ──────────────────────
 
-type WorkerDialogBodyProps = { children: ReactNode };
+type WorkerDialogBodyProps = {
+  children: ReactNode;
+  scrollable?: boolean;
+};
 
-export const WorkerDialogBody = ({ children }: WorkerDialogBodyProps) => (
-  <div style={{ padding: "16px 24px", color: "var(--worker-ink)" }}>
+export const WorkerDialogBody = ({
+  children,
+  scrollable = false,
+}: WorkerDialogBodyProps) => (
+  <div
+    style={{
+      padding: "16px 24px",
+      color: "var(--worker-ink)",
+      maxHeight: scrollable ? "70vh" : undefined,
+      overflowY: scrollable ? "auto" : undefined,
+    }}
+  >
     {children}
   </div>
 );

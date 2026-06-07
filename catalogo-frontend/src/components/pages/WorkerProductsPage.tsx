@@ -7,9 +7,6 @@ import {
   useWorkerColores,
   useWorkerProductosSlim,
   useEditarVariante,
-  useCrearProducto,
-  useCrearVariante,
-  useSubirImagen,
   useCrearColor,
   useCrearCategoria,
 } from "../../queries/workerProducts";
@@ -25,6 +22,7 @@ import {
   WorkerDialogCancel,
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
+import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -129,9 +127,12 @@ export default function WorkerProductsPage() {
   const [search, setSearch]       = useState("");
   const [catFilter, setCatFilter] = useState("ALL");
 
-  // ── Utility drawer ──
+  // ── Utility drawer / create modal ──
   const [panelOpen, setPanelOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const createTriggerRef = useRef<HTMLButtonElement>(null);
+  const prevCreateOpenRef = useRef(false);
 
   // ── Inline edit state ──
   const [editId, setEditId]         = useState<number | null>(null);
@@ -153,15 +154,20 @@ export default function WorkerProductsPage() {
   } = useWorkerVariants();
 
   const { data: categorias = [] } = useWorkerCategorias();
-  const { data: colores = [] }    = useWorkerColores(panelOpen);
-  const { data: productos = [] }  = useWorkerProductosSlim(panelOpen);
+  const utilitiesOpen = panelOpen || createOpen;
+  const { data: colores = [] }    = useWorkerColores(utilitiesOpen);
+  const { data: productos = [] }  = useWorkerProductosSlim(utilitiesOpen);
 
   const editarVariante  = useEditarVariante();
-  const crearProductoM  = useCrearProducto();
-  const crearVarianteM  = useCrearVariante();
-  const subirImagenM    = useSubirImagen();
   const crearColorM     = useCrearColor();
   const crearCategoriaM = useCrearCategoria();
+
+  useEffect(() => {
+    if (!createOpen && prevCreateOpenRef.current) {
+      createTriggerRef.current?.focus();
+    }
+    prevCreateOpenRef.current = createOpen;
+  }, [createOpen]);
 
   // ── Derived data ──
   const categories = useMemo(() => {
@@ -286,22 +292,51 @@ export default function WorkerProductsPage() {
             )}
           </p>
         </div>
-        <button
-          onClick={() => setPanelOpen((o) => !o)}
-          style={{
-            padding: "8px 16px",
-            fontSize: 13,
-            fontWeight: 600,
-            color: "#fff",
-            background: "var(--worker-rail)",
-            border: "none",
-            borderRadius: 7,
-            cursor: "pointer",
-          }}
-        >
-          Utilidades
-        </button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button
+            ref={createTriggerRef}
+            onClick={() => setCreateOpen(true)}
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#fff",
+              background: "var(--worker-rail)",
+              border: "none",
+              borderRadius: 7,
+              cursor: "pointer",
+            }}
+          >
+            Nuevo Producto
+          </button>
+
+          <button
+            onClick={() => setPanelOpen((open) => !open)}
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--worker-ink-secondary)",
+              background: "var(--worker-bench)",
+              border: "1px solid var(--worker-border)",
+              borderRadius: 7,
+              cursor: "pointer",
+            }}
+          >
+            Utilidades
+          </button>
+        </div>
       </div>
+
+      {createOpen && (
+        <WorkerCreateProductModal
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          categorias={categorias}
+          colores={colores}
+          productos={productos}
+        />
+      )}
 
       {/* ── Filters ── */}
       <div
@@ -794,21 +829,6 @@ export default function WorkerProductsPage() {
             <CrearCategoriaForm mutation={crearCategoriaM} />
           </Seccion>
 
-          <Seccion title="Crear Producto Base">
-            <CrearProductoForm
-              categorias={categorias}
-              mutation={crearProductoM}
-            />
-          </Seccion>
-
-          <Seccion title="Crear Variantes e Imágenes">
-            <CrearVarianteForm
-              productos={productos}
-              colores={colores}
-              varianteMutation={crearVarianteM}
-              imagenMutation={subirImagenM}
-            />
-          </Seccion>
         </div>
       )}
     </div>
@@ -917,307 +937,6 @@ function CrearCategoriaForm({
       <Field label="Nombre" value={nombre} onChange={setNombre} required />
       {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
       <SaveBtn loading={mutation.isPending} />
-    </form>
-  );
-}
-
-function CrearProductoForm({
-  categorias,
-  mutation,
-}: {
-  categorias: { id: number; nombre: string }[];
-  mutation: ReturnType<typeof useCrearProducto>;
-}) {
-  const [form, setForm] = useState({
-    nombre: "", descripcion: "", precio: "",
-    peso: "", medidas: "", capacidad: "", categoria: "",
-  });
-  const [imagen, setImagen] = useState<File | null>(null);
-  const [error, setError]   = useState("");
-
-  const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!imagen) { setError("Selecciona una imagen"); return; }
-    setError("");
-    try {
-      const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v && k !== "categoria") fd.append(k, v); });
-      fd.append("imagen", imagen);
-      if (form.categoria) fd.append("categorias_ids", form.categoria);
-      await mutation.mutateAsync(fd);
-      setForm({ nombre: "", descripcion: "", precio: "", peso: "", medidas: "", capacidad: "", categoria: "" });
-      setImagen(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
-    }
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "7px 10px",
-    fontSize: 13,
-    background: "var(--worker-control-bg)",
-    border: "1px solid var(--worker-control-border)",
-    borderRadius: 6,
-    color: "var(--worker-ink)",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: 12,
-    color: "var(--worker-ink-secondary)",
-    fontWeight: 500,
-  };
-
-  return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <Field label="Nombre"    value={form.nombre}    onChange={set("nombre")}    required />
-        <Field label="Precio"    value={form.precio}    onChange={set("precio")}    type="number" required />
-        <Field label="Peso"      value={form.peso}      onChange={set("peso")}      type="number" required />
-        <Field label="Medidas"   value={form.medidas}   onChange={set("medidas")}   required />
-        <Field label="Capacidad" value={form.capacidad} onChange={set("capacidad")} />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Descripción</label>
-        <textarea
-          value={form.descripcion}
-          onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
-          rows={2}
-          style={{ ...inputStyle, resize: "vertical" }}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Categoría</label>
-        <select
-          value={form.categoria}
-          onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
-          style={{ ...inputStyle, cursor: "pointer" }}
-        >
-          <option value="">Sin categoría</option>
-          {categorias.map((c) => (
-            <option key={c.id} value={String(c.id)}>{c.nombre}</option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Imagen *</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setImagen(e.target.files?.[0] ?? null)}
-          style={{ fontSize: 13, color: "var(--worker-ink-secondary)" }}
-        />
-      </div>
-
-      {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
-      <SaveBtn loading={mutation.isPending} label="Insertar" />
-    </form>
-  );
-}
-
-function CrearVarianteForm({
-  productos,
-  colores,
-  varianteMutation,
-  imagenMutation,
-}: {
-  productos: { id: number; nombre: string }[];
-  colores: { id: number; nombre: string; hex: string }[];
-  varianteMutation: ReturnType<typeof useCrearVariante>;
-  imagenMutation: ReturnType<typeof useSubirImagen>;
-}) {
-  const [productoId, setProductoId] = useState("");
-  const [colorId, setColorId]       = useState("");
-  const [item, setItem]             = useState("");
-  const [stock, setStock]           = useState("0");
-  const [activo, setActivo]         = useState(true);
-  const [imagenes, setImagenes]     = useState<File[]>([]);
-  const [esPrincipal, setEsPrincipal] = useState(false);
-  const [error, setError]           = useState("");
-  const [success, setSuccess]       = useState("");
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-
-  // Compute object URLs from selected files; revoke on cleanup.
-  const previewUrls = useMemo(
-    () => imagenes.map((f) => URL.createObjectURL(f)),
-    [imagenes]
-  );
-  useEffect(() => {
-    return () => { previewUrls.forEach((url) => URL.revokeObjectURL(url)); };
-  }, [previewUrls]);
-
-  const isPending = varianteMutation.isPending || imagenMutation.isPending;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!productoId || !colorId) { setError("Selecciona producto y color"); return; }
-    setError(""); setSuccess(""); setUploadProgress(0);
-    try {
-      await varianteMutation.mutateAsync({
-        productoId: Number(productoId),
-        data: {
-          color: Number(colorId),
-          stock: Number(stock),
-          activo,
-          item,
-        },
-      });
-
-      const totalImages = imagenes.length;
-      for (let i = 0; i < totalImages; i++) {
-        const fd = new FormData();
-        fd.append("imagen", imagenes[i]);
-        fd.append("orden", String(i));
-        fd.append("es_principal", i === 0 && esPrincipal ? "true" : "false");
-        await imagenMutation.mutateAsync({ productoId: Number(productoId), data: fd });
-        setUploadProgress(Math.round(((i + 1) / totalImages) * 100));
-      }
-
-      setProductoId(""); setColorId(""); setItem(""); setStock("0"); setActivo(true);
-      setImagenes([]); setEsPrincipal(false); setUploadProgress(0);
-      setSuccess("Variante creada correctamente");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
-    }
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "7px 10px",
-    fontSize: 13,
-    background: "var(--worker-control-bg)",
-    border: "1px solid var(--worker-control-border)",
-    borderRadius: 6,
-    color: "var(--worker-ink)",
-    cursor: "pointer",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: 12,
-    color: "var(--worker-ink-secondary)",
-    fontWeight: 500,
-  };
-
-  return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Producto base *</label>
-        <select
-          value={productoId}
-          onChange={(e) => setProductoId(e.target.value)}
-          required
-          style={inputStyle}
-        >
-          <option value="">Selecciona el producto base</option>
-          {productos.map((p) => (
-            <option key={p.id} value={String(p.id)}>{p.nombre}</option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Color *</label>
-        <select
-          value={colorId}
-          onChange={(e) => setColorId(e.target.value)}
-          required
-          style={inputStyle}
-        >
-          <option value="">Selecciona un color</option>
-          {colores.map((c) => (
-            <option key={c.id} value={String(c.id)}>{c.nombre} ({c.hex})</option>
-          ))}
-        </select>
-      </div>
-
-      <Field label="No. Item (SKU)" value={item} onChange={setItem} required />
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, alignItems: "end" }}>
-        <Field label="Stock" value={stock} onChange={setStock} type="number" required />
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--worker-ink-secondary)", paddingBottom: 2 }}>
-          <input
-            type="checkbox"
-            checked={activo}
-            onChange={(e) => setActivo(e.target.checked)}
-          />
-          Activo
-        </label>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Imágenes (opcional)</label>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => setImagenes(Array.from(e.target.files ?? []))}
-          style={{ fontSize: 13, color: "var(--worker-ink-secondary)" }}
-        />
-        {imagenes.length > 0 && (
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--worker-ink-secondary)", marginTop: 4 }}>
-            <input
-              type="checkbox"
-              checked={esPrincipal}
-              onChange={(e) => setEsPrincipal(e.target.checked)}
-            />
-            Primera imagen como principal
-          </label>
-        )}
-        {imagenes.length > 0 && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-            {imagenes.map((_, i) => (
-              <img
-                key={i}
-                src={previewUrls[i]}
-                alt=""
-                style={{
-                  width: 52,
-                  height: 52,
-                  objectFit: "cover",
-                  borderRadius: 6,
-                  border: "1px solid var(--worker-border)",
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Upload progress bar */}
-      {imagenMutation.isPending && uploadProgress > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <div
-            style={{
-              height: 4,
-              borderRadius: 2,
-              background: "var(--worker-bench)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${uploadProgress}%`,
-                background: "var(--worker-rail)",
-                borderRadius: 2,
-                transition: "width 0.2s ease",
-              }}
-            />
-          </div>
-          <p style={{ margin: 0, fontSize: 11, color: "var(--worker-ink-tertiary)" }}>
-            Subiendo imágenes… {uploadProgress}%
-          </p>
-        </div>
-      )}
-
-      {error   && <p style={{ color: "var(--worker-error-fg)",     fontSize: 12, margin: 0 }}>{error}</p>}
-      {success && <p style={{ color: "var(--worker-inventory-fg)", fontSize: 12, margin: 0 }}>{success}</p>}
-      <SaveBtn loading={isPending} label="Guardar variante" />
     </form>
   );
 }
