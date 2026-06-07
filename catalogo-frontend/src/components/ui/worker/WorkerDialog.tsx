@@ -42,51 +42,38 @@ type WorkerDialogContentProps = {
    * of the normal rail color. Use for deny/cancel/delete confirmations.
    */
   destructive?: boolean;
+  size?: "md" | "lg";
+  layout?: "dialog" | "adaptive";
 };
 
 export const WorkerDialogContent = ({
   children,
   className = "",
   destructive = false,
+  size = "md",
+  layout = "dialog",
 }: WorkerDialogContentProps) => {
   const { theme } = useWorkerTheme();
+  const panelClassName = [
+    "worker-overlay-portal",
+    "worker-dialog-content",
+    `worker-dialog-content--${size}`,
+    layout === "adaptive" ? "worker-dialog-content--adaptive" : "",
+    className,
+  ].filter(Boolean).join(" ");
 
   return (
     <RadixDialog.Portal>
       {/* Overlay */}
       <RadixDialog.Overlay
-        className="worker-overlay-portal"
+        className="worker-overlay-portal worker-dialog-overlay"
         data-worker-theme={theme}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9998,
-          backgroundColor: "rgba(15, 23, 42, 0.5)",
-          backdropFilter: "blur(2px)",
-        }}
       />
 
       {/* Content panel */}
       <RadixDialog.Content
-        className={`worker-overlay-portal ${className}`}
+        className={panelClassName}
         data-worker-theme={theme}
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 9999,
-          width: "min(480px, calc(100vw - 2rem))",
-          backgroundColor: "var(--worker-overlay)",
-          border: `1px solid var(--worker-border-strong)`,
-          borderRadius: "14px",
-          boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-          fontVariantNumeric: "tabular-nums",
-        }}
       >
         {/* Fulfillment rail accent — top border strip */}
         <div
@@ -106,12 +93,15 @@ export const WorkerDialogContent = ({
 
 // ─── Header ──────────────────────────────────────────────────────────────────
 
-type WorkerDialogHeaderProps = { children: ReactNode };
+type WorkerDialogHeaderProps = {
+  children: ReactNode;
+  className?: string;
+};
 
-export const WorkerDialogHeader = ({ children }: WorkerDialogHeaderProps) => (
+export const WorkerDialogHeader = ({ children, className = "" }: WorkerDialogHeaderProps) => (
   <div
+    className={["worker-dialog-header", className].filter(Boolean).join(" ")}
     style={{
-      padding: "20px 24px 0",
       display: "flex",
       flexDirection: "column",
       gap: "6px",
@@ -161,26 +151,45 @@ export const WorkerDialogDescription = ({
 
 // ─── Body (optional generic slot between header/footer) ──────────────────────
 
-type WorkerDialogBodyProps = { children: ReactNode };
+type WorkerDialogBodyProps = {
+  children: ReactNode;
+  scrollable?: boolean;
+  className?: string;
+};
 
-export const WorkerDialogBody = ({ children }: WorkerDialogBodyProps) => (
-  <div style={{ padding: "16px 24px", color: "var(--worker-ink)" }}>
+export const WorkerDialogBody = ({
+  children,
+  scrollable = false,
+  className = "",
+}: WorkerDialogBodyProps) => (
+  <div
+    className={[
+      "worker-dialog-body",
+      scrollable ? "worker-dialog-body--scrollable" : "",
+      className,
+    ].filter(Boolean).join(" ")}
+    style={{
+      color: "var(--worker-ink)",
+    }}
+  >
     {children}
   </div>
 );
 
 // ─── Footer ──────────────────────────────────────────────────────────────────
 
-type WorkerDialogFooterProps = { children: ReactNode };
+type WorkerDialogFooterProps = {
+  children: ReactNode;
+  className?: string;
+};
 
-export const WorkerDialogFooter = ({ children }: WorkerDialogFooterProps) => (
+export const WorkerDialogFooter = ({ children, className = "" }: WorkerDialogFooterProps) => (
   <div
+    className={["worker-dialog-footer", className].filter(Boolean).join(" ")}
     style={{
-      padding: "16px 24px 20px",
       display: "flex",
       gap: "10px",
       justifyContent: "flex-end",
-      borderTop: "1px solid var(--worker-border-soft)",
     }}
   >
     {children}

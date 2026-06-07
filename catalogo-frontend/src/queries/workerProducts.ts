@@ -28,6 +28,7 @@ import {
   getWorkerVariants,
   subirImagen,
 } from "../services/worker";
+import type { WorkerCreatedVariant, WorkerUploadedImage } from "../services/worker";
 import { workerKeys } from "./workerKeys";
 
 // ─── useWorkerVariants ────────────────────────────────────────────────────────
@@ -169,7 +170,14 @@ export function useCrearProducto() {
  */
 export function useCrearVariante() {
   const qc = useQueryClient();
-  return useMutation({
+  return useMutation<
+    WorkerCreatedVariant,
+    Error,
+    {
+      productoId: number;
+      data: { color: number; stock: number; activo: boolean; item?: string };
+    }
+  >({
     mutationFn: ({
       productoId,
       data,
@@ -193,7 +201,14 @@ export function useCrearVariante() {
  */
 export function useSubirImagen() {
   const qc = useQueryClient();
-  return useMutation({
+  return useMutation<
+    WorkerUploadedImage,
+    Error,
+    {
+      productoId: number;
+      data: FormData;
+    }
+  >({
     mutationFn: ({
       productoId,
       data,

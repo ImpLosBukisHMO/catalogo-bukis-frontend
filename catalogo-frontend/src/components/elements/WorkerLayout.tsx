@@ -72,10 +72,16 @@ class PageErrorBoundary extends Component<
   }
 }
 
+const bypassWorkerAuth = import.meta.env.DEV && import.meta.env.VITE_WORKER_AUTH_BYPASS === "true";
+
 const WorkerLayout = () => {
-  const [status, setStatus] = useState<GuardStatus>("loading");
+  const [status, setStatus] = useState<GuardStatus>(bypassWorkerAuth ? "authorized" : "loading");
 
   useEffect(() => {
+    if (bypassWorkerAuth) {
+      return;
+    }
+
     let cancelled = false;
 
     (async () => {

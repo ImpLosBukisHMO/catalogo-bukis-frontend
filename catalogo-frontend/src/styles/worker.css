@@ -218,3 +218,96 @@
   background-color: var(--worker-bench, rgba(48, 36, 28, 0.06));
   outline: none;
 }
+
+.worker-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.worker-dialog-content {
+  --worker-dialog-width: 480px;
+
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  width: min(var(--worker-dialog-width), calc(100vw - 2rem));
+  max-height: min(90dvh, calc(100dvh - 2rem));
+  background: var(--worker-overlay);
+  border: 1px solid var(--worker-border-strong);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.worker-dialog-content--lg {
+  --worker-dialog-width: 720px;
+}
+
+.worker-dialog-header {
+  padding: 20px 24px 0;
+  flex-shrink: 0;
+}
+
+.worker-dialog-body {
+  padding: 16px 24px;
+}
+
+.worker-dialog-body--scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.worker-dialog-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--worker-border-soft);
+  background: color-mix(in srgb, var(--worker-overlay) 94%, var(--worker-bench));
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .worker-dialog-content--adaptive {
+    inset: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+    width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .worker-dialog-content--adaptive .worker-dialog-header {
+    padding: 16px 16px 0;
+  }
+
+  .worker-dialog-content--adaptive .worker-dialog-body {
+    padding: 16px;
+  }
+
+  .worker-dialog-content--adaptive .worker-dialog-footer {
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--worker-overlay) 92%, var(--worker-bench));
+  }
+
+  .worker-dialog-footer--stack-sm {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .worker-dialog-footer--stack-sm > * {
+    width: 100%;
+  }
+}
