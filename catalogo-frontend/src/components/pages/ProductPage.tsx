@@ -64,6 +64,7 @@ export default function ProductPage() {
   const stock = selectedVariant?.stock ?? 0;
   const isDisponible = Boolean(selectedVariant?.disponible);
   const qty = useMemo(() => parseQty(qtyRaw), [qtyRaw]);
+  const displayedPrice = selectedVariant?.precio ?? product?.precio ?? "0";
 
   const validation = useMemo(() => {
     if (!selectedVariant) return { ok: false, msg: "Selecciona una variante." };
@@ -276,7 +277,7 @@ export default function ProductPage() {
                         Precio
                       </div>
                       <div className="column" style={{ color: "#111" }}>
-                        ${Number(product.precio).toFixed(2)} MXN
+                        ${Number(displayedPrice).toFixed(2)} MXN
                       </div>
                     </div>
 
