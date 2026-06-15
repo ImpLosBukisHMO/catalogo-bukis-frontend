@@ -45,6 +45,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   // Más productos (mismo componente que Home)
   const [moreProducts, setMoreProducts] = useState<ProductCardVM[]>([]);
@@ -88,14 +89,29 @@ export default function ProductPage() {
 
         setLoading(true);
         setError(null);
+        setNotFound(false);
 
         const data = await getProductById(id);
         setProduct(data);
 
         const defVariantId = pickDefaultVariantId(data.variantes);
         setSelectedVariantId(defVariantId);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Error desconocido");
+      } catch (e: unknown) {
+        const status =
+          e != null &&
+          typeof e === "object" &&
+          "response" in e &&
+          e.response != null &&
+          typeof e.response === "object" &&
+          "status" in e.response
+            ? (e.response as { status: number }).status
+            : null;
+
+        if (status === 404) {
+          setNotFound(true);
+        } else {
+          setError(e instanceof Error ? e.message : "Error desconocido");
+        }
       } finally {
         setLoading(false);
       }
@@ -187,7 +203,24 @@ export default function ProductPage() {
           {loading && <p>Cargando producto...</p>}
           {error && <p style={{ color: "red" }}>{error}</p>}
 
-          {!loading && !error && product && (
+          {!loading && notFound && (
+            <div style={{ textAlign: "center", paddingTop: "4rem", paddingBottom: "4rem" }}>
+              <h2
+                className="title is-3"
+                style={{ color: "#111", marginBottom: "1rem" }}
+              >
+                Producto no encontrado
+              </h2>
+              <p style={{ color: "#555", marginBottom: "1.5rem" }}>
+                El producto que buscas no está disponible o fue dado de baja.
+              </p>
+              <a href="/" className="button is-dark">
+                Volver al inicio
+              </a>
+            </div>
+          )}
+
+          {!loading && !error && !notFound && product && (
             <>
               <div className="columns is-variable is-7 is-align-items-flex-start">
                 {/* Imagen */}
