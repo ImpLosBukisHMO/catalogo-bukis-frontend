@@ -1,3 +1,20 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-bukis-red-50: #fff1f1;
+  --color-bukis-red-100: #ffe0e0;
+  --color-bukis-red-600: #dd0000;
+  --color-bukis-red-700: #c50000;
+  --color-bukis-red-800: #a10000;
+  --color-bukis-ink: #171717;
+  --color-bukis-paper: #ffffff;
+  --color-bukis-surface: #f7f4f2;
+  --color-bukis-border: #d8d0cc;
+  --shadow-bukis-soft: 0 1px 2px rgba(23, 23, 23, 0.06), 0 8px 24px rgba(23, 23, 23, 0.08);
+}
+
 :root, html, #root {
   width: 100%;
   height: 100%;
@@ -8,228 +25,4 @@
 
 body {
   background-color: #ffffff;
-}
-
-h1, h2 {
-  color: #000;
-}
-
-.generic-container{
-  background-color: #f3f3f3;
-  border: 2px solid #b5b5b5;
-  border-radius: 15px;
-  box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 5px;
-}
-
-.main-nav{
-  background-color: #dd0000;
-  box-shadow: rgba(0, 0, 0, 0.3) 0px 5px 5px;
-}
-
-a.main-nav, a.main-nav:focus{
-  background-color: #dd0000;
-  box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 0px;
-}
-
-a.main-nav:hover{
-  background-color: #bb0000;
-}
-
-a.main-nav:active{
-  background-color: #cc0000;
-}
-
-.main-footer{
-  background-color: #0f0f0f;
-}
-
-.main-footer-2{
-  background-color: #090909;
-}
-
-.map-home{
-  border-radius: 15px;
-  box-shadow: rgba(0, 0, 0, 0.6) 0px 0px 10px;
-}
-
-button.custom-btn, button.custom-btn:focus{
-  color: white;
-  background-color: #e10000;
-  border: 2px solid #a10000;
-  border-radius: 10px;
-}
-
-button.custom-btn:hover{
-  transition: 0.1s;
-  background-color: #f10000;
-}
-
-button.custom-btn:active{
-  transition: 0.1s;
-  background-color: #d10000;
-}
-
-button.favorite-product-btn{
-  transition: 0.1s;
-  color: #a3a3a3;
-  background-color: #ececec;
-  border: 2px solid #a3a3a3;
-  border-radius: 30px;
-  display: flex;
-  align-items: center;
-}
-
-button.favorite-product-btn:hover{
-  transition: 0.1s;
-  box-shadow: rgba(0, 0, 0, 0.35) 0px 0px 12px;
-}
-
-.social-network-icon:hover{
-  cursor: pointer;
-  box-shadow: rgba(255, 255, 255, 0.9) 0px 0px 12px;
-  border-radius: 50%;
-}
-
-.social-network-icon:active{
-  box-shadow: rgba(255, 255, 255, 0.4) 0px 0px 12px;
-}
-
-.offer-slider{
-  box-shadow: rgba(0, 0, 0, 0.8) 0px 2px 5px;
-}
-
-.slider-btn{
-  transition: 0.3;
-  background-color: #fff;
-  border-radius: 50%;
-  box-shadow: rgba(0, 0, 0, 0.2) 0px 0px 12px;
-}
-
-.slider-btn:hover{
-  cursor: pointer;
-  box-shadow: rgba(0, 0, 0, 0.55) 0px 0px 12px;
-}
-
-.slider-btn:active{
-  box-shadow: rgba(0, 0, 0, 0.5) 0px 0px 12px;
-}
-
-.custom-input{
-  color: #000;
-  background-color: #ffffff;
-  border: 2px solid #7c7c7c;
-  border-radius: 10px;
-}
-
-.custom-input::placeholder{
-  color: #7c7c7c;
-}
-
-.custom-input:focus{
-  border-color: #7c7c7c;
-  box-shadow: #000 0px 0px 0px;
-}
-
-.custom-input:disabled{
-  color: #000;
-  background-color: #dfdfdf;
-  border: 2px solid #5c5c5c;
-  border-radius: 10px;
-}
-
-.custom-input:disabled::placeholder{
-  color: #777;
-}
-
-p.txt-white{
-  color: #fff;
-}
-
-p, strong.product-label {
-  color: #000;
-}
-
-.zoomable-img{
-  width: "100%";
-  padding: 10px;
-  background-color: #eeeeee;
-  justify-items: center;
-  border-radius: 12px;
-  border: 2px solid #a2a2a2;
-  box-shadow: rgba(0,0,0,0.35) 0 2px 8px;
-}
-
-table {
-  width: 100%;
-  border: 2px solid #656565;
-}
-
-thead.table-thead-1{
-  padding: 1rem;
-  background-color: #c3c3c3;
-  color: #000;
-  border: 2px solid #656565;
-}
-
-tr.table-body-1:nth-child(odd) {
-  background-color: #fff;
-  color: #000;
-  border: 2px solid #656565;
-}
-
-tr.table-body-1:nth-child(even) {
-  background-color: #e8e8e8;
-  color: #000;
-  border: 2px solid #656565;
-}
-
-img.product-img-sidebar{
-  width: auto;
-  height: 80px;
-  border-radius: 12px;
-  border: 2px solid #a2a2a2;
-  box-shadow: rgba(0,0,0,0.35) 0 2px 8px;
-}
-
-.buy-qty-input{
-  width: 6rem;
-  text-align: center;
-  line-height: 2.1;
-  font-size: 1rem;
-  border: 2px solid #a2a2a2;
-  border-radius: 10px;
-}
-
-a.custom-link {
-  color: #000;
-}
-
-a.custom-link:hover {
-  text-decoration: underline;
-}
-
-a.custom-link:active {
-  color: #8700a2;
-}
-
-.icon-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 40px;
-  padding: 5px;
-  color: #7c7c7c;
-  background-color: #ddd;
-  border-radius: 10px;
-  border: 2px solid #7c7c7c;
-}
-
-.icon-container-search {
-  border-radius: 10px 0px 0px 10px;
-  border-right: 1px solid #7c7c7c;;
-}
-
-.custom-input-search {
-  border-radius: 0px 10px 10px 0px;
-  border-left: 1px solid #7c7c7c;;
 }

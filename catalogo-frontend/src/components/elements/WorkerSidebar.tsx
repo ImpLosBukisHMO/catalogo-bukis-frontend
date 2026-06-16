@@ -1,4 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
+import { ClipboardList, LayoutDashboard, Moon, Package, Store, Sun, UserCircle } from "lucide-react";
 import { logOut } from "../../services/user";
 import { useWorkerTheme } from "../providers/useWorkerTheme";
 import {
@@ -17,24 +19,26 @@ const NAV_ROUTES = [
     label: "Dashboard",
     to: "/worker",
     end: true,
-    // Fulfillment rail: Dashboard shows the queue overview — dispatch context
-    railLabel: "Cola",
+    icon: LayoutDashboard,
   },
   {
     label: "Productos",
     to: "/worker/products",
     end: false,
-    // Fulfillment rail: Productos shows the stock shelf context
-    railLabel: "Stock",
+    icon: Package,
   },
   {
     label: "Pedidos",
     to: "/worker/orders",
     end: false,
-    // Fulfillment rail: Pedidos shows the dispatch lane context
-    railLabel: "Despacho",
+    icon: ClipboardList,
   },
-] as const;
+] as const satisfies readonly {
+  label: string;
+  to: string;
+  end: boolean;
+  icon: LucideIcon;
+}[];
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
@@ -49,161 +53,57 @@ const WorkerSidebar = () => {
 
   return (
     <aside
-      style={{
-        width: "240px",
-        minHeight: "100vh",
-        backgroundColor: "var(--worker-shelf)",
-        borderRight: "1px solid var(--worker-border)",
-        display: "flex",
-        flexDirection: "column",
-        flexShrink: 0,
-      }}
+      className="wk:flex wk:min-h-screen wk:w-[72px] wk:flex-shrink-0 wk:flex-col wk:border-r wk:bg-[var(--worker-shelf)]"
+      style={{ borderColor: "var(--worker-border)" }}
     >
       {/* ── Brand header ─────────────────────────────────────────────────── */}
-      <div style={{ padding: "20px 16px 12px" }}>
-        <p
-          style={{
-            fontSize: "10px",
-            fontWeight: 600,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--worker-ink-muted)",
-            margin: "0 0 3px",
-          }}
+      <div className="wk:flex wk:flex-col wk:items-center wk:gap-2 wk:px-3 wk:py-4">
+        <div
+          className="wk:flex wk:h-11 wk:w-11 wk:items-center wk:justify-center wk:rounded-2xl wk:border wk:bg-[var(--worker-rail-soft)] wk:text-sm wk:font-bold wk:text-[var(--worker-rail)]"
+          style={{ borderColor: "var(--worker-rail-border)" }}
+          title="Panel Operaciones"
+          aria-label="Panel Operaciones Los Bukis"
         >
-          Los Bukis
-        </p>
-        <p
-          style={{
-            fontSize: "15px",
-            fontWeight: 700,
-            color: "var(--worker-ink)",
-            margin: 0,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Panel Operaciones
-        </p>
+          LB
+        </div>
       </div>
 
       {/* ── Back-to-store ─────────────────────────────────────────────────── */}
-      <div style={{ padding: "0 16px 12px" }}>
+      <div className="wk:flex wk:justify-center wk:px-3 wk:pb-3">
         <Link
           to="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            fontSize: "12px",
-            color: "var(--worker-ink-tertiary)",
-            textDecoration: "none",
-          }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color =
-              "var(--worker-ink-secondary)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color =
-              "var(--worker-ink-tertiary)")
-          }
+          className="wk:flex wk:h-10 wk:w-10 wk:items-center wk:justify-center wk:rounded-xl wk:text-[var(--worker-ink-tertiary)] wk:transition hover:wk:bg-[var(--worker-bench)] hover:wk:text-[var(--worker-ink-secondary)] focus:wk:outline-none focus:wk:ring-2 focus:wk:ring-[var(--worker-rail-border)]"
+          aria-label="Volver a la tienda"
+          title="Volver a la tienda"
         >
-          ← Volver a la tienda
+          <Store size={20} aria-hidden="true" />
         </Link>
       </div>
 
       {/* ── Divider ───────────────────────────────────────────────────────── */}
       <div
-        style={{
-          height: "1px",
-          backgroundColor: "var(--worker-border-soft)",
-          margin: "0 16px 8px",
-        }}
+        className="wk:mx-3 wk:h-px wk:bg-[var(--worker-border-soft)]"
       />
 
       {/* ── Navigation ────────────────────────────────────────────────────── */}
-      <nav style={{ flex: 1, padding: "8px 0" }} aria-label="Worker navigation">
-        <p
-          style={{
-            padding: "0 16px",
-            fontSize: "10px",
-            fontWeight: 600,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--worker-ink-muted)",
-            marginBottom: "4px",
-          }}
-        >
-          Navegación
-        </p>
-
-        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-          {NAV_ROUTES.map(({ label, to, end, railLabel }) => (
-            <li key={to}>
+      <nav className="wk:flex-1 wk:px-3 wk:py-4" aria-label="Worker navigation">
+        <ul className="wk:flex wk:list-none wk:flex-col wk:gap-2 wk:p-0 wk:m-0">
+          {NAV_ROUTES.map(({ label, to, end, icon: Icon }) => (
+            <li key={to} className="wk:m-0 wk:p-0">
               <NavLink
                 to={to}
                 end={end}
-                style={({ isActive }) => ({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "9px 16px",
-                  fontSize: "14px",
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive
-                    ? "var(--worker-rail)"
-                    : "var(--worker-ink-secondary)",
-                  textDecoration: "none",
-                  // Fulfillment rail — active indicator as left border strip
-                  borderLeft: isActive
-                    ? "3px solid var(--worker-rail)"
-                    : "3px solid transparent",
-                  backgroundColor: isActive
-                    ? "var(--worker-rail-soft)"
-                    : "transparent",
-                  transition: "background-color 0.12s, color 0.12s",
-                })}
-                // Additional hover via onMouseEnter/Leave since inline style
-                // doesn't support :hover
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  if (!el.classList.contains("active") &&
-                      el.getAttribute("aria-current") !== "page") {
-                    el.style.backgroundColor = "var(--worker-bench)";
-                    el.style.color = "var(--worker-ink)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  if (!el.classList.contains("active") &&
-                      el.getAttribute("aria-current") !== "page") {
-                    el.style.backgroundColor = "transparent";
-                    el.style.color = "var(--worker-ink-secondary)";
-                  }
-                }}
+                className={({ isActive }) =>
+                  `wk:flex wk:h-11 wk:w-11 wk:items-center wk:justify-center wk:rounded-2xl wk:border wk:transition focus:wk:outline-none focus:wk:ring-2 focus:wk:ring-[var(--worker-rail-border)] ${
+                    isActive
+                      ? "wk:border-[var(--worker-rail-border)] wk:bg-[var(--worker-rail-soft)] wk:text-[var(--worker-rail)]"
+                      : "wk:border-transparent wk:text-[var(--worker-ink-secondary)] hover:wk:bg-[var(--worker-bench)] hover:wk:text-[var(--worker-ink)]"
+                  }`
+                }
+                aria-label={label}
+                title={label}
               >
-                {({ isActive }) => (
-                  <>
-                    <span>{label}</span>
-                    {isActive && (
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          fontSize: "9px",
-                          fontWeight: 700,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          color: "var(--worker-rail)",
-                          backgroundColor: "var(--worker-rail-soft)",
-                          border: "1px solid var(--worker-rail-border)",
-                          borderRadius: "4px",
-                          padding: "2px 5px",
-                        }}
-                      >
-                        {railLabel}
-                      </span>
-                    )}
-                  </>
-                )}
+                <Icon size={21} aria-hidden="true" />
               </NavLink>
             </li>
           ))}
@@ -212,97 +112,28 @@ const WorkerSidebar = () => {
 
       {/* ── Footer — session/profile dropdown ────────────────────────────── */}
       <div
-        style={{
-          padding: "12px 16px",
-          borderTop: "1px solid var(--worker-border-soft)",
-        }}
+        className="wk:flex wk:flex-col wk:items-center wk:gap-2 wk:border-t wk:px-3 wk:py-3"
+        style={{ borderColor: "var(--worker-border-soft)" }}
       >
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
           aria-label={`Cambiar a tema ${theme === "dark" ? "claro" : "oscuro"}`}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "7px 10px",
-            marginBottom: "8px",
-            fontSize: "12px",
-            color: "var(--worker-ink-tertiary)",
-            backgroundColor: "transparent",
-            border: "1px solid var(--worker-border-soft)",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "var(--worker-bench)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "transparent")
-          }
+          title={theme === "dark" ? "Tema claro" : "Tema oscuro"}
+          className="wk:flex wk:h-10 wk:w-10 wk:items-center wk:justify-center wk:rounded-xl wk:border wk:border-[var(--worker-border-soft)] wk:bg-transparent wk:text-[var(--worker-ink-tertiary)] wk:transition hover:wk:bg-[var(--worker-bench)] hover:wk:text-[var(--worker-ink)] focus:wk:outline-none focus:wk:ring-2 focus:wk:ring-[var(--worker-rail-border)]"
         >
-          <span>{theme === "dark" ? "☀ Tema claro" : "☾ Tema oscuro"}</span>
+          {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
         </button>
 
         {/* Session/profile dropdown */}
         <WorkerDropdownRoot>
           <WorkerDropdownTrigger asChild>
             <button
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 10px",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "var(--worker-ink-secondary)",
-                backgroundColor: "var(--worker-bench)",
-                border: "1px solid var(--worker-border)",
-                borderRadius: "6px",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-              onMouseEnter={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                  "var(--worker-control-bg)")
-              }
-              onMouseLeave={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                  "var(--worker-bench)")
-              }
+              className="wk:flex wk:h-10 wk:w-10 wk:items-center wk:justify-center wk:rounded-xl wk:border wk:border-[var(--worker-border)] wk:bg-[var(--worker-bench)] wk:text-[var(--worker-ink-secondary)] wk:transition hover:wk:bg-[var(--worker-control-bg)] focus:wk:outline-none focus:wk:ring-2 focus:wk:ring-[var(--worker-rail-border)]"
+              aria-label="Cuenta de operador"
+              title="Cuenta de operador"
             >
-              {/* Staff avatar placeholder */}
-              <span
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--worker-rail-soft)",
-                  border: "1px solid var(--worker-rail-border)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "var(--worker-rail)",
-                  flexShrink: 0,
-                }}
-              >
-                OP
-              </span>
-              <span style={{ flex: 1, minWidth: 0 }}>Sesión operador</span>
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: "var(--worker-ink-muted)",
-                }}
-              >
-                ▾
-              </span>
+              <UserCircle size={20} aria-hidden="true" />
             </button>
           </WorkerDropdownTrigger>
 
