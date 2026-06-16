@@ -2,17 +2,14 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const OfferSlider = () => {
     return (
-        <div className="offer-slider" style={{ width: '100%' }}>
-            <div style={{
-                width: '100%', margin: 0, textAlign: 'center', backgroundColor: '#000',
-                color: '#fff'
-            }}>
-                <p className='is-size-4' style={{color: '#fff', padding: 10, fontSize: 22 }}>¡Aprovecha nuestras ofertas!</p>
+        <div className="w-full overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-200 shadow-bukis-soft">
+            <div className="w-full bg-black px-4 py-3 text-center text-white">
+                <p className='text-xl font-semibold text-white'>¡Aprovecha nuestras ofertas!</p>
             </div>
-            <div style={{backgroundColor: '#9e9e9eff', height: '360px' }}>
-                <div style={{ width: '100%', display: 'flex', gap: '85%' , alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                    <ArrowLeft className="slider-btn" size={'3rem'} color="#000000" />
-                    <ArrowRight className="slider-btn" size={'3rem'} color="#000000" />
+            <div className="h-[360px] bg-neutral-300">
+                <div className="flex h-full w-full items-center justify-between px-6">
+                    <ArrowLeft className="h-12 w-12 cursor-pointer rounded-full bg-white p-3 text-black shadow-md transition hover:shadow-lg active:shadow" />
+                    <ArrowRight className="h-12 w-12 cursor-pointer rounded-full bg-white p-3 text-black shadow-md transition hover:shadow-lg active:shadow" />
                 </div>
             </div>
         </div>

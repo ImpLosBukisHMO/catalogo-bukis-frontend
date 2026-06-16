@@ -60,6 +60,11 @@ export default function FavoritosPage() {
   }
 
   async function handleAddToCart(fav: FavoritoVariante) {
+    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+      navigate("/iniciar-sesion");
+      return;
+    }
+
     const favId = fav.id;
     try {
       setBusy(favId);
@@ -82,7 +87,7 @@ export default function FavoritosPage() {
       <NavBar />
 
       <div
-        className="container is-fluid"
+        className="w-full"
         style={{
           paddingLeft: "clamp(1rem, 3vw, 3rem)",
           paddingRight: "clamp(1rem, 3vw, 3rem)",
@@ -91,24 +96,29 @@ export default function FavoritosPage() {
         }}
       >
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <h1 className="title is-2" style={{ color: "#111" }}>
+          <h1 className="mb-6 text-3xl font-bold text-bukis-ink">
             Mis favoritos
           </h1>
 
-          {loading && <p>Cargando favoritos...</p>}
+          {loading && <p className="text-neutral-600">Cargando favoritos...</p>}
 
           {error && (
-            <div className="notification is-danger">
-              <button className="delete" onClick={() => setError(null)} />
-              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{error}</pre>
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+              <pre className="flex-1 whitespace-pre-wrap text-sm">{error}</pre>
+              <button
+                className="mt-0.5 text-red-400 hover:text-red-600"
+                onClick={() => setError(null)}
+              >
+                ✕
+              </button>
             </div>
           )}
 
           {!loading && !error && favoritos.length === 0 && (
-            <div className="box">
-              <p style={{ color: "#111" }}>No tienes favoritos aún.</p>
+            <div className="rounded-2xl border border-bukis-border bg-white p-6 shadow-bukis-soft">
+              <p className="text-bukis-ink">No tienes favoritos aún.</p>
               <button
-                className="button is-dark mt-3"
+                className="mt-3 inline-flex rounded-xl bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-800"
                 onClick={() => navigate("/")}
               >
                 Explorar productos
@@ -117,7 +127,7 @@ export default function FavoritosPage() {
           )}
 
           {!loading && favoritos.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div className="flex flex-col gap-6">
               {favoritos.map((fav) => {
                 const v = fav.variante;
                 const imgSrc =
@@ -128,43 +138,18 @@ export default function FavoritosPage() {
                 return (
                   <div
                     key={fav.id}
-                    className="box"
-                    style={{
-                      background: "rgba(0,0,0,0.90)",
-                      borderRadius: 16,
-                      padding: "1.25rem",
-                    }}
+                    className="rounded-2xl bg-[rgba(0,0,0,0.90)] p-5"
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "1.25rem",
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div className="flex flex-wrap items-center gap-5">
                       {/* Thumbnail */}
                       <figure
-                        style={{
-                          width: 80,
-                          height: 80,
-                          background: "#fff",
-                          borderRadius: 10,
-                          overflow: "hidden",
-                          flex: "0 0 80px",
-                          cursor: "pointer",
-                        }}
+                        className="h-20 w-20 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl bg-white"
                         onClick={() => navigate(`/producto/${v.id}`)}
                       >
                         <img
                           src={imgSrc}
                           alt={v.nombre_producto}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                            display: "block",
-                          }}
+                          className="block h-full w-full object-contain"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src =
                               "https://placehold.net/600x600.png";
@@ -173,57 +158,35 @@ export default function FavoritosPage() {
                       </figure>
 
                       {/* Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p
-                          className="title is-5"
-                          style={{ color: "#fff", marginBottom: "0.25rem" }}
-                        >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-lg font-bold text-white">
                           {v.nombre_producto}
                         </p>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            marginBottom: "0.25rem",
-                          }}
-                        >
+                        <div className="mt-1 flex items-center gap-2">
                           <span
+                            className="inline-block h-4 w-4 rounded-full"
                             style={{
                               background: v.color.hex,
-                              width: 16,
-                              height: 16,
-                              borderRadius: 999,
                               border: "1px solid rgba(255,255,255,0.3)",
-                              display: "inline-block",
                             }}
                           />
-                          <span
-                            className="tag"
-                            style={{
-                              background: "rgba(255,255,255,0.12)",
-                              color: "#fff",
-                              fontSize: 12,
-                            }}
-                          >
+                          <span className="inline-flex items-center rounded-full bg-white/12 px-2.5 py-0.5 text-xs font-medium text-white">
                             {v.color.nombre}
                           </span>
                         </div>
 
-                        <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 15 }}>
+                        <p className="mt-1 text-sm text-white/80">
                           {money(Number(v.precio))}
                         </p>
 
                         {itemMsg && (
                           <p
-                            style={{
-                              fontSize: 12,
-                              marginTop: 4,
-                              color: itemMsg.startsWith("Error")
-                                ? "#ff6b6b"
-                                : "#69db7c",
-                            }}
+                            className={`mt-1 text-xs ${
+                              itemMsg.startsWith("Error")
+                                ? "text-red-400"
+                                : "text-green-400"
+                            }`}
                           >
                             {itemMsg}
                           </p>
@@ -231,16 +194,9 @@ export default function FavoritosPage() {
                       </div>
 
                       {/* Botones */}
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 8,
-                          alignItems: "flex-end",
-                        }}
-                      >
+                      <div className="flex flex-col items-end gap-2">
                         <button
-                          className="button is-warning"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={isBusy}
                           onClick={() => handleAddToCart(fav)}
                         >
@@ -248,7 +204,7 @@ export default function FavoritosPage() {
                         </button>
 
                         <button
-                          className="button is-danger is-outlined"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-600 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={isBusy}
                           onClick={() => handleRemove(fav.id)}
                         >

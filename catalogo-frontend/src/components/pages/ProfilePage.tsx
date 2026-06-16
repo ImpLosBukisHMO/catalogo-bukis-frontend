@@ -12,29 +12,31 @@ import {
 
 
 const EditingButtons = (props: { isEditing: boolean, handleEditing: () => void, handleSave: () => void, handleCancel: () => void }) => {
+    const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35";
+
     if (!props.isEditing) {
         return (
-            <div className="mt-5" style={{ width: '100%' }}>
-                <button className="mt-1 mx-auto p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
+            <div className="mt-6 flex w-full justify-center">
+                <button className={buttonClass}
                     onClick={props.handleEditing}>
                     <Pencil size={22} />
-                    <p className='is-size-6 txt-white'>&nbsp;Modificar datos</p>
+                    <span>Modificar datos</span>
                 </button>
             </div>
         );
     }
     else {
         return (
-            <div className="mt-5 is-flex is-justify-content-center" style={{ width: '100%' }}>
-                <button type="submit" className="mt-1 mx-3 p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
+            <div className="mt-6 flex w-full flex-wrap justify-center gap-3">
+                <button type="submit" className={buttonClass}
                     onClick={props.handleSave}>
                     <Save size={22} />
-                    <p className='is-size-6 txt-white'>&nbsp;Guardar datos</p>
+                    <span>Guardar datos</span>
                 </button>
-                <button type="reset" className="mt-1 mx-3 p-1 px-2 custom-btn is-flex is-align-items-center is-justify-content-center"
+                <button type="reset" className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-400/35"
                     onClick={props.handleCancel}>
                     <Ban size={22} />
-                    <p className='is-size-6 txt-white'>&nbsp;Cancelar</p>
+                    <span>Cancelar</span>
                 </button>
             </div>
         );
@@ -138,6 +140,9 @@ const ProfilePage = () => {
         }
     }
 
+    const inputClass = "w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25 disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-600";
+    const labelClass = "mb-2 block text-sm font-semibold text-bukis-ink";
+
     const fetchUserData = async () => {
         try {
             const userData: Usuario = await getLoggedUserData();
@@ -202,85 +207,85 @@ const ProfilePage = () => {
         <div>
             <title>Mi Perfil | Importaciones Los Bukis</title>
             <NavBar />
-            <h1 className='mb-5 has-text-weight-bold is-size-2' style={{ margin: 0, textAlign: 'center' }}>
+            <h1 className='mb-5 text-center text-4xl font-bold text-bukis-ink'>
                 Mi Perfil
             </h1>
-            <div className="my-6 p-3 pb-5 mx-auto generic-container" style={{ width: '80%' }}>
-                <p className="mb-4 is-size-3 has-text-centered has-text-weight-bold" style={{ color: 'black' }}>Datos generales</p>
-                <div className="columns">
-                    <div className="column">
+            <div className="mx-auto my-6 w-[80%] rounded-2xl border border-bukis-border bg-bukis-surface p-5 shadow-bukis-soft">
+                <p className="mb-5 text-center text-2xl font-bold text-bukis-ink">Datos generales</p>
+                <div className="grid gap-5 md:grid-cols-2">
+                    <div className="space-y-4">
                         <div>
-                            <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Nombre</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre completo." value={nombre ?? ''} onChange={(e) => setNombre(e.target.value)} disabled={!isEditing} />
+                            <label className={labelClass}>Nombre</label>
+                            <input className={inputClass} type="text" placeholder="Nombre completo." value={nombre ?? ''} onChange={(e) => setNombre(e.target.value)} disabled={!isEditing} />
                         </div>
                         <div>
-                            <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Apellidos</p>
-                            <input className="input custom-input" type="text" placeholder="Apellidos completos." value={apellidos ?? ''} onChange={(e) => setApellidos(e.target.value)} disabled={!isEditing} />
+                            <label className={labelClass}>Apellidos</label>
+                            <input className={inputClass} type="text" placeholder="Apellidos completos." value={apellidos ?? ''} onChange={(e) => setApellidos(e.target.value)} disabled={!isEditing} />
                         </div>
                     </div>
-                    <div className="column">
+                    <div className="space-y-4">
                         <div>
-                            <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Correo electrónico</p>
-                            <input className="input custom-input" type="text" placeholder="Ej.: usuario@correo.com" value={correo ?? ''} disabled={true} />
+                            <label className={labelClass}>Correo electrónico</label>
+                            <input className={inputClass} type="text" placeholder="Ej.: usuario@correo.com" value={correo ?? ''} disabled={true} />
                         </div>
                         <div>
-                            <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Teléfono</p>
-                            <input className="input custom-input" type="text" placeholder="Ej: (+00) 000-000-0000" value={telefono ?? ''} onChange={(e) => setTelefono(e.target.value)} disabled={!isEditing} />
+                            <label className={labelClass}>Teléfono</label>
+                            <input className={inputClass} type="text" placeholder="Ej: (+00) 000-000-0000" value={telefono ?? ''} onChange={(e) => setTelefono(e.target.value)} disabled={!isEditing} />
                         </div>
                     </div>
                 </div>
 
-                <div>
-                    <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Contraseña</p>
-                    <div className="is-flex">
-                        <HideShowPassword className="mr-2" passwordVisibilityAction={togglePasswordVisibility}
+                <div className="mt-4">
+                    <label className={labelClass}>Contraseña</label>
+                    <div className="flex gap-2">
+                        <HideShowPassword passwordVisibilityAction={togglePasswordVisibility}
                             passwordState={passwordVisible} disabled={!isEditing} />
-                        <input className="input custom-input" type={passwordVisible} placeholder="Nueva contraseña." value={password || ""} onChange={(e) => setPassword(e.target.value)} disabled={!isEditing} />
+                        <input className={inputClass} type={passwordVisible} placeholder="Nueva contraseña." value={password || ""} onChange={(e) => setPassword(e.target.value)} disabled={!isEditing} />
                     </div>
                 </div>
 
-                <p className="mt-5 mb-4 is-size-3 has-text-centered has-text-weight-bold" style={{ color: 'black' }}>Dirección</p>
-                <div className="columns">
-                    <div className="column">
+                <p className="mb-5 mt-8 text-center text-2xl font-bold text-bukis-ink">Dirección</p>
+                <div className="grid gap-5 md:grid-cols-2">
+                    <div className="space-y-4">
                         <div>
-                            <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Calle</p>
-                            <input className="input custom-input" type="text" placeholder="Ej.: Nombre de la calle, número exterior." value={calle ?? ''} onChange={(e) => setCalle(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <label className={labelClass}>Calle</label>
+                            <input className={inputClass} type="text" placeholder="Ej.: Nombre de la calle, número exterior." value={calle ?? ''} onChange={(e) => setCalle(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                         <div>
-                            <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Colonia / Fraccionamiento / Residencial</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre de colonia, fraccionamiento o residencial." value={colonia ?? ''} onChange={(e) => setColonia(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <label className={labelClass}>Colonia / Fraccionamiento / Residencial</label>
+                            <input className={inputClass} type="text" placeholder="Nombre de colonia, fraccionamiento o residencial." value={colonia ?? ''} onChange={(e) => setColonia(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                         <div>
-                            <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Código Postal (C.P.)</p>
-                            <input className="input custom-input" type="number" placeholder="Ej.: 0000" value={codigoPostal ?? ''} onChange={(e) => setCodigoPostal(e.target.value === '' ? null : Number(e.target.value))} disabled={!hasAddress || !isEditing} />
+                            <label className={labelClass}>Código Postal (C.P.)</label>
+                            <input className={inputClass} type="number" placeholder="Ej.: 0000" value={codigoPostal ?? ''} onChange={(e) => setCodigoPostal(e.target.value === '' ? null : Number(e.target.value))} disabled={!hasAddress || !isEditing} />
                         </div>
                     </div>
-                    <div className="column">
+                    <div className="space-y-4">
                         <div>
-                            <p className="is-size-5 has-text-weight-bold" style={{ color: 'black' }}>Estado</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre del estado." value={estado ?? ''} onChange={(e) => setEstado(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <label className={labelClass}>Estado</label>
+                            <input className={inputClass} type="text" placeholder="Nombre del estado." value={estado ?? ''} onChange={(e) => setEstado(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
         
                         <div>
-                            <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>Ciudad / Municipio</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre de la ciudad o municipio." value={ciudad ?? ''} onChange={(e) => setCiudad(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <label className={labelClass}>Ciudad / Municipio</label>
+                            <input className={inputClass} type="text" placeholder="Nombre de la ciudad o municipio." value={ciudad ?? ''} onChange={(e) => setCiudad(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                         <div>
-                            <p className="is-size-5 mt-3 has-text-weight-bold" style={{ color: 'black' }}>País</p>
-                            <input className="input custom-input" type="text" placeholder="Nombre del país." value={pais ?? ''} onChange={(e) => setPais(e.target.value)} disabled={!hasAddress || !isEditing} />
+                            <label className={labelClass}>País</label>
+                            <input className={inputClass} type="text" placeholder="Nombre del país." value={pais ?? ''} onChange={(e) => setPais(e.target.value)} disabled={!hasAddress || !isEditing} />
                         </div>
                     </div>
                 </div>
                 <EditingButtons isEditing={isEditing} handleEditing={handleEditing} handleCancel={handleCancel} handleSave={handleSave} />
             </div>
 
-            <div className="mx-auto mt-4 mb-6" style={{ width: '80%' }}>
+            <div className="mx-auto mb-6 mt-4 flex w-[80%]">
                 <button
-                    className="p-1 px-3 custom-btn is-flex is-align-items-center"
+                    className="inline-flex items-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
                     onClick={() => navigate("/pedidos")}
                 >
                     <ClipboardList size={22} />
-                    <p className="is-size-6 txt-white">&nbsp;Mis Pedidos</p>
+                    <span>Mis Pedidos</span>
                 </button>
             </div>
 

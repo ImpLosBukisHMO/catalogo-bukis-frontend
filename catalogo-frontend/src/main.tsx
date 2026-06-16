@@ -1,7 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import "bulma/css/bulma.min.css";
 import { createBrowserRouter, RouterProvider } from "react-router";
 
 import Home from "./components/pages/Home.tsx";

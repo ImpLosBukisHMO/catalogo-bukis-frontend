@@ -82,7 +82,6 @@ function getColorHex(item: CartItem): string | null {
 }
 
 function getUnitPrice(item: CartItem): number {
-  // Priority: precio_unitario → variante.precio → producto.precio → precio
   return toNumber(
     item.precio_unitario ??
       nested(item, "variante", "precio") ??
@@ -97,7 +96,6 @@ function getQty(item: CartItem): number {
 }
 
 function getImageSrc(item: CartItem): string {
-  // Try common paths to avoid fighting the backend shape
   const src =
     item.imagen ??
     item.imagenUrl ??
@@ -118,13 +116,11 @@ export default function CarritoPage() {
   const [busy, setBusy] = useState<number | "checkout" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // cantidad editable por item
   const [qtyDraft, setQtyDraft] = useState<Record<number, string>>({});
 
   const items: CartItem[] = (carrito?.items ?? []) as CartItem[];
 
   const total = useMemo(() => {
-    // si backend trae subtotal total, lo usamos; si no, lo calculamos
     if (carrito?.subtotal != null) return toNumber(carrito.subtotal, 0);
 
     return items.reduce((acc: number, it: CartItem) => {
@@ -141,14 +137,12 @@ export default function CarritoPage() {
       const data = await getCarritoActual();
       setCarrito(data);
 
-      // inicializa drafts con cantidades actuales
       const next: Record<number, string> = {};
       (data?.items ?? []).forEach((it) => {
         if (it?.id != null) next[Number(it.id)] = String(getQty(it as CartItem));
       });
       setQtyDraft(next);
 
-      // Debug útil: aquí sí existe la variable
       console.log("carrito item example", data?.items?.[0]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error cargando carrito");
@@ -220,33 +214,33 @@ export default function CarritoPage() {
       <title>Carrito | Importaciones Los Bukis</title>
       <NavBar />
 
-      <div
-        className="container is-fluid"
-        style={{
-          paddingLeft: "clamp(1rem, 3vw, 3rem)",
-          paddingRight: "clamp(1rem, 3vw, 3rem)",
-          paddingTop: "2rem",
-          paddingBottom: "2rem",
-        }}
-      >
-        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <h1 className="title is-2" style={{ color: "#111" }}>
+      <div className="px-4 py-8 sm:px-6 lg:px-12">
+        <div className="mx-auto max-w-[1400px]">
+          <h1 className="mb-6 text-4xl font-bold text-bukis-ink">
             Carrito
           </h1>
 
-          {loading && <p>Cargando carrito...</p>}
+          {loading && <p className="text-neutral-600">Cargando carrito...</p>}
           {error && (
-            <div className="notification is-danger">
-              <button className="delete" onClick={() => setError(null)} />
-              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{error}</pre>
+            <div className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <pre className="m-0 flex-1 whitespace-pre-wrap text-sm text-red-800">{error}</pre>
+                <button
+                  className="flex size-6 shrink-0 items-center justify-center rounded-md text-red-500 transition hover:bg-red-100"
+                  onClick={() => setError(null)}
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           )}
 
           {!loading && !error && (!items || items.length === 0) && (
-            <div className="box">
-              <p style={{ color: "#111" }}>Tu carrito está vacío.</p>
+            <div className="rounded-2xl border border-bukis-border bg-white p-6 shadow-bukis-soft">
+              <p className="text-bukis-ink">Tu carrito está vacío.</p>
               <button
-                className="button is-dark mt-3"
+                className="mt-3 inline-flex rounded-xl bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-800"
                 onClick={() => navigate("/")}
               >
                 Volver a inicio
@@ -256,7 +250,7 @@ export default function CarritoPage() {
 
           {!loading && items && items.length > 0 && (
             <>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div className="flex flex-col gap-6">
                 {items.map((item: CartItem) => {
                   const itemId = Number(item?.id);
                   const productId = getProductId(item);
@@ -275,7 +269,7 @@ export default function CarritoPage() {
                   return (
                     <div
                       key={itemId}
-                      className="box"
+                      className="cursor-pointer rounded-2xl bg-neutral-950 p-5 shadow-bukis-soft"
                       role="button"
                       tabIndex={0}
                       onClick={() => {
@@ -286,40 +280,13 @@ export default function CarritoPage() {
                           if (productId != null) navigate(`/producto/${productId}`);
                         }
                       }}
-                      style={{
-                        background: "rgba(0,0,0,0.90)",
-                        borderRadius: 16,
-                        padding: "1.25rem",
-                        cursor: productId != null ? "pointer" : "default",
-                      }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "1.25rem",
-                        }}
-                      >
-                        {/* Imagen cuadrada */}
-                        <figure
-                          style={{
-                            width: 160,
-                            height: 160,
-                            background: "#fff",
-                            borderRadius: 12,
-                            overflow: "hidden",
-                            flex: "0 0 160px",
-                          }}
-                        >
+                      <div className="flex items-center gap-5">
+                        <figure className="h-40 w-40 shrink-0 overflow-hidden rounded-xl bg-white">
                           <img
                             src={imgSrc}
                             alt={nombre}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "contain",
-                              display: "block",
-                            }}
+                            className="block h-full w-full object-contain"
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).src =
                                 "https://placehold.net/600x600.png";
@@ -327,90 +294,57 @@ export default function CarritoPage() {
                           />
                         </figure>
 
-                        {/* Info */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h2
-                            className="title is-3"
-                            style={{
-                              color: "#fff",
-                              marginBottom: "0.25rem",
-                              lineHeight: 1.1,
-                            }}
-                          >
+                        <div className="min-w-0 flex-1">
+                          <h2 className="mb-1 text-3xl font-bold leading-tight text-white">
                             {nombre}
                           </h2>
-
-                          <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 14 }}>
+                          <div className="text-sm text-white/75">
                             {descripcion ? (
-                              <p style={{ marginBottom: 8, maxWidth: 720 }}>
-                                {descripcion}
-                              </p>
+                              <p className="mb-2 max-w-[720px]">{descripcion}</p>
                             ) : null}
 
                             {(colorName || colorHex) && (
-                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div className="flex items-center gap-2.5">
                                 <span>{colorName}</span>
                                 {colorHex && (
                                   <span
+                                    className="inline-block h-3.5 w-3.5 rounded-full"
                                     style={{
-                                      width: 14,
-                                      height: 14,
-                                      borderRadius: 999,
                                       background: colorHex,
                                       border: "1px solid rgba(255,255,255,0.25)",
-                                      display: "inline-block",
                                     }}
                                   />
                                 )}
                               </div>
                             )}
 
-                            <p style={{ marginTop: 8 }}>
+                            <p className="mt-2">
                               Precio unitario: {money(unit)}
                             </p>
                           </div>
                         </div>
 
-                        {/* Subtotal */}
-                        <div style={{ minWidth: 190, textAlign: "right" }}>
-                          <p style={{ color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>
+                        <div className="min-w-[190px] text-right">
+                          <p className="mb-1.5 text-white/55">
                             Subtotal
                           </p>
-                          <p
-                            className="title is-4"
-                            style={{ color: "#fff", margin: 0 }}
-                          >
+                          <p className="m-0 text-2xl font-bold text-white">
                             {money(subtotal)}
                           </p>
                         </div>
 
-                        {/* Controles */}
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          style={{
-                            minWidth: 230,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            gap: 10,
-                          }}
+                          className="flex min-w-[230px] flex-col items-end gap-2.5"
                         >
-                          <div style={{ width: "100%" }}>
-                            <label
-                              className="label"
-                              style={{
-                                color: "rgba(255,255,255,0.6)",
-                                fontSize: 13,
-                                textAlign: "right",
-                                marginBottom: 6,
-                              }}
-                            >
+                          <div className="w-full">
+                            <label className="mb-1.5 block text-right text-xs text-white/60">
                               Cantidad
                             </label>
 
-                            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                            <div className="flex justify-end gap-2.5">
                               <input
-                                className="input"
+                                className="w-24 rounded-xl border border-neutral-700 bg-white px-3 py-2 text-sm text-bukis-ink outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/35 disabled:cursor-not-allowed disabled:bg-neutral-200"
                                 type="number"
                                 min={1}
                                 step={1}
@@ -418,12 +352,11 @@ export default function CarritoPage() {
                                 onChange={(e) =>
                                   setQtyDraft((p) => ({ ...p, [itemId]: e.target.value }))
                                 }
-                                style={{ width: 90 }}
                                 disabled={busy === itemId}
                               />
 
                               <button
-                                className="button is-light"
+                                className="inline-flex items-center justify-center rounded-xl bg-neutral-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={() => onApplyQty(item)}
                                 disabled={busy === itemId}
                               >
@@ -431,7 +364,7 @@ export default function CarritoPage() {
                               </button>
 
                               <button
-                                className="button is-danger"
+                                className="inline-flex items-center justify-center rounded-xl bg-bukis-red-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-bukis-red-800 disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={() => onRemove(item)}
                                 disabled={busy === itemId}
                               >
@@ -439,14 +372,7 @@ export default function CarritoPage() {
                               </button>
                             </div>
 
-                            <p
-                              style={{
-                                color: "rgba(255,255,255,0.45)",
-                                fontSize: 12,
-                                textAlign: "right",
-                                marginTop: 6,
-                              }}
-                            >
+                            <p className="mt-1.5 text-right text-xs text-white/45">
                               Cambia y aplica.
                             </p>
                           </div>
@@ -457,30 +383,18 @@ export default function CarritoPage() {
                 })}
               </div>
 
-              {/* Total + checkout */}
-              <div
-                className="box mt-5"
-                style={{
-                  background: "rgba(0,0,0,0.90)",
-                  borderRadius: 16,
-                  padding: "1.25rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "1rem",
-                }}
-              >
+              <div className="mt-6 flex items-center justify-between gap-4 rounded-2xl bg-neutral-950 p-5 shadow-bukis-soft">
                 <div>
-                  <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: 6 }}>
+                  <p className="mb-1.5 text-white/70">
                     Total del pedido
                   </p>
-                  <p className="title is-3" style={{ color: "#fff", margin: 0 }}>
+                  <p className="m-0 text-3xl font-bold text-white">
                     {money(total)}
                   </p>
                 </div>
 
                 <button
-                  className={`button is-warning is-large`}
+                  className="rounded-xl bg-amber-400 px-8 py-3 text-lg font-semibold text-neutral-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={onCheckout}
                   disabled={busy === "checkout" || items.length === 0}
                 >
