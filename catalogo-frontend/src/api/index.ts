@@ -22,6 +22,18 @@ API.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
+
+      // Si el backend dice que el token no es válido (token_not_valid),
+      // limpiamos el token y reintentamos sin Authorization para endpoints públicos
+      const errorCode = error.response?.data?.code;
+      if (errorCode === "token_not_valid") {
+        localStorage.removeItem("access");
+        localStorage.removeItem("token");
+        delete original.headers.Authorization;
+        return API(original);
+      }
+
+      // Si no es token_not_valid, intentamos refrescar el token
       try {
         const newAccess = await refreshAccessToken();
         original.headers.Authorization = `Bearer ${newAccess}`;
