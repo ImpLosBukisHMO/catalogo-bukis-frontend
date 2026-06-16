@@ -168,8 +168,9 @@ JWT_SECRET_KEY=<jwt-secret>
 # CORS
 CORS_ALLOWED_ORIGINS=https://optimistic-youth.up.railway.app
 
-# Cloudinary
-CLOUDINARY_URL=cloudinary://...
+# Media files (Railway Volume)
+MEDIA_ROOT=/app/media
+MEDIA_URL=/media/
 ```
 
 ### Frontend

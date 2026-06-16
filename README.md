@@ -298,9 +298,6 @@ VITE_API_URL=http://localhost:8000
 
 # Stripe (si aplica)
 VITE_STRIPE_PUBLIC_KEY=pk_test_...
-
-# Cloudinary
-VITE_CLOUDINARY_URL=cloudinary://...
 ```
 
 ---

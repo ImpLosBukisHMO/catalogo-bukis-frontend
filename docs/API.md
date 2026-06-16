@@ -140,7 +140,7 @@ Listar productos.
       "descripcion": "Camiseta de algodón",
       "precio": "29.99",
       "disponible": true,
-      "imagen": "https://res.cloudinary.com/...",
+      "imagen": "/media/img/products/abc123.jpg",
       "categoria": {
         "id": 1,
         "nombre": "Ropa"
@@ -163,7 +163,7 @@ Detalle de producto.
   "descripcion": "Camiseta de algodón",
   "precio": "29.99",
   "disponible": true,
-  "imagen": "https://res.cloudinary.com/...",
+  "imagen": "/media/img/products/abc123.jpg",
   "categoria": {
     "id": 1,
     "nombre": "Ropa"
@@ -184,7 +184,7 @@ Detalle de producto.
   "imagenes": [
     {
       "id": 1,
-      "url": "https://res.cloudinary.com/...",
+      "url": "/media/img/products/abc123.jpg",
       "es_principal": true,
       "orden": 1
     }

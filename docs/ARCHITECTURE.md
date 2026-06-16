@@ -16,7 +16,7 @@ graph TB
         C --> D[Frontend Service]
         C --> E[Backend Service]
         C --> F[PostgreSQL]
-        C --> G[Cloud Storage]
+        C --> G[Railway Volume]
     end
 
     B --> C
@@ -52,7 +52,7 @@ graph TB
 | **DRF** | REST Framework | API RESTful |
 | **SimpleJWT** | Auth Library | Autenticación JWT |
 | **PostgreSQL** | Database | Persistencia de datos |
-| **Cloudinary** | Media Storage | Almacenamiento de imágenes |
+| **Railway Volume** | File Storage | Almacenamiento de imágenes locales |
 
 ---
 
@@ -66,7 +66,7 @@ sequenceDiagram
     participant Frontend as React App
     participant Backend as Django API
     participant DB as PostgreSQL
-    participant Cloud as Cloudinary
+    participant Storage as Railway Volume
 
     User->>Browser: Navega a la app
     Browser->>Railway: GET /
@@ -79,8 +79,7 @@ sequenceDiagram
     Railway->>Backend: Proxy request
     Backend->>DB: SELECT productos
     DB->>Backend: Resultados
-    Backend->>Cloud: URLs imágenes
-    Backend->>Railway: JSON response
+    Backend->>Railway: JSON + image URLs
     Railway->>Frontend: Datos
     Frontend->>User: Muestra productos
 ```
@@ -336,7 +335,7 @@ graph TB
 **Consideraciones:**
 - Railway maneja automáticamente el scaling horizontal
 - PostgreSQL puede manejar miles de conexiones
-- Cloudinary es CDN para imágenes
+- Railway Volume para almacenamiento de imágenes locales
 - Redis para cache de sesiones (opcional)
 
 ---
@@ -384,7 +383,7 @@ graph TD
 
 | Área | Optimización | Impacto |
 |------|-------------|---------|
-| **Imágenes** | Cloudinary CDN | Carga rápida global |
+| **Imágenes** | Railway Volume | Almacenamiento local persistente |
 | **DB** | Índices + `select_related` | Menos queries N+1 |
 | **Frontend** | Code splitting + lazy loading | Bundle más pequeño |
 | **API** | Paginación | Respuestas más rápidas |
@@ -415,7 +414,7 @@ graph TD
 | Componente | Backup | Frecuencia |
 |------------|--------|------------|
 | **Base de datos** | Railway automatic backups | Diario |
-| **Imágenes** | Cloudinary | Automático |
+| **Imágenes** | Railway Volume | Con backup de Railway |
 | **Código** | GitHub | Cada commit |
 
 ### Recuperación

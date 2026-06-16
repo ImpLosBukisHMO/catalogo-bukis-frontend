@@ -18,7 +18,7 @@ graph TB
     A[Cliente] --> B[React SPA]
     B --> C[API REST]
     C --> D[PostgreSQL]
-    C --> E[Cloud Storage]
+    C --> E[Railway Volume]
 
     style A fill:#e1f5fe
     style B fill:#e1f5fe
@@ -36,7 +36,7 @@ graph TB
 | **Base de datos** | PostgreSQL 16 |
 | **Auth** | JWT (SimpleJWT) |
 | **Deploy** | Railway |
-| **Imágenes** | Cloudinary |
+| **Imágenes** | Railway Volume |
 
 ---
 
