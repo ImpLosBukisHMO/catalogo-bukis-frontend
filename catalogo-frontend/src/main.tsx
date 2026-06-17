@@ -25,8 +25,7 @@ import FavoritosPage from "./components/pages/FavoritosPage.tsx";
 import MisPedidosPage from "./components/pages/MisPedidosPage.tsx";
 import PedidoDetallePage from "./components/pages/PedidoDetallePage.tsx";
 
-import { AuthProvider } from "./context/AuthContext.tsx";
-
+import { AuthProvider } from "./context/AuthProvider";
 
 const router = createBrowserRouter([
   // Public / user routes
