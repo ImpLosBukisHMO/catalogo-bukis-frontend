@@ -42,34 +42,36 @@ function Home() {
       <title>Inicio | Importaciones Los Bukis</title>
       <NavBar />
 
-      <h1 className="mb-5 has-text-weight-bold is-size-2" style={{ margin: 0, textAlign: "center" }}>
+      <h1 className="mb-5 text-center text-4xl font-bold text-bukis-ink">
         {"¡Bienvenido(a)!"}
       </h1>
 
       <OfferSlider />
 
-      <div>
-        <h1 className="has-text-weight-bold is-size-2 py-5" style={{ margin: 0, textAlign: "center" }}>
+      <section className="mx-auto max-w-7xl px-4 py-8">
+        <h1 className="text-center text-3xl font-bold text-bukis-ink">
           Productos destacados
         </h1>
 
-        {loading && <p style={{ textAlign: "center" }}>Cargando productos...</p>}
-        {error && <p style={{ textAlign: "center", color: "#dc0000" }}>{error}</p>}
+        {loading && <p className="mt-6 text-center text-neutral-600">Cargando productos...</p>}
+        {error && <p className="mt-6 text-center text-bukis-red-700">{error}</p>}
 
-        <div className="is-flex is-justify-content-center is-align-items-center" style={{ width: "100%" }}>
+        <div className="mt-6 flex w-full gap-4 overflow-x-auto px-1 pb-4 snap-x snap-mandatory">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <div key={p.id} className="w-72 shrink-0 snap-start">
+              <ProductCard product={p} />
+            </div>
           ))}
         </div>
-      </div>
-      <div>
-        <h1 className='has-text-weight-bold is-size-2 py-5' style={{ margin: 0, textAlign: 'center' }}>
+      </section>
+      <section className="mx-auto max-w-5xl px-4 pb-10">
+        <h1 className='py-5 text-center text-3xl font-bold text-bukis-ink'>
           Nos ubicamos en:
         </h1>
-        <div className='mb-6 is-flex is-justify-content-center is-align-items-center'>
-          <iframe className='map-home' src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5117.699121661781!2d-110.99242163568606!3d29.0906510470514!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86ce840f0c532091%3A0xb230f207772b69bb!2sImportaciones%20Los%20Bukis!5e0!3m2!1ses-419!2smx!4v1767916805029!5m2!1ses-419!2smx" width="800" height="460" loading="lazy"></iframe>
+        <div className='mb-6 flex justify-center'>
+          <iframe className='min-h-[320px] w-full max-w-4xl rounded-2xl border border-neutral-300 shadow-bukis-soft' src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5117.699121661781!2d-110.99242163568606!3d29.0906510470514!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86ce840f0c532091%3A0xb230f207772b69bb!2sImportaciones%20Los%20Bukis!5e0!3m2!1ses-419!2smx!4v1767916805029!5m2!1ses-419!2smx" width="800" height="460" loading="lazy"></iframe>
         </div>
-      </div>
+      </section>
       <Footer />
     </>
   );

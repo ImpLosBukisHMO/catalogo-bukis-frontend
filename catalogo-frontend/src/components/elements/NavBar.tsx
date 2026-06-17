@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Briefcase, House, Heart, ShoppingCart, UserRound, Search, Box } from "lucide-react";
+import { Briefcase, House, Heart, ShoppingCart, UserRound, Search, Box, Menu, X } from "lucide-react";
 import { DoorOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
@@ -41,77 +41,74 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
 
     useEffect(() => { (async () => await fetchUserData())(); }, []);
 
+    const linkClass = (isActive: boolean) =>
+        `inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45 ${isActive ? "bg-white/15 underline underline-offset-4" : ""}`;
+
     return (
-        <nav className="navbar mb-5 main-nav" style={{ zIndex: 2, position: 'sticky' }} role="navigation" aria-label="main navigation">
-            <div className="navbar-brand">
-                <Link className="navbar-item is-flex is-align-items-center main-nav" to="/">
-                    <img src={logoBukis} alt="logo-los-bukis" style={{ maxHeight: "3rem" }} />
-                    <p className="subtitle" style={{ color: "white", textAlign: 'center', fontSize: '1.1rem' }}>Importaciones<br />Los Bukis</p>
+        <nav className="sticky top-0 z-20 mb-5 border-b border-red-950/20 bg-bukis-red-600 shadow-bukis-soft" role="navigation" aria-label="main navigation">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 lg:flex-nowrap lg:px-6">
+                <Link className="flex shrink-0 items-center gap-3 rounded-xl px-2 py-1 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" to="/">
+                    <img src={logoBukis} alt="logo-los-bukis" className="h-12 w-auto" />
+                    <p className="text-center text-base font-semibold leading-tight text-white">Importaciones<br />Los Bukis</p>
                 </Link>
-                <a
-                    role="button"
-                    className={`main-nav navbar-burger ${isOpen ? 'is-active' : ''}`}
-                    style={{ color: '#fff' }}
+
+                <button
+                    type="button"
+                    className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45 lg:hidden"
                     aria-label="menu"
-                    aria-expanded="false"
+                    aria-expanded={isOpen}
                     onClick={toggleNavMenu}>
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                </a>
-            </div>
-            <div id="navbar-menu" className={`navbar-menu ${isOpen ? 'is-active' : ''}`} style={{ backgroundColor: '#dd0000' }}>
-                <div className="navbar-start">
-                    <div className="is-flex is-align-items-center" style={{ backgroundColor: '#dd0000' }}>
-                        <div className="icon-container icon-container-search ml-5">
-                            <Search size={28} />
+                    {isOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+
+                <div id="navbar-menu" className={`${isOpen ? "flex" : "hidden"} w-full flex-col gap-3 lg:flex lg:w-auto lg:flex-1 lg:flex-row lg:items-center lg:justify-between`}>
+                    <form className="flex w-full min-w-0 items-center lg:max-w-sm xl:max-w-md" onSubmit={handleQuery}>
+                        <div className="flex h-11 items-center rounded-l-xl border border-white/25 bg-white/15 px-3 text-white">
+                            <Search size={22} />
                         </div>
-                        <form className="mr-5" onSubmit={handleQuery} style={{width: '100%'}}>
-                            <input className="input custom-input custom-input-search mr-5"
-                                style={{ width: '100%' }}
+                        <input className="h-11 min-w-0 flex-1 rounded-r-xl border border-l-0 border-white/25 bg-white px-3 text-sm text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
                                 type="text"
                                 placeholder="Busque un producto"
                                 defaultValue={navBarQuery || searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)} />
-                        </form>
-                    </div>
-                </div>
-                <div className="navbar-end">
-                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/" style={{ color: "white" }}>
+                    </form>
+
+                    <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-end">
+                    <Link className={linkClass(pathname === "/")} to="/">
                         <House size={iconSize} />
-                        <p className={pathname === "/" ? "is-underlined txt-white" : "txt-white"}>Inicio</p>
+                        <span>Inicio</span>
                     </Link>
-                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/productos" style={{ color: "white" }}>
+                    <Link className={linkClass(pathname === "/productos")} to="/productos">
                         <Box size={iconSize} />
-                        <p className={pathname === "/productos" ? "is-underlined txt-white" : "txt-white"}>Productos</p>
+                        <span>Productos</span>
                     </Link>
-                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/favoritos" style={{ color: "white" }}>
+                    <Link className={linkClass(pathname === "/favoritos")} to="/favoritos">
                         <Heart size={iconSize} />
-                        <p className={pathname === "/favoritos" ? "is-underlined txt-white" : "txt-white"}>Favoritos</p>
+                        <span>Favoritos</span>
                     </Link>
-                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/carrito" style={{ color: "white" }}>
+                    <Link className={linkClass(pathname === "/carrito")} to="/carrito">
                         <ShoppingCart size={iconSize} />
-                        <p className={pathname === "/carrito" ? "is-underlined txt-white" : "txt-white"}>Carrito</p>
+                        <span>Carrito</span>
                     </Link>
-                    <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/perfil" style={{ color: "white" }}>
+                    <Link className={linkClass(pathname === "/perfil")} to="/perfil">
                         <UserRound size={iconSize} />
-                        <p className={pathname === "/perfil" ? "is-underlined txt-white" : "txt-white"}>
+                        <span>
                             {isLoggedIn ? "Mi Perfil" : "Iniciar Sesión"}
-                        </p>
+                        </span>
                     </Link>
                     {isLoggedIn && isStaff && (
-                        <Link className="navbar-item main-nav is-flex is-justify-content-center" to="/worker" style={{ color: "white" }}>
+                        <Link className={linkClass(pathname.startsWith("/worker"))} to="/worker">
                             <Briefcase size={iconSize} />
-                            <p className={pathname.startsWith("/worker") ? "is-underlined txt-white" : "txt-white"}>Panel de Trabajo</p>
+                            <span>Panel de Trabajo</span>
                         </Link>
                     )}
                     {isLoggedIn && (
-                        <a className="navbar-item main-nav is-flex is-justify-content-center" onClick={async () => await logOut()} style={{ color: "white", cursor: 'pointer' }}>
+                        <button className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" onClick={async () => await logOut()} type="button">
                             <DoorOpen size={iconSize} />
-                            <p className='txt-white'>Cerrar Sesión</p>
-                        </a>
+                            <span>Cerrar Sesión</span>
+                        </button>
                     )}
+                    </div>
                 </div>
             </div>
         </nav>

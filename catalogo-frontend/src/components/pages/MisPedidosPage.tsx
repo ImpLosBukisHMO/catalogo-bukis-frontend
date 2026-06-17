@@ -73,7 +73,7 @@ export default function MisPedidosPage() {
       <NavBar />
 
       <div
-        className="container is-fluid"
+        className="w-full"
         style={{
           paddingLeft: "clamp(1rem, 3vw, 3rem)",
           paddingRight: "clamp(1rem, 3vw, 3rem)",
@@ -82,24 +82,29 @@ export default function MisPedidosPage() {
         }}
       >
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <h1 className="title is-2" style={{ color: "#111" }}>
+          <h1 className="mb-6 text-3xl font-bold text-bukis-ink">
             Mis pedidos
           </h1>
 
-          {loading && <p>Cargando pedidos...</p>}
+          {loading && <p className="text-neutral-600">Cargando pedidos...</p>}
 
           {error && (
-            <div className="notification is-danger">
-              <button className="delete" onClick={() => setError(null)} />
-              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{error}</pre>
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+              <pre className="flex-1 whitespace-pre-wrap text-sm">{error}</pre>
+              <button
+                className="mt-0.5 text-red-400 hover:text-red-600"
+                onClick={() => setError(null)}
+              >
+                ✕
+              </button>
             </div>
           )}
 
           {!loading && !error && pedidos.length === 0 && (
-            <div className="box">
-              <p style={{ color: "#111" }}>No tienes pedidos aún.</p>
+            <div className="rounded-2xl border border-bukis-border bg-white p-6 shadow-bukis-soft">
+              <p className="text-bukis-ink">No tienes pedidos aún.</p>
               <button
-                className="button is-dark mt-3"
+                className="mt-3 inline-flex rounded-xl bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-800"
                 onClick={() => navigate("/")}
               >
                 Explorar productos
@@ -108,7 +113,7 @@ export default function MisPedidosPage() {
           )}
 
           {!loading && pedidos.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div className="flex flex-col gap-4">
               {pedidos.map((p) => {
                 const estadoColor = ESTADO_COLOR[p.estado] ?? "#888";
                 const estadoLabel = ESTADO_LABEL[p.estado] ?? p.estado;
@@ -116,59 +121,31 @@ export default function MisPedidosPage() {
                 return (
                   <div
                     key={p.id}
-                    className="box"
-                    style={{
-                      background: "rgba(0,0,0,0.88)",
-                      borderRadius: 14,
-                      padding: "1.25rem",
-                      cursor: "pointer",
-                    }}
+                    className="cursor-pointer rounded-2xl bg-[rgba(0,0,0,0.88)] p-5"
                     onClick={() => navigate(`/pedidos/${p.id}`)}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "0.75rem",
-                      }}
-                    >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p
-                          className="title is-5"
-                          style={{ color: "#fff", marginBottom: 4 }}
-                        >
+                        <p className="text-lg font-bold text-white">
                           Pedido #{p.id}
                         </p>
-                        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>
+                        <p className="text-xs text-white/60">
                           {formatDate(p.created_at)} · {p.items_count}{" "}
                           {p.items_count === 1 ? "producto" : "productos"}
                         </p>
                       </div>
 
-                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <div className="flex items-center gap-4">
                         <span
-                          style={{
-                            background: estadoColor,
-                            color: "#fff",
-                            padding: "3px 12px",
-                            borderRadius: 20,
-                            fontSize: 13,
-                            fontWeight: 600,
-                          }}
+                          className="inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold text-white"
+                          style={{ background: estadoColor }}
                         >
                           {estadoLabel}
                         </span>
-                        <span
-                          className="title is-5"
-                          style={{ color: "#fff", margin: 0 }}
-                        >
+                        <span className="text-lg font-bold text-white">
                           {money(p.precio_total)}
                         </span>
-                        <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 18 }}>
-                          ›
-                        </span>
+                        <span className="text-lg text-white/40">›</span>
                       </div>
                     </div>
                   </div>

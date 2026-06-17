@@ -146,7 +146,7 @@ export default function PedidoDetallePage() {
       <NavBar />
 
       <div
-        className="container is-fluid"
+        className="w-full"
         style={{
           paddingLeft: "clamp(1rem, 3vw, 3rem)",
           paddingRight: "clamp(1rem, 3vw, 3rem)",
@@ -156,66 +156,45 @@ export default function PedidoDetallePage() {
       >
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           <button
-            className="button is-light mb-4"
+            className="mb-4 inline-flex items-center rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100"
             onClick={() => navigate("/pedidos")}
           >
             ← Mis pedidos
           </button>
 
-          {loading && <p>Cargando pedido...</p>}
+          {loading && <p className="text-neutral-600">Cargando pedido...</p>}
 
           {error && (
-            <div className="notification is-danger">
-              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{error}</pre>
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+              <pre className="whitespace-pre-wrap text-sm">{error}</pre>
             </div>
           )}
 
           {!loading && !error && pedido && (
             <>
               {/* Encabezado */}
-              <div
-                className="box"
-                style={{
-                  background: "rgba(0,0,0,0.88)",
-                  borderRadius: 14,
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    flexWrap: "wrap",
-                    gap: "1rem",
-                  }}
-                >
+              <div className="mb-6 rounded-2xl bg-[rgba(0,0,0,0.88)] p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p className="title is-3" style={{ color: "#fff", marginBottom: 6 }}>
+                    <p className="text-2xl font-bold text-white">
                       Pedido #{pedido.id}
                     </p>
-                    <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13 }}>
+                    <p className="mt-1 text-xs text-white/55">
                       {formatDate(pedido.created_at)}
                     </p>
                   </div>
 
-                  <div style={{ textAlign: "right" }}>
+                  <div className="text-right">
                     <span
+                      className="mb-2 inline-block rounded-full px-3.5 py-1 text-sm font-semibold text-white"
                       style={{
                         background: ESTADO_COLOR[pedido.estado] ?? "#888",
-                        color: "#fff",
-                        padding: "4px 14px",
-                        borderRadius: 20,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        display: "inline-block",
-                        marginBottom: 8,
                       }}
                     >
                       {ESTADO_LABEL[pedido.estado] ?? pedido.estado}
                     </span>
 
-                    <p className="title is-4" style={{ color: "#fff", margin: 0 }}>
+                    <p className="text-xl font-bold text-white">
                       {money(pedido.precio_total)}
                     </p>
                   </div>
@@ -223,23 +202,17 @@ export default function PedidoDetallePage() {
 
                 {/* Mensajes adicionales */}
                 {pedido.denegado_razon && (
-                  <div
-                    className="notification is-danger is-light mt-4"
-                    style={{ marginBottom: 0 }}
-                  >
+                  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
                     <strong>Razón de denegación:</strong> {pedido.denegado_razon}
                   </div>
                 )}
                 {pedido.nota_worker && (
-                  <div
-                    className="notification is-info is-light mt-4"
-                    style={{ marginBottom: 0 }}
-                  >
+                  <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sky-800">
                     <strong>Nota del equipo:</strong> {pedido.nota_worker}
                   </div>
                 )}
                 {pedido.aprobado_eta && (
-                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 8 }}>
+                  <p className="mt-2 text-xs text-white/60">
                     Fecha estimada de entrega:{" "}
                     {new Date(pedido.aprobado_eta).toLocaleDateString("es-MX")}
                   </p>
@@ -247,11 +220,8 @@ export default function PedidoDetallePage() {
               </div>
 
               {/* Productos */}
-              <div
-                className="box"
-                style={{ background: "rgba(0,0,0,0.88)", borderRadius: 14 }}
-              >
-                <p className="title is-5" style={{ color: "#fff", marginBottom: "0.75rem" }}>
+              <div className="rounded-2xl bg-[rgba(0,0,0,0.88)] p-5">
+                <p className="mb-3 text-lg font-bold text-white">
                   Productos
                 </p>
 
@@ -259,16 +229,8 @@ export default function PedidoDetallePage() {
                   <ItemRow key={item.id} item={item} />
                 ))}
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginTop: "1rem",
-                    paddingTop: "0.75rem",
-                    borderTop: "1px solid rgba(255,255,255,0.1)",
-                  }}
-                >
-                  <p className="title is-5" style={{ color: "#fff", margin: 0 }}>
+                <div className="mt-4 flex justify-end border-t border-white/10 pt-3">
+                  <p className="text-lg font-bold text-white">
                     Total: {money(pedido.precio_total)}
                   </p>
                 </div>

@@ -1,7 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import "bulma/css/bulma.min.css";
 import { createBrowserRouter, RouterProvider } from "react-router";
 
 import Home from "./components/pages/Home.tsx";
@@ -18,6 +17,7 @@ import WorkerLayout from "./components/elements/WorkerLayout.tsx";
 import WorkerDashboardPage from "./components/pages/WorkerDashboardPage.tsx";
 import WorkerOrdersPage from "./components/pages/WorkerOrdersPage.tsx";
 import WorkerProductsPage from "./components/pages/WorkerProductsPage.tsx";
+import { WorkerProviders } from "./components/providers/WorkerProviders.tsx";
 
 // User features
 import CarritoPage from "./components/pages/CarritoPage.tsx";
@@ -44,7 +44,11 @@ const router = createBrowserRouter([
   // Worker panel (nested layout with sidebar)
   {
     path: "/worker",
-    element: <WorkerLayout />,
+    element: (
+      <WorkerProviders>
+        <WorkerLayout />
+      </WorkerProviders>
+    ),
     children: [
       { index: true, element: <WorkerDashboardPage /> },
       { path: "orders", element: <WorkerOrdersPage /> },

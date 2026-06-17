@@ -185,49 +185,39 @@ export default function SearchProductsPage() {
             <NavBar navBarQuery={productQuery || ""} />
             {favMsg && (
                 <div
-                    className="notification"
-                    style={{
-                        position: "fixed", bottom: "1.5rem", right: "1.5rem",
-                        zIndex: 999, maxWidth: 320,
-                        background: favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "#ffe0e0" : "#e6f9ee",
-                        color: favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "#c0392b" : "#1a7a3f",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    }}
+                    className={`fixed bottom-6 right-6 z-[999] max-w-xs rounded-2xl px-4 py-3 text-sm font-medium shadow-bukis-soft ${favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"}`}
                 >
                     {favMsg}
                 </div>
             )}
-            <div className="columns is-flex ml-4 mr-1 is-aligned-items-center" style={{ height: '100%' }}>
-                <div className="column is-one-fourth is-one-fifth generic-container"
-                    style={{ marginRight: 0, flex: '0 0 20%' }}>
-                    <p className="has-text-weight-semibold"
-                        style={{ borderBottom: '1px solid #000', paddingBottom: '3px' }}>
+            <main className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 lg:grid-cols-[280px_minmax(0,1fr)]">
+                <aside className="h-fit rounded-2xl border border-bukis-border bg-bukis-surface p-5 shadow-bukis-soft">
+                    <p className="border-b border-neutral-300 pb-2 font-semibold text-bukis-ink">
                         Filtrar por:
                     </p>
 
                     <div className="mt-4">
-                        <p className="has-text-weight-semibold">
+                        <p className="font-semibold text-bukis-ink">
                             Búsqueda
                         </p>
 
                         <form action={applyFilters}>
-                            <input className="mt-2 input custom-input"
-                                style={{ width: '95%' }}
+                            <input className="mt-2 w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={sideBarSearch}
                                 onChange={(e) => setSideBarSearch(e.target.value)}
                                 placeholder="Busque un producto" />
                         </form>
                     </div>
 
-                    <div className="mt-4" style={{ borderTop: '1px solid #000', paddingTop: '3px' }}>
-                        <p className="has-text-weight-semibold">
+                    <div className="mt-4 border-t border-neutral-300 pt-4">
+                        <p className="font-semibold text-bukis-ink">
                             Categoría
                         </p>
                         <div>
-                            {categories.length === 0 && !loading && <p className="is-size-6 mt-2">Sin categorías</p>}
+                            {categories.length === 0 && !loading && <p className="mt-2 text-sm text-neutral-600">Sin categorías</p>}
                             {
                                 categories && categories.map((c) => (
-                                    <label key={c.id} className="checkbox is-flex my-3" style={{ display: 'block' }}>
+                                    <label key={c.id} className="my-3 flex items-center gap-2 text-sm text-bukis-ink">
                                         <input
                                             onChange={() => {
                                                 if (c.id === null) return;
@@ -238,51 +228,45 @@ export default function SearchProductsPage() {
                                                 }
                                             }}
                                             type="checkbox"
-                                            className="ml-2" />
-                                        <p className="ml-2">{c.nombre}</p>
+                                            className="h-4 w-4 rounded border-neutral-400 text-bukis-red-600 focus:ring-bukis-red-600/30" />
+                                        <span>{c.nombre}</span>
                                     </label>
                                 ))
                             }
                         </div>
                     </div>
                     <div className="mt-4">
-                        <p className="pt-4 has-text-weight-semibold"
-                            style={{ borderTop: '1px solid #000', paddingTop: '3px' }}>
+                        <p className="border-t border-neutral-300 pt-4 font-semibold text-bukis-ink">
                             Rango de precios (MXN)
                         </p>
-                        <div className="my-3 is-align-items-center">
-                            <p className="ml-2 mb-2">Mínimo</p>
-                            <input type="number" min={1} placeholder="Ej.: 1.50" className="ml-2 custom-input" style={{ width: '70%', padding: '8px' }}
+                        <div className="my-3">
+                            <p className="mb-2 text-sm text-neutral-600">Mínimo</p>
+                            <input type="number" min={1} placeholder="Ej.: 1.50" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={filterMinPrice || ""}
                                 onChange={(e) => { setFilterMinPrice(Number(e.target.value)) }} />
                         </div>
-                        <div className="is-align-items-center">
-                            <p className="ml-2 mb-2">Máximo</p>
-                            <input type="number" min={1} placeholder="Ej.: 1500.40" className="ml-2 custom-input" style={{ width: '70%', padding: '8px' }}
+                        <div>
+                            <p className="mb-2 text-sm text-neutral-600">Máximo</p>
+                            <input type="number" min={1} placeholder="Ej.: 1500.40" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={filterMaxPrice || ""}
                                 onChange={(e) => { setFilterMaxPrice(Number(e.target.value)) }} />
                         </div>
                     </div>
-                    <div className="mt-4 pt-4 is-flex is-justify-content-center" style={{ borderTop: '1px solid #000', paddingTop: '3px' }}>
-                        <button className="button custom-btn p-2 is-flex is-align-items-center is-justify-content-center"
+                    <div className="mt-4 flex justify-center border-t border-neutral-300 pt-4">
+                        <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35 disabled:cursor-not-allowed disabled:opacity-60"
                             onClick={applyFilters}
                             disabled={(Number(filterMinPrice) > Number(filterMaxPrice))}>
-                            <Search size={20} className="mr-1" /><p className="is-size-7 txt-white">Aplicar filtro(s)</p>
+                            <Search size={20} /><span>Aplicar filtro(s)</span>
                         </button>
                     </div>
-                </div>
+                </aside>
 
-                <div className="column is-three-fourths is-four-fifths"
-                    style={{ flex: '0 0 80%' }}>
+                <section>
 
-                    {loading && <p style={{ textAlign: "center" }}>Cargando productos...</p>}
-                    {error && <p style={{ textAlign: "center", color: "#dc0000" }}>{error}</p>}
+                    {loading && <p className="text-center text-neutral-600">Cargando productos...</p>}
+                    {error && <p className="text-center text-bukis-red-700">{error}</p>}
 
-                    <div className="ml-2 mb-1 is-flex"
-                        style={{
-                            position: 'relative', top: 0, paddingBottom: '3px',
-                            borderBottom: "1px solid #7c7c7c"
-                        }}>
+                    <div className="mb-4 border-b border-neutral-300 pb-2 text-sm text-neutral-700">
                         {products.length == 0 && <p>{"No se encontró ningún producto."}</p>}
                         {products.length == 1 && <p>{`Se encontró ${products.length} producto.`}</p>}
                         {products.length > 1 && <p>{`Se encontraron ${products.length} productos.`}</p>}
@@ -290,39 +274,39 @@ export default function SearchProductsPage() {
 
                     {
                         products.length === 0 && !loading && (
-                            <div className="is-flex is-flex-direction-column is-justify-content-center">
-                                <p className="mt-6 mb-4 is-size-3 has-text-centered">
+                            <div className="flex flex-col items-center justify-center text-bukis-ink">
+                                <p className="mb-4 mt-6 text-center text-2xl font-semibold">
                                     Para encontrar productos puede:
                                 </p>
-                                <div className="mx-auto is-flex is-flex-direction-column is-justify-content-center">
-                                    <li style={{ color: '#000' }}>
-                                        <p className="my-3 is-size-5">
+                                <ul className="mx-auto list-disc space-y-3 text-lg">
+                                    <li>
+                                        <p>
                                             Realizar cambios en la búsqueda.
                                         </p>
                                     </li>
-                                    <li style={{ color: '#000' }}>
-                                        <p className="my-3 is-size-5">
+                                    <li>
+                                        <p>
                                             Dar clic en el cuadro(s) a la izquierda de la categoría(s)
                                             <br />
                                             que busca para seleccionarla.
                                         </p>
                                     </li>
-                                    <li style={{ color: '#000' }}>
-                                        <p className="my-3 is-size-5">
+                                    <li>
+                                        <p>
                                             Ingresar el rango de precios deseado, de tal manera que
                                             <br />
                                             el precio el mínimo sea menor o igual al máximo.
                                         </p>
                                     </li>
-                                </div>
+                                </ul>
                             </div>
                         )
                     }
 
                     {
                         products.length > 0 && !loading && (
-                            <div className="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
-                                <div className="grid" style={{ overflow: "scroll", maxHeight: '95vh', padding: '5px' }}>
+                            <div>
+                                <div className="grid max-h-[95vh] grid-cols-1 gap-4 overflow-auto p-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                     {
                                         products.map((p) => (
                                             <ProductCard key={p.id} product={p} onToggleFavorite={handleToggleFavorite} />
@@ -332,8 +316,8 @@ export default function SearchProductsPage() {
                             </div>
                         )
                     }
-                </div>
-            </div>
+                </section>
+            </main>
             <Footer />
         </>
     )

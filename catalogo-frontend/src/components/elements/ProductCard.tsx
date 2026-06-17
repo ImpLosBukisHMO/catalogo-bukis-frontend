@@ -15,18 +15,10 @@ const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
 
   return (
     <div
-      className={`mx-2 p-5 is-flex is-flex-direction-column is-align-items-center ${className}}`}
-      style={
-          {
-            borderRadius: 12,
-            border: "1px solid #c3c3c3",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.35)",
-            backgroundColor: "#f5f5f5",
-          }
-      }
+      className={`mx-2 flex h-full flex-col rounded-2xl border border-bukis-border bg-bukis-surface p-5 shadow-bukis-soft transition hover:-translate-y-0.5 hover:shadow-lg ${className ?? ""}`}
       tabIndex={0}
     >
-      <div>
+      <div className="w-full overflow-hidden rounded-xl border border-neutral-300 bg-white shadow-sm">
         <img
           src={imagenUrl || "https://placehold.net/600x600.png"}
           alt={nombre}
@@ -35,57 +27,47 @@ const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
             img.onerror = null; // evita loop infinito
             img.src = "https://placehold.net/600x600.png";
           }}
-          style={{
-            width: "auto",
-            height: 150,
-            borderRadius: 12,
-            border: "2px solid #c3c3c3",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.35)",
-          }}
+          className="aspect-square w-full object-cover"
         />
       </div>
 
-      <div className="mt-3" style={{ width: "100%" }}>
-        <p className="is-size-5 has-text-weight-bold" style={{ color: "black" }}>
+      <div className="mt-4 flex w-full flex-1 flex-col">
+        <p className="line-clamp-2 text-lg font-bold leading-tight text-bukis-ink">
           {nombre}
         </p>
 
-        <p className="is-size-6 has-text-weight-light" style={{ color: "black" }}>
+        <p className="mt-2 text-base font-semibold text-bukis-red-700">
           $ {precio.toFixed(2)} MXN
         </p>
 
-        <p className="is-size-7 has-text-weight-light" style={{ color: "black" }}>
+        <p className="mt-1 text-xs text-neutral-500">
           Ítem (SKU): {sku}
         </p>
 
         {disponible ? (
-          <p className="is-size-6 has-text-weight-light" style={{ color: "green" }}>
+          <p className="mt-3 w-fit rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
             Disponible
           </p>
         ) : (
-          <p className="is-size- has-text-weight-light" style={{ color: "red" }}>
+          <p className="mt-3 w-fit rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-200">
             No disponible
           </p>
         )}
 
-        <div className="is-flex align-items-center my-1">
+        <div className="mt-auto flex items-center gap-3 pt-4">
           <button
-            className="mt-1 p-1 mr-3 custom-btn is-flex is-align-items-center is-justify-content-center"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
             onClick={(e) => {
               e.stopPropagation();
               goToDetail();
             }}
-            style={{
-              opacity: disponible ? 1 : 0.6,
-              cursor: disponible ? "pointer" : "not-allowed",
-            }}
           >
             <CornerDownRight size={20} />
-            <p className="is-size-7 txt-white">&nbsp;&nbsp;Ver producto</p>
+            <span>Ver producto</span>
           </button>
 
           <button
-            className="mt-1 p-1 favorite-product-btn"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-500 transition hover:border-bukis-red-600 hover:text-bukis-red-600 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite?.(product);

@@ -73,11 +73,12 @@ export default function PedidoPage() {
   
 
   
+
   if (loading) {
     return (
       <>
         <NavBar />
-        <p className="has-text-centered mt-6">Cargando carrito...</p>
+        <p className="mt-12 text-center text-neutral-600">Cargando carrito...</p>
         <Footer />
       </>
     );
@@ -88,162 +89,108 @@ export default function PedidoPage() {
       <title>Pedido | Importaciones Los Bukis</title>
       <NavBar />
 
-      <div
-        className="container is-fluid"
-        style={{
-          paddingLeft: "clamp(1rem, 3vw, 3rem)",
-          paddingRight: "clamp(1rem, 3vw, 3rem)",
-          paddingTop: "2rem",
-          paddingBottom: "2rem",
-        }}
-      >
-        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div className="columns is-variable is-6">
+      <div className="px-4 py-8 sm:px-6 lg:px-12">
+        <div className="mx-auto max-w-[1400px]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
             {/* Columna principal */}
-            <div className="column is-8">
-              <div className="box">
-                {/* Header */}
-                <div className="is-flex is-justify-content-space-between is-align-items-center mb-4">
-                  <h1 className="title is-4">Productos</h1>
-                  <span className="has-text-grey">
-                    {totalArticulos} artículos
-                  </span>
-                </div>
+            <div className="rounded-2xl border border-bukis-border bg-white p-6 shadow-bukis-soft">
+              {/* Header */}
+              <div className="mb-4 flex items-center justify-between">
+                <h1 className="text-xl font-bold text-bukis-ink">Productos</h1>
+                <span className="text-neutral-500">
+                  {totalArticulos} artículos
+                </span>
+              </div>
 
-                {/* Lista de productos */}
-                <div className="is-flex is-flex-direction-column" style={{ gap: "1rem" }}>
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="box"
-                      style={{ marginBottom: 0, minHeight: 120 }}
-                    >
-                      <div className="columns is-mobile is-vcentered">
-                        {/* Imagen */}
-                        <div className="column is-narrow">
-                          <figure className="image is-64x64" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <img
-                              src={`${API.defaults.baseURL}${item.imagen}`} 
-                              alt={item.nombre}
-                              style={{
-                                objectFit: "cover",
-                                borderRadius: 6,
-                              }}
-                            />
-                          </figure>
-                        </div> 
+              {/* Lista de productos */}
+              <div className="flex flex-col gap-4">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="min-h-[120px] rounded-xl border border-bukis-border bg-white p-4 shadow-bukis-soft"
+                  >
+                    <div className="flex items-start gap-4 sm:items-center">
+                      {/* Imagen */}
+                      <figure className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-100">
+                        <img
+                          src={`${API.defaults.baseURL}${item.imagen}`} 
+                          alt={item.nombre}
+                          className="h-full w-full object-cover"
+                        />
+                      </figure>
 
-                        {/* Detalles del Producto */}
-                        <div className="column is-6">
-
-                          {/* Nombre del producto */}
-                          <p className="has-text-weight-semibold">
-                            {item.nombre}
+                      {/* Detalles del Producto */}
+                      <div className="flex-1">
+                        <p className="font-semibold text-bukis-ink">
+                          {item.nombre}
+                        </p>
+                        {item.variante && (
+                          <p className="text-xs text-neutral-500">
+                            {item.variante}
                           </p>
-                          {/* Variante si aplica */}
-                          {item.variante && (
-                            <p className="is-size-7 has-text-grey">
-                              {item.variante}
-                            </p>
-                          )}
-                          
-                          
+                        )}
 
-                          {/* Controles de cantidad */}
-                          <div
-                            className="is-flex align-items-center"
-                            style={{
-                              marginTop: "1rem",
-                            }}
-                          >
-                            <div
-                              className="is-flex is-align-items-center"
-                              style={{
-                                border: "3px solid #dbdbdb",
-                                borderRadius: "9999px",
-                                overflow: "hidden",
-                              }}
+                        {/* Controles de cantidad */}
+                        <div className="mt-4 flex">
+                          <div className="inline-flex items-center overflow-hidden rounded-full border-[3px] border-neutral-300">
+                            <button
+                              className="inline-flex items-center justify-center px-3 py-1 text-sm text-bukis-ink transition hover:bg-neutral-100"
+                              onClick={() => decrementarCantidad(item)}
                             >
-                              <button
-                                className="button is-small is-white"
-                                style={{ border: "none" }}
-                                onClick={() => decrementarCantidad(item)}
-                              >
-                                −
-                              </button>
+                              −
+                            </button>
 
-                              <span
-                                className="has-text-weight-semibold is-size-7"
-                                style={{
-                                  minWidth: 24,
-                                  textAlign: "center",
-                                }}
-                              >
-                                {item.cantidad}
-                              </span>
+                            <span className="min-w-[24px] text-center text-xs font-semibold">
+                              {item.cantidad}
+                            </span>
 
-                              <button
-                                className="button is-small is-white"
-                                style={{ border: "none" }}
-                                onClick={() => incrementarCantidad(item)}
-                              >
-                                +
-                              </button>
-                            </div>
+                            <button
+                              className="inline-flex items-center justify-center px-3 py-1 text-sm text-bukis-ink transition hover:bg-neutral-100"
+                              onClick={() => incrementarCantidad(item)}
+                            >
+                              +
+                            </button>
                           </div>
-
-                        
-                        
-                        
-                        </div>
-
-                        <div className="column has-text-right">
-                          <p className="has-text-weight-semibold">
-                            $
-                            {(item.precio * item.cantidad).toFixed(2)} MXN
-                          </p>
-                          <p className="is-size-7 has-text-grey">
-                            ${item.precio.toFixed(2)} c/u
-                          </p>
                         </div>
                       </div>
-                    </div>
-                    
-                  ))}
 
-                  {items.length === 0 && (
-                    <p className="has-text-grey">
-                      No hay productos en el pedido.
-                    </p>
-                  )}
-                </div>
+                      <div className="shrink-0 text-right">
+                        <p className="font-semibold text-bukis-ink">
+                          $
+                          {(item.precio * item.cantidad).toFixed(2)} MXN
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          ${item.precio.toFixed(2)} c/u
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {items.length === 0 && (
+                  <p className="text-neutral-500">
+                    No hay productos en el pedido.
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Columna resumen */}
-            <div className="column is-4">
-              <div
-                className="box"
-                style={{
-                  position: "sticky",
-                  top: "1rem",
-                }}
-              >
-                <h2 className="title is-5 mb-4">Resumen</h2>
+            <div className="sticky top-4 rounded-2xl border border-bukis-border bg-white p-6 shadow-bukis-soft">
+              <h2 className="mb-4 text-lg font-bold text-bukis-ink">Resumen</h2>
 
-                <div className="is-flex is-justify-content-space-between mb-2">
-                  <span>Subtotal:</span>
-                  <span className="has-text-weight-semibold">
-                    ${subtotal.toFixed(2)} MXN
-                  </span>
-                </div>
-
-                <hr />
-
-                <button className="button is-fullwidth has-text-white" style={{backgroundColor: "#d10000"}}>
-                  Continuar pedido
-                </button>
+              <div className="mb-2 flex justify-between">
+                <span>Subtotal:</span>
+                <span className="font-semibold">
+                  ${subtotal.toFixed(2)} MXN
+                </span>
               </div>
+
+              <hr className="my-4 border-bukis-border" />
+
+              <button className="w-full rounded-xl bg-bukis-red-700 px-4 py-3 font-semibold text-white transition hover:bg-bukis-red-800">
+                Continuar pedido
+              </button>
             </div>
           </div>
         </div>

@@ -1,24 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWorkerVariants, crearVariante, subirImagen, crearProducto } from "../../services/worker";
-import API from "../../api";
 import type { WorkerVariant } from "../../types/worker";
 import {
-  surface,
-  ink,
-  semantic,
-} from "../elements/workerTheme";
+  useWorkerVariants,
+  useWorkerCategorias,
+  useWorkerColores,
+  useWorkerProductosSlim,
+  useEditarVariante,
+  useCrearColor,
+  useCrearCategoria,
+} from "../../queries/workerProducts";
+import { getStockColor } from "../elements/workerTheme";
+import {
+  WorkerDialogRoot,
+  WorkerDialogContent,
+  WorkerDialogHeader,
+  WorkerDialogTitle,
+  WorkerDialogDescription,
+  WorkerDialogBody,
+  WorkerDialogFooter,
+  WorkerDialogCancel,
+  WorkerDialogAction,
+} from "../ui/worker/WorkerDialog";
+import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
 
 // ─── local types ─────────────────────────────────────────────────
-type Color     = { id: number; nombre: string; hex: string };
-type Categoria = { id: number; nombre: string };
-type Producto  = { id: number; nombre: string };
+type PendingEdit = { variantId: number; stock: string; activo: boolean };
 
 // ─── collapsible section ─────────────────────────────────────────
 function Seccion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: `1px solid ${surface.border}` }}>
+    <div style={{ borderBottom: "1px solid var(--worker-border-soft)" }}>
       <button
         onClick={() => setOpen((o) => !o)}
         style={{
@@ -32,12 +45,12 @@ function Seccion({ title, children }: { title: string; children: React.ReactNode
           cursor: "pointer",
           fontWeight: 600,
           fontSize: 14,
-          color: ink.primary,
+          color: "var(--worker-ink)",
           textAlign: "left",
         }}
       >
         {title}
-        <span style={{ fontSize: 12, color: ink.tertiary, lineHeight: 1 }}>
+        <span style={{ fontSize: 12, color: "var(--worker-ink-tertiary)", lineHeight: 1 }}>
           {open ? "▲" : "▼"}
         </span>
       </button>
@@ -58,19 +71,25 @@ function Field({
   type?: string; required?: boolean;
 }) {
   return (
-    <div className="field">
-      <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label style={{ fontSize: 12, color: "var(--worker-ink-secondary)", fontWeight: 500 }}>
         {label}{required && " *"}
       </label>
-      <div className="control">
-        <input
-          className="input"
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required={required}
-        />
-      </div>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        style={{
+          width: "100%",
+          padding: "7px 10px",
+          fontSize: 13,
+          background: "var(--worker-control-bg)",
+          border: "1px solid var(--worker-control-border)",
+          borderRadius: 6,
+          color: "var(--worker-ink)",
+        }}
+      />
     </div>
   );
 }
@@ -81,113 +100,76 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
     <button
       type="submit"
       disabled={loading}
-      className={`button is-dark${loading ? " is-loading" : ""}`}
-      style={{ alignSelf: "flex-end", marginTop: 4 }}
+      style={{
+        alignSelf: "flex-end",
+        marginTop: 4,
+        padding: "8px 18px",
+        fontSize: 13,
+        fontWeight: 600,
+        color: "#fff",
+        background: loading ? "var(--worker-ink-muted)" : "var(--worker-rail)",
+        border: "none",
+        borderRadius: 6,
+        cursor: loading ? "not-allowed" : "pointer",
+        opacity: loading ? 0.7 : 1,
+      }}
     >
       {loading ? "Guardando…" : label}
     </button>
   );
 }
 
-// ─── confirm modal ───────────────────────────────────────────────
-function ConfirmModal({
-  msg, onConfirm, onCancel,
-}: { msg: string; onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15,23,42,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        className="box"
-        style={{
-          maxWidth: 360,
-          width: "90%",
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-        }}
-      >
-        <p style={{ margin: 0, fontWeight: 500, color: ink.primary, fontSize: 14 }}>{msg}</p>
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button className="button is-outlined" onClick={onCancel}>Cancelar</button>
-          <button className="button is-dark" onClick={onConfirm}>Confirmar</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── main component ──────────────────────────────────────────────
 export default function WorkerProductsPage() {
   const navigate = useNavigate();
-  const [variants, setVariants]       = useState<WorkerVariant[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [search, setSearch]           = useState("");
-  const [catFilter, setCatFilter]     = useState("ALL");
-  const [panelOpen, setPanelOpen]     = useState(false);
-  const [fetchError, setFetchError]   = useState<string | null>(null);
 
-  const [editId, setEditId]           = useState<number | null>(null);
-  const [editStock, setEditStock]     = useState("");
-  const [editActivo, setEditActivo]   = useState(false);
-  const [savingEdit, setSavingEdit]   = useState(false);
-  const [editError, setEditError]     = useState<string | null>(null);
-  const [confirmEdit, setConfirmEdit] = useState(false);
+  // ── Search / filter ──
+  const [search, setSearch]       = useState("");
+  const [catFilter, setCatFilter] = useState("ALL");
 
-  const [colores, setColores]         = useState<Color[]>([]);
-  const [categorias, setCategorias]   = useState<Categoria[]>([]);
-  const [productos, setProductos]     = useState<Producto[]>([]);
-
+  // ── Utility drawer / create modal ──
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const createTriggerRef = useRef<HTMLButtonElement>(null);
+  const prevCreateOpenRef = useRef(false);
 
-  const reload = (): Promise<void> => {
-    setLoading(true);
-    setFetchError(null);
-    return getWorkerVariants()
-      .then(setVariants)
-      .catch((e: unknown) =>
-        setFetchError(e instanceof Error ? e.message : "Error al cargar variantes")
-      )
-      .finally(() => setLoading(false));
-  };
+  // ── Inline edit state ──
+  const [editId, setEditId]         = useState<number | null>(null);
+  const [editStock, setEditStock]   = useState("");
+  const [editActivo, setEditActivo] = useState(false);
+  const [editError, setEditError]   = useState<string | null>(null);
+
+  // ── Confirm dialog ──
+  const [confirmOpen, setConfirmOpen]         = useState(false);
+  const [pendingEdit, setPendingEdit]         = useState<PendingEdit | null>(null);
+
+  // ── React Query hooks ──
+  const {
+    data: variants = [],
+    isLoading: loadingVariants,
+    isError: isVariantsError,
+    error: variantsError,
+    isFetching,
+  } = useWorkerVariants();
+
+  const { data: categorias = [] } = useWorkerCategorias();
+  const utilitiesOpen = panelOpen || createOpen;
+  const { data: colores = [] }    = useWorkerColores(utilitiesOpen);
+  const { data: productos = [] }  = useWorkerProductosSlim(utilitiesOpen);
+
+  const editarVariante  = useEditarVariante();
+  const crearColorM     = useCrearColor();
+  const crearCategoriaM = useCrearCategoria();
 
   useEffect(() => {
-    reload();
-    API.get("/api/categorias/")
-      .then((r) => r.data)
-      .then((data) => setCategorias(Array.isArray(data) ? data : (data?.results ?? [])))
-      .catch((err: unknown) => console.error("Error cargando categorías:", err));
-  }, []);
+    if (!createOpen && prevCreateOpenRef.current) {
+      createTriggerRef.current?.focus();
+    }
+    prevCreateOpenRef.current = createOpen;
+  }, [createOpen]);
 
-  useEffect(() => {
-    if (!panelOpen) return;
-    let cancelled = false;
-    const normalize = (d: unknown) =>
-      Array.isArray(d) ? d : (d as { results?: unknown[] })?.results ?? [];
-    Promise.all([
-      API.get("/api/colores/").then((r) => r.data),
-      API.get("/api/productos/").then((r) => r.data),
-    ])
-      .then(([c, p]) => {
-        if (cancelled) return;
-        setColores(normalize(c));
-        setProductos(normalize(p));
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        console.error("Error cargando datos del panel:", err);
-      });
-    return () => { cancelled = true; };
-  }, [panelOpen]);
-
+  // ── Derived data ──
   const categories = useMemo(() => {
     const catMap = new Map(categorias.map((c) => [c.id, c.nombre]));
     const set = new Set<string>();
@@ -213,94 +195,242 @@ export default function WorkerProductsPage() {
     });
   }, [variants, search, catFilter, categorias]);
 
+  // normalize variant name for rendering
+  const variantName = (v: WorkerVariant) => v.producto.nombre;
+
   const startEdit = (v: WorkerVariant) => {
     setEditId(v.variant_id);
     setEditStock(String(v.stock));
     setEditActivo(v.activo);
+    setEditError(null);
   };
 
   const cancelEdit = () => { setEditId(null); setEditError(null); };
 
-  const handleSaveEdit = async () => {
+  const requestSaveEdit = () => {
     if (editId === null) return;
-    setSavingEdit(true);
+    setPendingEdit({ variantId: editId, stock: editStock, activo: editActivo });
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmEdit = async () => {
+    if (!pendingEdit) return;
     setEditError(null);
     try {
-      await API.patch(`/api/producto-variantes/${editId}/`, { stock: Number(editStock), activo: editActivo });
-      await reload();
+      await editarVariante.mutateAsync({
+        variantId: pendingEdit.variantId,
+        data: { stock: Number(pendingEdit.stock), activo: pendingEdit.activo },
+      });
       setEditId(null);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Error al guardar cambios");
     } finally {
-      setSavingEdit(false);
-      setConfirmEdit(false);
+      setConfirmOpen(false);
+      setPendingEdit(null);
     }
   };
 
-  return (
-    <div className="worker-page" style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%" }}>
+  // ── Fetch error message ──
+  const fetchErrorMsg = (() => {
+    if (!isVariantsError) return null;
+    const msg = variantsError instanceof Error ? variantsError.message : "Error al cargar variantes";
+    if (msg.includes("401") || msg.includes("403")) {
+      return "No autenticado. Inicia sesión como worker para ver los productos.";
+    }
+    return msg;
+  })();
 
+  const isAuthError = fetchErrorMsg?.includes("autenticado");
+
+  const savingEdit = editarVariante.isPending;
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        background: "var(--worker-canvas)",
+        color: "var(--worker-ink)",
+      }}
+    >
       {/* ── Page header ── */}
-      <div className="level" style={{ marginBottom: "1.5rem" }}>
-        <div className="level-left">
-          <div>
-            <h1 className="title is-4">Productos</h1>
-            <p className="subtitle is-6">Inventario por variante</p>
-          </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "var(--worker-ink)",
+            }}
+          >
+            Productos
+          </h1>
+          <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--worker-ink-secondary)" }}>
+            Inventario por variante
+            {isFetching && !loadingVariants && (
+              <span
+                style={{
+                  marginLeft: 8,
+                  fontSize: 11,
+                  color: "var(--worker-dispatch-fg)",
+                  fontWeight: 500,
+                }}
+              >
+                ↻ actualizando…
+              </span>
+            )}
+          </p>
         </div>
-        <div className="level-right">
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
-            className="button is-dark"
-            onClick={() => setPanelOpen((o) => !o)}
+            ref={createTriggerRef}
+            onClick={() => setCreateOpen(true)}
+            aria-haspopup="dialog"
+            title="Crear producto con flujo optimizado para celular o escritorio"
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#fff",
+              background: "var(--worker-rail)",
+              border: "none",
+              borderRadius: 7,
+              cursor: "pointer",
+            }}
+          >
+            Nuevo Producto
+          </button>
+
+          <button
+            onClick={() => setPanelOpen((open) => !open)}
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--worker-ink-secondary)",
+              background: "var(--worker-bench)",
+              border: "1px solid var(--worker-border)",
+              borderRadius: 7,
+              cursor: "pointer",
+            }}
           >
             Utilidades
           </button>
         </div>
       </div>
 
+      {createOpen && (
+        <WorkerCreateProductModal
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          categorias={categorias}
+          colores={colores}
+          productos={productos}
+        />
+      )}
+
       {/* ── Filters ── */}
-      <div className="field is-grouped" style={{ marginBottom: "1rem" }}>
-        <div className="control is-expanded">
-          <input
-            className="input"
-            placeholder="Buscar producto…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="control">
-          <div className="select">
-            <select
-              value={catFilter}
-              onChange={(e) => setCatFilter(e.target.value)}
-            >
-              <option value="ALL">Todas las categorías</option>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          marginBottom: "1rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <input
+          style={{
+            flex: 1,
+            minWidth: 180,
+            padding: "8px 12px",
+            fontSize: 13,
+            background: "var(--worker-control-bg)",
+            border: "1px solid var(--worker-control-border)",
+            borderRadius: 7,
+            color: "var(--worker-ink)",
+          }}
+          placeholder="Buscar producto…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          value={catFilter}
+          onChange={(e) => setCatFilter(e.target.value)}
+          style={{
+            padding: "8px 12px",
+            fontSize: 13,
+            background: "var(--worker-control-bg)",
+            border: "1px solid var(--worker-control-border)",
+            borderRadius: 7,
+            color: "var(--worker-ink)",
+            cursor: "pointer",
+          }}
+        >
+          <option value="ALL">Todas las categorías</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
       {/* ── Edit error ── */}
       {editError && (
-        <div className="notification is-danger is-light" style={{ marginBottom: "1rem" }}>
-          <p className="has-text-danger">{editError}</p>
+        <div
+          style={{
+            marginBottom: "1rem",
+            padding: "10px 14px",
+            background: "var(--worker-error-bg)",
+            border: "1px solid var(--worker-error-border)",
+            borderRadius: 7,
+            fontSize: 13,
+            color: "var(--worker-error-fg)",
+          }}
+        >
+          {editError}
         </div>
       )}
 
       {/* ── Fetch error ── */}
-      {fetchError && (
-        <div className="notification is-danger is-light" style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: 12 }}>
-          <span>
-            {fetchError.includes("401") || fetchError.includes("403")
-              ? "No autenticado. Inicia sesión como worker para ver los productos."
-              : fetchError}
-          </span>
-          {(fetchError.includes("401") || fetchError.includes("403")) && (
+      {fetchErrorMsg && (
+        <div
+          style={{
+            marginBottom: "1rem",
+            padding: "10px 14px",
+            background: "var(--worker-error-bg)",
+            border: "1px solid var(--worker-error-border)",
+            borderRadius: 7,
+            fontSize: 13,
+            color: "var(--worker-error-fg)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <span>{fetchErrorMsg}</span>
+          {isAuthError && (
             <button
-              className="button is-danger is-small"
               onClick={() => navigate("/iniciar-sesion")}
-              style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+              style={{
+                padding: "6px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#fff",
+                background: "var(--worker-error-fg)",
+                border: "none",
+                borderRadius: 5,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
             >
               Ir al login
             </button>
@@ -308,31 +438,69 @@ export default function WorkerProductsPage() {
         </div>
       )}
 
-      {/* ── Table ── */}
-      {loading ? (
-        <p style={{ fontSize: 13, color: ink.secondary }}>Cargando…</p>
+      {/* ── Skeleton loading ── */}
+      {loadingVariants ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              style={{
+                height: 52,
+                borderRadius: 6,
+                background: "var(--worker-bench)",
+                opacity: 0.5 + i * 0.06,
+              }}
+            />
+          ))}
+        </div>
       ) : (
+        /* ── Table ── */
         <div style={{ overflowX: "auto" }}>
-          <table className="table is-striped is-hoverable is-fullwidth">
-            <thead className="worker-table-header">
-              <tr>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: 13,
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  background: "#1e293b",
+                  color: "#fff",
+                }}
+              >
                 {["Imagen", "Nombre", "No.Item", "Color", "Stock", "Activo", ""].map((h) => (
-                  <th key={h} style={{ padding: "10px 14px", whiteSpace: "nowrap", color: "#fff", fontWeight: 600, fontSize: 13 }}>{h}</th>
+                  <th
+                    key={h}
+                    style={{
+                      padding: "10px 14px",
+                      whiteSpace: "nowrap",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      textAlign: "left",
+                    }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((v) => {
                 const isEditing = editId === v.variant_id;
-                const stockColor =
-                  v.stock === 0
-                    ? semantic.danger.fg
-                    : v.stock < 5
-                    ? semantic.warning.fg
-                    : ink.primary;
+                const stockColor = getStockColor(v.stock);
 
                 return (
-                  <tr key={v.variant_id}>
+                  <tr
+                    key={v.variant_id}
+                    style={{
+                      borderBottom: "1px solid var(--worker-border-soft)",
+                      background: isEditing
+                        ? "var(--worker-bench)"
+                        : "transparent",
+                    }}
+                  >
                     {/* Image */}
                     <td style={{ padding: "8px 16px" }}>
                       {v.imagen_principal ? (
@@ -346,38 +514,59 @@ export default function WorkerProductsPage() {
                           style={{
                             width: 40,
                             height: 40,
-                            background: surface.inset,
+                            background: "var(--worker-bench)",
                             borderRadius: 6,
-                            border: `1px solid ${surface.border}`,
+                            border: "1px solid var(--worker-border)",
                           }}
                         />
                       )}
                     </td>
 
                     {/* Name */}
-                    <td style={{ padding: "8px 16px", fontWeight: 500, color: ink.primary }}>
-                      {v.producto.nombre}
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontWeight: 500,
+                        color: "var(--worker-ink)",
+                      }}
+                    >
+                      {variantName(v)}
                     </td>
 
                     {/* Item # */}
-                    <td style={{ padding: "8px 16px", fontSize: 13, color: ink.secondary }}>
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                      }}
+                    >
                       {v.item}
                     </td>
 
                     {/* Color */}
                     <td style={{ padding: "8px 16px" }}>
-                      <span style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
+                      <span
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                          fontSize: 13,
+                        }}
+                      >
                         <span
                           style={{
                             width: 12,
                             height: 12,
                             borderRadius: "50%",
                             background: v.color.hex,
-                            border: `1px solid ${surface.borderMid}`,
+                            border: "1px solid var(--worker-border)",
                             flexShrink: 0,
                           }}
                         />
-                        <span style={{ color: ink.secondary }}>{v.color.nombre}</span>
+                        <span style={{ color: "var(--worker-ink-secondary)" }}>
+                          {v.color.nombre}
+                        </span>
                       </span>
                     </td>
 
@@ -385,15 +574,28 @@ export default function WorkerProductsPage() {
                     <td style={{ padding: "8px 16px" }}>
                       {isEditing ? (
                         <input
-                          className="input"
                           type="number"
                           value={editStock}
                           min={0}
                           onChange={(e) => setEditStock(e.target.value)}
-                          style={{ width: 72, padding: "4px 8px" }}
+                          style={{
+                            width: 72,
+                            padding: "4px 8px",
+                            fontSize: 13,
+                            background: "var(--worker-control-bg)",
+                            border: "1px solid var(--worker-control-border)",
+                            borderRadius: 5,
+                            color: "var(--worker-ink)",
+                          }}
                         />
                       ) : (
-                        <span style={{ fontWeight: 500, color: stockColor, fontSize: 14 }}>
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            color: stockColor,
+                            fontSize: 14,
+                          }}
+                        >
                           {v.stock}
                         </span>
                       )}
@@ -410,10 +612,21 @@ export default function WorkerProductsPage() {
                         />
                       ) : (
                         <span
-                          className="tag"
                           style={{
-                            backgroundColor: v.activo ? semantic.success.fg : ink.tertiary,
-                            color: "#fff",
+                            display: "inline-block",
+                            padding: "2px 8px",
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            backgroundColor: v.activo
+                              ? "var(--worker-inventory-bg)"
+                              : "var(--worker-bench)",
+                            color: v.activo
+                              ? "var(--worker-inventory-fg)"
+                              : "var(--worker-ink-muted)",
+                            border: v.activo
+                              ? "1px solid var(--worker-inventory-border)"
+                              : "1px solid var(--worker-border)",
                           }}
                         >
                           {v.activo ? "Sí" : "No"}
@@ -426,25 +639,52 @@ export default function WorkerProductsPage() {
                       {isEditing ? (
                         <div style={{ display: "flex", gap: 8 }}>
                           <button
-                            className="button is-dark is-small"
-                            onClick={() => setConfirmEdit(true)}
+                            onClick={requestSaveEdit}
                             disabled={savingEdit}
+                            style={{
+                              padding: "5px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "#fff",
+                              background: savingEdit
+                                ? "var(--worker-ink-muted)"
+                                : "var(--worker-rail)",
+                              border: "none",
+                              borderRadius: 5,
+                              cursor: savingEdit ? "not-allowed" : "pointer",
+                            }}
                           >
                             Guardar
                           </button>
                           <button
-                            className="button is-outlined is-small"
                             onClick={cancelEdit}
+                            style={{
+                              padding: "5px 12px",
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: "var(--worker-ink-secondary)",
+                              background: "var(--worker-bench)",
+                              border: "1px solid var(--worker-border)",
+                              borderRadius: 5,
+                              cursor: "pointer",
+                            }}
                           >
                             Cancelar
                           </button>
                         </div>
                       ) : (
                         <button
-                          className="button is-ghost"
                           onClick={() => startEdit(v)}
                           title="Editar"
-                          style={{ fontSize: 18 }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            fontSize: 18,
+                            cursor: "pointer",
+                            color: "var(--worker-ink-tertiary)",
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                          }}
                         >
                           ✏️
                         </button>
@@ -461,7 +701,7 @@ export default function WorkerProductsPage() {
                     style={{
                       padding: 32,
                       textAlign: "center",
-                      color: ink.tertiary,
+                      color: "var(--worker-ink-tertiary)",
                       fontSize: 14,
                     }}
                   >
@@ -474,20 +714,51 @@ export default function WorkerProductsPage() {
         </div>
       )}
 
-      {/* ── Confirm modal ── */}
-      {confirmEdit && (
-        <ConfirmModal
-          msg="¿Seguro que deseas guardar los cambios del producto?"
-          onConfirm={handleSaveEdit}
-          onCancel={() => setConfirmEdit(false)}
-        />
-      )}
+      {/* ── Confirm edit WorkerDialog ── */}
+      <WorkerDialogRoot open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <WorkerDialogContent>
+          <WorkerDialogHeader>
+            <WorkerDialogTitle>Confirmar cambios</WorkerDialogTitle>
+            <WorkerDialogDescription>
+              ¿Guardar los cambios de stock y estado activo para esta variante?
+            </WorkerDialogDescription>
+          </WorkerDialogHeader>
+          <WorkerDialogBody>
+            {pendingEdit && (
+              <div style={{ fontSize: 13, color: "var(--worker-ink-secondary)" }}>
+                <p style={{ margin: "0 0 4px" }}>
+                  <strong style={{ color: "var(--worker-ink)" }}>Stock nuevo:</strong>{" "}
+                  {pendingEdit.stock}
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong style={{ color: "var(--worker-ink)" }}>Activo:</strong>{" "}
+                  {pendingEdit.activo ? "Sí" : "No"}
+                </p>
+              </div>
+            )}
+          </WorkerDialogBody>
+          <WorkerDialogFooter>
+            <WorkerDialogCancel>Cancelar</WorkerDialogCancel>
+            <WorkerDialogAction
+              onClick={handleConfirmEdit}
+              disabled={savingEdit}
+            >
+              {savingEdit ? "Guardando…" : "Confirmar"}
+            </WorkerDialogAction>
+          </WorkerDialogFooter>
+        </WorkerDialogContent>
+      </WorkerDialogRoot>
 
       {/* ── Drawer overlay ── */}
       {panelOpen && (
         <div
-          className="worker-drawer-overlay"
           onClick={() => setPanelOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 499,
+            background: "rgba(0,0,0,0.4)",
+          }}
         />
       )}
 
@@ -495,7 +766,19 @@ export default function WorkerProductsPage() {
       {panelOpen && (
         <div
           ref={panelRef}
-          className="worker-drawer"
+          style={{
+            position: "fixed",
+            right: 0,
+            top: 0,
+            width: 380,
+            height: "100vh",
+            zIndex: 500,
+            background: "var(--worker-shelf)",
+            overflowY: "auto",
+            boxShadow: "-4px 0 24px rgba(0,0,0,0.18)",
+            display: "flex",
+            flexDirection: "column",
+          }}
         >
           {/* Drawer header */}
           <div
@@ -504,14 +787,32 @@ export default function WorkerProductsPage() {
               justifyContent: "space-between",
               alignItems: "center",
               padding: "16px 20px",
-              borderBottom: `1px solid ${surface.border}`,
+              borderBottom: "1px solid var(--worker-border)",
+              flexShrink: 0,
             }}
           >
-            <h3 className="title is-6" style={{ margin: 0 }}>Utilidades</h3>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: 15,
+                fontWeight: 700,
+                color: "var(--worker-ink)",
+              }}
+            >
+              Utilidades
+            </h3>
             <button
-              className="button is-ghost"
               onClick={() => setPanelOpen(false)}
-              style={{ fontSize: 18 }}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: 18,
+                cursor: "pointer",
+                color: "var(--worker-ink-tertiary)",
+                padding: "2px 6px",
+                borderRadius: 4,
+              }}
+              aria-label="Cerrar panel"
             >
               ✕
             </button>
@@ -520,36 +821,16 @@ export default function WorkerProductsPage() {
           <Seccion title="Colores">
             <CrearColorForm
               onCreated={() => {
-                API.get("/api/colores/").then((r) => setColores(r.data));
+                crearColorM.reset();
               }}
+              mutation={crearColorM}
             />
           </Seccion>
 
           <Seccion title="Categorías">
-            <CrearCategoriaForm
-              onCreated={() => {
-                API.get("/api/categorias/").then((r) => setCategorias(r.data));
-              }}
-            />
+            <CrearCategoriaForm mutation={crearCategoriaM} />
           </Seccion>
 
-          <Seccion title="Crear Producto Base">
-            <CrearProductoForm
-              categorias={categorias}
-              onCreated={() => {
-                reload();
-                API.get("/api/productos/").then((r) => setProductos(r.data));
-              }}
-            />
-          </Seccion>
-
-          <Seccion title="Crear Variantes e Imágenes">
-            <CrearVarianteForm
-              productos={productos}
-              colores={colores}
-              onCreated={reload}
-            />
-          </Seccion>
         </div>
       )}
     </div>
@@ -558,58 +839,69 @@ export default function WorkerProductsPage() {
 
 // ─── sub-forms ───────────────────────────────────────────────────
 
-function CrearColorForm({ onCreated }: { onCreated: () => void }) {
+function CrearColorForm({
+  onCreated,
+  mutation,
+}: {
+  onCreated?: () => void;
+  mutation: ReturnType<typeof useCrearColor>;
+}) {
   const [nombre, setNombre]         = useState("");
   const [hex, setHex]               = useState("#000000");
   const [disponible, setDisponible] = useState(true);
-  const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true); setError("");
+    setError("");
     try {
-      await API.post("/api/colores/", { nombre, hex, disponible });
+      await mutation.mutateAsync({ nombre, hex, disponible });
       setNombre(""); setHex("#000000"); setDisponible(true);
-      onCreated();
+      onCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
-    } finally {
-      setSaving(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <Field label="Nombre" value={nombre} onChange={setNombre} required />
-      <div className="field">
-        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>HEX *</label>
-        <div className="control">
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="color"
-              value={hex}
-              onChange={(e) => setHex(e.target.value)}
-              style={{
-                width: 40,
-                height: 34,
-                border: `1px solid ${surface.borderMid}`,
-                borderRadius: 6,
-                cursor: "pointer",
-                padding: 2,
-              }}
-            />
-            <input
-              className="input"
-              type="text"
-              value={hex}
-              onChange={(e) => setHex(e.target.value)}
-              style={{ flex: 1 }}
-            />
-          </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <label style={{ fontSize: 12, color: "var(--worker-ink-secondary)", fontWeight: 500 }}>
+          HEX *
+        </label>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="color"
+            value={hex}
+            onChange={(e) => setHex(e.target.value)}
+            style={{
+              width: 40,
+              height: 34,
+              border: "1px solid var(--worker-border)",
+              borderRadius: 6,
+              cursor: "pointer",
+              padding: 2,
+              background: "var(--worker-control-bg)",
+            }}
+          />
+          <input
+            type="text"
+            value={hex}
+            onChange={(e) => setHex(e.target.value)}
+            style={{
+              flex: 1,
+              padding: "7px 10px",
+              fontSize: 13,
+              background: "var(--worker-control-bg)",
+              border: "1px solid var(--worker-control-border)",
+              borderRadius: 6,
+              color: "var(--worker-ink)",
+            }}
+          />
         </div>
       </div>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: ink.secondary }}>
+      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--worker-ink-secondary)" }}>
         <input
           type="checkbox"
           checked={disponible}
@@ -617,277 +909,36 @@ function CrearColorForm({ onCreated }: { onCreated: () => void }) {
         />
         Disponible
       </label>
-      {error && <p style={{ color: semantic.danger.fg, fontSize: 12, margin: 0 }}>{error}</p>}
-      <SaveBtn loading={saving} />
+      {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
+      <SaveBtn loading={mutation.isPending} />
     </form>
   );
 }
 
-function CrearCategoriaForm({ onCreated }: { onCreated: () => void }) {
+function CrearCategoriaForm({
+  mutation,
+}: {
+  mutation: ReturnType<typeof useCrearCategoria>;
+}) {
   const [nombre, setNombre] = useState("");
-  const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true); setError("");
+    setError("");
     try {
-      await API.post("/api/categorias/", { nombre });
+      await mutation.mutateAsync(nombre);
       setNombre("");
-      onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
-    } finally {
-      setSaving(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <Field label="Nombre" value={nombre} onChange={setNombre} required />
-      {error && <p style={{ color: semantic.danger.fg, fontSize: 12, margin: 0 }}>{error}</p>}
-      <SaveBtn loading={saving} />
-    </form>
-  );
-}
-
-function CrearProductoForm({ categorias, onCreated }: { categorias: Categoria[]; onCreated: () => void }) {
-  const [form, setForm] = useState({
-    nombre: "", descripcion: "", precio: "",
-    peso: "", medidas: "", capacidad: "", categoria: "",
-  });
-  const [imagen, setImagen] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState("");
-
-  const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!imagen) { setError("Selecciona una imagen"); return; }
-    setSaving(true); setError("");
-    try {
-      const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
-      fd.append("imagen", imagen);
-      if (form.categoria) fd.append("categorias_ids", form.categoria);
-      await crearProducto(fd);
-      setForm({ nombre: "", descripcion: "", precio: "", peso: "", medidas: "", capacidad: "", categoria: "" });
-      setImagen(null);
-      onCreated();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <Field label="Nombre"   value={form.nombre}   onChange={set("nombre")}   required />
-        <Field label="Precio"   value={form.precio}   onChange={set("precio")}   type="number" required />
-        <Field label="Peso"     value={form.peso}     onChange={set("peso")}     type="number" required />
-        <Field label="Medidas"  value={form.medidas}  onChange={set("medidas")}  required />
-        <Field label="Capacidad" value={form.capacidad} onChange={set("capacidad")} />
-      </div>
-
-      <div className="field">
-        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Descripción</label>
-        <div className="control">
-          <textarea
-            className="textarea"
-            value={form.descripcion}
-            onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
-            rows={2}
-            style={{ resize: "vertical" }}
-          />
-        </div>
-      </div>
-
-      <div className="field">
-        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Categoría</label>
-        <div className="control">
-          <div className="select is-fullwidth">
-            <select
-              value={form.categoria}
-              onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
-            >
-              <option value="">Sin categoría</option>
-              {categorias.map((c) => (
-                <option key={c.id} value={String(c.id)}>{c.nombre}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="field">
-        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Imagen *</label>
-        <div className="control">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImagen(e.target.files?.[0] ?? null)}
-            style={{ fontSize: 13, color: ink.secondary }}
-          />
-        </div>
-      </div>
-
-      {error && <p style={{ color: semantic.danger.fg, fontSize: 12, margin: 0 }}>{error}</p>}
-      <SaveBtn loading={saving} label="Insertar" />
-    </form>
-  );
-}
-
-function CrearVarianteForm({
-  productos, colores, onCreated,
-}: { productos: Producto[]; colores: Color[]; onCreated: () => void }) {
-  const [productoId, setProductoId] = useState("");
-  const [colorId, setColorId]       = useState("");
-  const [item, setItem]             = useState("");
-  const [stock, setStock]           = useState("0");
-  const [activo, setActivo]         = useState(true);
-  const [imagenes, setImagenes]     = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [esPrincipal, setEsPrincipal] = useState(false);
-  const [saving, setSaving]         = useState(false);
-  const [error, setError]           = useState("");
-  const [success, setSuccess]       = useState("");
-
-  useEffect(() => {
-    const urls = imagenes.map((f) => URL.createObjectURL(f));
-    setPreviewUrls(urls);
-    return () => { urls.forEach((url) => URL.revokeObjectURL(url)); };
-  }, [imagenes]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!productoId || !colorId) { setError("Selecciona producto y color"); return; }
-    setSaving(true); setError(""); setSuccess("");
-    try {
-      await crearVariante(Number(productoId), {
-        color: Number(colorId),
-        stock: Number(stock),
-        activo,
-        item,
-      });
-
-      for (let i = 0; i < imagenes.length; i++) {
-        const fd = new FormData();
-        fd.append("imagen", imagenes[i]);
-        fd.append("orden", String(i));
-        fd.append("es_principal", i === 0 && esPrincipal ? "true" : "false");
-        await subirImagen(Number(productoId), fd);
-      }
-
-      setProductoId(""); setColorId(""); setItem(""); setStock("0"); setActivo(true);
-      setImagenes([]); setEsPrincipal(false);
-      setSuccess("Variante creada correctamente");
-      onCreated();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div className="field">
-        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Producto base *</label>
-        <div className="control">
-          <div className="select is-fullwidth">
-            <select
-              value={productoId}
-              onChange={(e) => setProductoId(e.target.value)}
-              required
-            >
-              <option value="">Selecciona el producto base</option>
-              {productos.map((p) => (
-                <option key={p.id} value={String(p.id)}>{p.nombre}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="field">
-        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Color *</label>
-        <div className="control">
-          <div className="select is-fullwidth">
-            <select
-              value={colorId}
-              onChange={(e) => setColorId(e.target.value)}
-              required
-            >
-              <option value="">Selecciona un color</option>
-              {colores.map((c) => (
-                <option key={c.id} value={String(c.id)}>{c.nombre} ({c.hex})</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <Field label="No. Item (SKU)" value={item} onChange={setItem} required />
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, alignItems: "end" }}>
-        <Field label="Stock" value={stock} onChange={setStock} type="number" required />
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: ink.secondary, paddingBottom: 2 }}>
-          <input
-            type="checkbox"
-            checked={activo}
-            onChange={(e) => setActivo(e.target.checked)}
-          />
-          Activo
-        </label>
-      </div>
-
-      <div className="field">
-        <label className="label" style={{ fontSize: 12, color: ink.secondary, fontWeight: 500 }}>Imágenes (opcional)</label>
-        <div className="control">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => setImagenes(Array.from(e.target.files ?? []))}
-            style={{ fontSize: 13, color: ink.secondary }}
-          />
-        </div>
-        {imagenes.length > 0 && (
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: ink.secondary, marginTop: 4 }}>
-            <input
-              type="checkbox"
-              checked={esPrincipal}
-              onChange={(e) => setEsPrincipal(e.target.checked)}
-            />
-            Primera imagen como principal
-          </label>
-        )}
-        {imagenes.length > 0 && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-            {imagenes.map((_, i) => (
-              <img
-                key={i}
-                src={previewUrls[i]}
-                alt=""
-                style={{
-                  width: 52,
-                  height: 52,
-                  objectFit: "cover",
-                  borderRadius: 6,
-                  border: `1px solid ${surface.border}`,
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {error   && <p style={{ color: semantic.danger.fg,  fontSize: 12, margin: 0 }}>{error}</p>}
-      {success && <p style={{ color: semantic.success.fg, fontSize: 12, margin: 0 }}>{success}</p>}
-      <SaveBtn loading={saving} label="Guardar variante" />
+      {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
+      <SaveBtn loading={mutation.isPending} />
     </form>
   );
 }
