@@ -1,11 +1,10 @@
 import API from "../api";
+import { normalizeResponse } from "../components/pages/responseNormalizer";
+import type { Product } from "../types/product";
 
 export async function getProducts() {
   const res = await API.get("/api/productos/");
-  const data = res.data;
-  // Aseguramos la extracción del arreglo sin importar el wrapper
-  const items = Array.isArray(data) ? data : (data?.datos || data?.results || []);
-  return items;
+  return normalizeResponse<Product>(res.data);
 }
 
 export async function getProductById(id: string | number) {

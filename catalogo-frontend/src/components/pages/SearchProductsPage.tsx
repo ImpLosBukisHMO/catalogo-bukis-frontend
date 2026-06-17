@@ -9,7 +9,6 @@ import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
 import type { Category } from "../../services/category";
 import { addFavorito } from "../../services/favoritos";
-import { normalizeResponse } from "./responseNormalizer";
 
 
 export default function SearchProductsPage() {
@@ -46,9 +45,8 @@ export default function SearchProductsPage() {
 
     const fetchCategories = async () => {
         try {
-            const categoriesData = await getCategories();
-            const normalized = normalizeResponse(categoriesData);
-            setCategories(normalized);
+            const data = await getCategories();
+            setCategories(data);
         } catch (e) {
             console.error("Error al obtener las categorías:", e);
             setError(e instanceof Error ? e.message : "Error desconocido al cargar las categorías.");

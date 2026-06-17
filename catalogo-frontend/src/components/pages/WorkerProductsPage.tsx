@@ -163,8 +163,7 @@ export default function WorkerProductsPage() {
   const { data: coloresRaw = [], refetch: refetchColores } = useWorkerColores(utilitiesOpen);
   const colores = useMemo(() => normalizeResponse(coloresRaw), [coloresRaw]);
 
-  const { data: productosRaw = [] }  = useWorkerProductosSlim(utilitiesOpen);
-  const productos = useMemo(() => normalizeResponse(productosRaw), [productosRaw]);
+  const { data: productos = [], isLoading: loadingProds, error: errorProds, refetch: refetchProds }  = useWorkerProductosSlim(utilitiesOpen);
 
   // Forzar actualización de categorías al abrir paneles de creación o utilidades
   useEffect(() => {
@@ -345,6 +344,9 @@ export default function WorkerProductsPage() {
           categorias={categorias}
           colores={colores}
           productos={productos}
+          isLoadingProductos={loadingProds}
+          errorProductos={errorProds instanceof Error ? errorProds.message : null}
+          onRetryProductos={() => refetchProds()}
         />
       )}
 

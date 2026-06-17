@@ -1,17 +1,16 @@
 import type { WorkerVariant, WorkerPedido, WorkerPedidoDetalle, WorkerProducto } from "../types/worker";
 import API from "../api";
+import { normalizeResponse } from "../components/pages/responseNormalizer";
 
 export async function getWorkerVariants(): Promise<WorkerVariant[]> {
   const res = await API.get("/api/worker/variants/");
-  const data = res.data;
-  return Array.isArray(data) ? data : (data?.datos || data?.results || []);
+  return normalizeResponse<WorkerVariant>(res.data);
 }
 
 export async function getWorkerPedidos(estado?: string): Promise<WorkerPedido[]> {
   const url = estado ? `/api/worker/pedidos/?estado=${estado}` : "/api/worker/pedidos/";
   const res = await API.get(url);
-  const data = res.data;
-  return Array.isArray(data) ? data : (data?.datos || data?.results || []);
+  return normalizeResponse<WorkerPedido>(res.data);
 }
 
 export async function getWorkerPedidoDetalle(id: number): Promise<WorkerPedidoDetalle> {
@@ -103,7 +102,7 @@ export type WorkerCategoria = { id: number; nombre: string };
 export async function getWorkerCategorias(): Promise<WorkerCategoria[]> {
   const res = await API.get("/api/categorias/");
   const data = res.data;
-  return Array.isArray(data) ? data : (data?.datos || data?.results || []);
+  return normalizeResponse<WorkerCategoria>(data);
 }
 
 export async function crearCategoria(nombre: string): Promise<WorkerCategoria> {
@@ -120,6 +119,7 @@ export async function getWorkerColores(): Promise<WorkerColor[]> {
   const res = await API.get("/api/colores/");
   const data = res.data;
   return Array.isArray(data) ? data : (data?.datos || data?.results || []);
+  return normalizeResponse<WorkerColor>(data);
 }
 
 export async function crearColor(data: {
@@ -139,7 +139,5 @@ export type WorkerProductoSlim = { id: number; nombre: string };
 export async function getWorkerProductosSlim(): Promise<WorkerProductoSlim[]> {
   // Cambiamos al endpoint de worker para que el creador vea todos los productos base
   const res = await API.get("/api/worker/productos/");
-  const data = res.data;
-  const items = Array.isArray(data) ? data : (data?.datos || data?.results || []);
-  return items;
+  return normalizeResponse<WorkerProductoSlim>(res.data);
 }

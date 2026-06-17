@@ -31,6 +31,9 @@ export type WorkerCreateProductModalProps = {
   categorias: WorkerCategoria[];
   colores: WorkerColor[];
   productos: WorkerProductoSlim[];
+  isLoadingProductos?: boolean;
+  errorProductos?: string | null;
+  onRetryProductos?: () => void;
 };
 
 type ProductFormState = {
@@ -150,6 +153,9 @@ export function WorkerCreateProductModal({
   categorias,
   colores,
   productos,
+  isLoadingProductos,
+  errorProductos,
+  onRetryProductos,
 }: WorkerCreateProductModalProps) {
   const [mode, setMode] = useState<ModalMode>("create-product");
   const [createdProduct, setCreatedProduct] = useState<WorkerProducto | null>(null);
@@ -249,6 +255,9 @@ export function WorkerCreateProductModal({
           {mode === "select-product" && (
             <SelectProductSection
               productos={productos}
+              loading={isLoadingProductos}
+              error={errorProductos}
+              onRetry={onRetryProductos}
               onSelected={(p) => {
                 setCreatedProduct(p as unknown as WorkerProducto);
                 setMode("add-variant");
@@ -356,6 +365,7 @@ function CreateProductSection({
 }) {
   const [form, setForm] = useState<ProductFormState>(defaultProductForm);
   const [imagen, setImagen] = useState<File | null>(null);
+  const [disponible, setDisponible] = useState(true);
   const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
   const [submitError, setSubmitError] = useState("");
 
@@ -392,7 +402,7 @@ function CreateProductSection({
       formData.append("peso", form.peso);
       formData.append("medidas", form.medidas.trim());
       formData.append("descripcion", form.descripcion.trim());
-      formData.append("disponible", "true"); // Forzamos disponibilidad para que salga en la web pública
+      formData.append("disponible", disponible ? "true" : "false");
       if (form.capacidad.trim()) formData.append("capacidad", form.capacidad.trim());
       if (form.categoria) formData.append("categorias_ids", form.categoria);
       formData.append("imagen", imagen!);
@@ -530,6 +540,25 @@ function CreateProductSection({
         />
       </SectionCard>
 
+      <SectionCard title="Visibilidad" description="Controlá si el producto aparece en el catálogo público inmediatamente.">
+        <label
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "center",
+            fontSize: 14,
+            color: "var(--worker-ink-secondary)",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={disponible}
+            onChange={(e) => setDisponible(e.target.checked)}
+          />
+          Publicar inmediatamente (Disponible en la web)
+        </label>
+      </SectionCard>
+
       {submitError && <InlineNotice tone="error">{submitError}</InlineNotice>}
 
       <InlineNotice tone="info">
@@ -541,9 +570,15 @@ function CreateProductSection({
 
 function SelectProductSection({
   productos,
+  loading,
+  error,
+  onRetry,
   onSelected,
 }: {
   productos: WorkerProductoSlim[];
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   onSelected: (product: WorkerProductoSlim) => void;
 }) {
   const [filter, setFilter] = useState("");
@@ -571,6 +606,16 @@ function SelectProductSection({
       </SectionCard>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto", paddingRight: 4 }}>
+        {loading && <p style={helperStyle}>Cargando productos...</p>}
+        {error && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <p style={errorStyle}>Error: {error}</p>
+            <button type="button" onClick={onRetry} style={tertiaryButtonStyle()}>Reintentar</button>
+          </div>
+        )}
+        {!loading && !error && filtered.length === 0 && (
+          <p style={helperStyle}>No se encontraron productos con "{filter}"</p>
+        )}
         {filtered.map((p) => (
           <button
             key={p.id}
