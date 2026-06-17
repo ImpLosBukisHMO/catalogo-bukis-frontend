@@ -155,7 +155,7 @@ export default function SearchProductsPage() {
             <NavBar navBarQuery={productQuery || ""} />
             {favMsg && (
                 <div
-                    className={`fixed bottom-6 right-6 z-[999] max-w-xs rounded-2xl px-4 py-3 text-sm font-medium shadow-bukis-soft ${favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"}`}
+                    className={`fixed bottom-6 right-6 z-999 max-w-xs rounded-2xl px-4 py-3 text-sm font-medium shadow-bukis-soft ${favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"}`}
                 >
                     {favMsg}
                 </div>

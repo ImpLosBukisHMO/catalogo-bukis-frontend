@@ -25,7 +25,6 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
-import type { Category } from "../../services/category";
 import type { WorkerCategoria, WorkerColor } from "../../services/worker";
 
 // ─── local types ─────────────────────────────────────────────────
