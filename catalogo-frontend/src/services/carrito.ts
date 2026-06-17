@@ -3,7 +3,7 @@ import API from "../api";
 
 export async function getCarritoActual(): Promise<CarritoResponse> {
   const res = await API.get("/api/carrito/");
-  return res.data;
+  return res.data?.datos || res.data;
 }
 
 export async function addItem(variante_id: number, cantidad: number) {

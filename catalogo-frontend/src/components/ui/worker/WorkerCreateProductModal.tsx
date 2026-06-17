@@ -23,7 +23,7 @@ import {
   WorkerDialogTitle,
 } from "./WorkerDialog";
 
-export type ModalMode = "create-product" | "success" | "add-variant";
+export type ModalMode = "create-product" | "success" | "add-variant" | "select-product";
 
 export type WorkerCreateProductModalProps = {
   open: boolean;
@@ -197,11 +197,13 @@ export function WorkerCreateProductModal({
             <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
               <WorkerDialogTitle>
                 {mode === "create-product" && "Nuevo producto"}
+                {mode === "select-product" && "Elegir producto base"}
                 {mode === "success" && "Producto creado"}
                 {mode === "add-variant" && "Agregar variante"}
               </WorkerDialogTitle>
               <WorkerDialogDescription>
                 {mode === "create-product" && "Cargá el producto base con una foto clara y campos cómodos para usar desde el celular."}
+                {mode === "select-product" && "Buscá un producto base ya existente para cargarle una variante nueva."}
                 {mode === "success" && "El producto quedó listo. Revisá el resumen o seguí con la primera variante."}
                 {mode === "add-variant" && "La variante se crea primero y recién después se suben sus imágenes con el id correcto."}
               </WorkerDialogDescription>
@@ -240,6 +242,17 @@ export function WorkerCreateProductModal({
                 setCreatedProduct(product);
                 setMode("success");
               }}
+              onSwitchToExisting={() => setMode("select-product")}
+            />
+          )}
+
+          {mode === "select-product" && (
+            <SelectProductSection
+              productos={productos}
+              onSelected={(p) => {
+                setCreatedProduct(p as unknown as WorkerProducto);
+                setMode("add-variant");
+              }}
             />
           )}
 
@@ -274,6 +287,14 @@ export function WorkerCreateProductModal({
                 disabled={crearProductoM.isPending}
               >
                 {crearProductoM.isPending ? "Creando…" : "Crear producto"}
+              </ModalButton>
+            </>
+          )}
+
+          {mode === "select-product" && (
+            <>
+              <ModalButton kind="secondary" onClick={() => setMode("create-product")}>
+                Crear producto nuevo
               </ModalButton>
             </>
           )}
@@ -326,10 +347,12 @@ function CreateProductSection({
   categorias,
   mutation,
   onCreated,
+  onSwitchToExisting,
 }: {
   categorias: WorkerCategoria[];
   mutation: ReturnType<typeof useCrearProducto>;
   onCreated: (product: WorkerProducto) => void;
+  onSwitchToExisting: () => void;
 }) {
   const [form, setForm] = useState<ProductFormState>(defaultProductForm);
   const [imagen, setImagen] = useState<File | null>(null);
@@ -369,6 +392,7 @@ function CreateProductSection({
       formData.append("peso", form.peso);
       formData.append("medidas", form.medidas.trim());
       formData.append("descripcion", form.descripcion.trim());
+      formData.append("disponible", "true"); // Forzamos disponibilidad para que salga en la web pública
       if (form.capacidad.trim()) formData.append("capacidad", form.capacidad.trim());
       if (form.categoria) formData.append("categorias_ids", form.categoria);
       formData.append("imagen", imagen!);
@@ -384,6 +408,19 @@ function CreateProductSection({
 
   return (
     <form id={CREATE_PRODUCT_FORM_ID} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4 }}>
+        <button
+          type="button"
+          onClick={onSwitchToExisting}
+          style={{
+            ...tertiaryButtonStyle(),
+            borderColor: "var(--worker-rail)",
+            color: "var(--worker-rail)",
+          }}
+        >
+          🔍 Buscar producto base existente
+        </button>
+      </div>
       <SectionCard
         title="Datos principales"
         description="Completá lo mínimo necesario para identificar y vender el producto sin apretar campos en horizontal."
@@ -499,6 +536,58 @@ function CreateProductSection({
         La carga usa multipart/form-data. Si el backend devuelve error, mantenemos los valores para corregir rápido desde el teléfono.
       </InlineNotice>
     </form>
+  );
+}
+
+function SelectProductSection({
+  productos,
+  onSelected,
+}: {
+  productos: WorkerProductoSlim[];
+  onSelected: (product: WorkerProductoSlim) => void;
+}) {
+  const [filter, setFilter] = useState("");
+
+  const filtered = useMemo(() => {
+    return productos.filter((p) =>
+      p.nombre.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [productos, filter]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <SectionCard
+        title="Catálogo de productos"
+        description="Seleccioná un producto de la lista para continuar directamente con la carga de variantes."
+      >
+        <input
+          autoFocus
+          type="text"
+          placeholder="Escribí para buscar..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={inputStyle}
+        />
+      </SectionCard>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto", paddingRight: 4 }}>
+        {filtered.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onSelected(p)}
+            style={{
+              ...inputStyle,
+              textAlign: "left",
+              background: "var(--worker-bench)",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            {p.nombre}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

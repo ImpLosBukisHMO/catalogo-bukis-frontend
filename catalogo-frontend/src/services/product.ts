@@ -2,12 +2,16 @@ import API from "../api";
 
 export async function getProducts() {
   const res = await API.get("/api/productos/");
-  return res.data;
+  const data = res.data;
+  // Aseguramos la extracción del arreglo sin importar el wrapper
+  const items = Array.isArray(data) ? data : (data?.datos || data?.results || []);
+  return items;
 }
 
 export async function getProductById(id: string | number) {
   const res = await API.get(`/api/productos/${id}/`);
-  return res.data;
+  const data = res.data;
+  return data?.datos || data;
 }
 
 export type ProductImage = {
