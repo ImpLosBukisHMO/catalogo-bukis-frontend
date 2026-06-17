@@ -10,6 +10,12 @@ import { type Product, type ProductCardVM } from "../../types/product";
 import type { Category } from "../../services/category";
 import { addFavorito } from "../../services/favoritos";
 
+const normalizeSearchText = (value: string) =>
+    value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
 
 export default function SearchProductsPage() {
     const [searchParams] = useSearchParams();
@@ -57,8 +63,9 @@ export default function SearchProductsPage() {
         if (productQuery) {
             try {
                 const productsData: Product[] = await getProducts();
+                const normalizedQuery = normalizeSearchText(productQuery);
                 const filteredProducts = productsData.filter((p) =>
-                    p.nombre.toLowerCase().includes(productQuery.toLowerCase())
+                    normalizeSearchText(p.nombre).includes(normalizedQuery)
                 );
                 const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
                     id: p.id,
@@ -83,8 +90,9 @@ export default function SearchProductsPage() {
         try {
             const productsData: Product[] = await getProducts();
             const filteredProducts = productsData.filter((p: Product) => {
-                const matchesSearch = sideBarSearch === "" ||
-                    p.nombre.toLowerCase().includes(sideBarSearch.toLowerCase());
+                const normalizedSearch = normalizeSearchText(sideBarSearch);
+                const matchesSearch = normalizedSearch === "" ||
+                    normalizeSearchText(p.nombre).includes(normalizedSearch);
 
                 // Manejo robusto de categorías (plural, singular o arreglo de objetos)
                 const rawCats = p.categoria ? (Array.isArray(p.categoria) ? p.categoria : [p.categoria]) : [];
