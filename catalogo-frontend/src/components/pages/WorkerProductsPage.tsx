@@ -25,6 +25,8 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
+import type { Category } from "../../services/category";
+import type { WorkerCategoria, WorkerColor } from "../../services/worker";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -157,11 +159,11 @@ export default function WorkerProductsPage() {
   } = useWorkerVariants();
 
   const { data: categoriasRaw = [], refetch: refetchCategorias } = useWorkerCategorias();
-  const categorias = useMemo(() => normalizeResponse(categoriasRaw), [categoriasRaw]);
+  const categorias = useMemo(() => normalizeResponse(categoriasRaw) as WorkerCategoria[], [categoriasRaw]);
 
   const utilitiesOpen = panelOpen || createOpen;
   const { data: coloresRaw = [], refetch: refetchColores } = useWorkerColores(utilitiesOpen);
-  const colores = useMemo(() => normalizeResponse(coloresRaw), [coloresRaw]);
+  const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
 
   const { data: productos = [], isLoading: loadingProds, error: errorProds, refetch: refetchProds }  = useWorkerProductosSlim(utilitiesOpen);
 
@@ -186,7 +188,7 @@ export default function WorkerProductsPage() {
 
   // ── Derived data ──
   const categories = useMemo(() => {
-    return categorias.map((c) => c.nombre).sort();
+    return (categorias as WorkerCategoria[]).map((c: WorkerCategoria) => c.nombre).sort();
   }, [categorias]);
 
   const filtered = useMemo(() => {

@@ -87,11 +87,13 @@ export default function SearchProductsPage() {
                     p.nombre.toLowerCase().includes(sideBarSearch.toLowerCase());
 
                 // Manejo robusto de categorías (plural, singular o arreglo de objetos)
-                const rawCats = p.categorias || (p.categoria ? [p.categoria] : []);
-                const productCats = rawCats.map((c: Category | number) => typeof c === 'object' ? c.id : c);
+                const rawCats = p.categoria ? (Array.isArray(p.categoria) ? p.categoria : [p.categoria]) : [];
+                const productCats = rawCats
+                    .map((c: Category | number) => typeof c === 'object' ? c.id : c)
+                    .filter((id): id is number => typeof id === 'number');
 
                 const matchesCategory = filterCategories.length === 0 ||
-                    productCats.some((id: number) => filterCategories.includes(Number(id)));
+                    productCats.some((id: number) => filterCategories.includes(id));
 
                 const price = Number(p.precio);
                 const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) &&

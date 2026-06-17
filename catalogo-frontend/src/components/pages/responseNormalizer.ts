@@ -13,7 +13,6 @@ export function normalizeResponse<T>(d: unknown): T[] {
 
   if (Array.isArray(body)) return body as T[];
 
-  // Busca en las llaves comunes de respuesta de tu backend
   const potentialArray = (body as Record<string, unknown>)?.datos || 
                          (body as Record<string, unknown>)?.results || 
                          (body as Record<string, unknown>)?.items;
