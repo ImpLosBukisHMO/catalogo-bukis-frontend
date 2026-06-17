@@ -4,8 +4,7 @@ import { DoorOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
 import { logOut } from "../../services/user";
-import { useAuth } from "../../context/AuthContext";
-
+import { useAuth } from "../../context/useAuth";
 
 type NavBarProps = {
     navBarQuery?: string | null;
