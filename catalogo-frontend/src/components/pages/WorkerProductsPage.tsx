@@ -26,6 +26,7 @@ import {
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
 import type { WorkerCategoria, WorkerColor } from "../../services/worker";
+import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -501,6 +502,7 @@ export default function WorkerProductsPage() {
               {filtered.map((v) => {
                 const isEditing = editId === v.variant_id;
                 const stockColor = getStockColor(v.stock);
+                const imageSrc = resolveImageUrl(v.imagen_principal);
 
                 return (
                   <tr
@@ -514,11 +516,15 @@ export default function WorkerProductsPage() {
                   >
                     {/* Image */}
                     <td style={{ padding: "8px 16px" }}>
-                      {v.imagen_principal ? (
+                      {imageSrc ? (
                         <img
-                          src={v.imagen_principal}
+                          src={imageSrc}
                           alt=""
                           style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = IMAGE_PLACEHOLDER_URL;
+                          }}
                         />
                       ) : (
                         <div
