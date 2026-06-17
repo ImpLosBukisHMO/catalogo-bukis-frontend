@@ -84,21 +84,21 @@ export default function SearchProductsPage() {
         setLoading(true);
         try {
             const productsData: Product[] = await getProducts();
-            const filteredProducts = productsData.filter((p: any) => {
-                const matchesSearch = sideBarSearch === "" || 
+            const filteredProducts = productsData.filter((p: Product) => {
+                const matchesSearch = sideBarSearch === "" ||
                     p.nombre.toLowerCase().includes(sideBarSearch.toLowerCase());
-                
+
                 // Manejo robusto de categorías (plural, singular o arreglo de objetos)
                 const rawCats = p.categorias || (p.categoria ? [p.categoria] : []);
-                const productCats = rawCats.map((c: any) => typeof c === 'object' ? c.id : c);
+                const productCats = rawCats.map((c: Category | number) => typeof c === 'object' ? c.id : c);
 
-                const matchesCategory = filterCategories.length === 0 || 
-                    productCats.some((id: any) => filterCategories.includes(Number(id)));
-                
+                const matchesCategory = filterCategories.length === 0 ||
+                    productCats.some((id: number) => filterCategories.includes(Number(id)));
+
                 const price = Number(p.precio);
-                const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) && 
-                                     (filterMaxPrice === null || price <= filterMaxPrice);
-                
+                const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) &&
+                    (filterMaxPrice === null || price <= filterMaxPrice);
+
                 return matchesSearch && matchesCategory && matchesPrice;
             });
 
@@ -111,7 +111,7 @@ export default function SearchProductsPage() {
                 disponible: true,
             }));
             setProducts(mappedProducts);
-        } catch (e) {
+        } catch {
             setError("Error al filtrar productos");
         } finally {
             setLoading(false);
