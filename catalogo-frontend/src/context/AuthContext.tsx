@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { getLoggedUserData } from "../services/user";
 
 type AuthState = {
@@ -8,7 +9,7 @@ type AuthState = {
     refresh: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthState>({
+export const AuthContext = createContext<AuthState>({
     isLoggedIn: false,
     isStaff: false,
     isLoading: true,
@@ -58,5 +59,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         </AuthContext.Provider>
     );
 }
-
-export const useAuth = () => useContext(AuthContext);
