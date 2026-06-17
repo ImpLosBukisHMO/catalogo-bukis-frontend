@@ -6,6 +6,7 @@ import Footer from "../elements/Footer";
 
 import type { CarritoResponse } from "../../types/carrito";
 import { getCarritoActual, updateItemCantidad, deleteItem, checkoutCart } from "../../services/carrito";
+import { IMAGE_PLACEHOLDER_URL, resolveImageUrlOrPlaceholder } from "../../utils/images";
 
 function money(n: number) {
   return new Intl.NumberFormat("es-MX", {
@@ -103,9 +104,8 @@ function getImageSrc(item: CartItem): string {
     item.producto_imagen ??
     nested(item, "variante", "imagen") ??
     nested(item, "variante", "producto", "imagen") ??
-    nested(item, "variante", "producto_imagen") ??
-    "https://placehold.net/600x600.png";
-  return String(src);
+    nested(item, "variante", "producto_imagen");
+  return resolveImageUrlOrPlaceholder(src != null ? String(src) : null);
 }
 
 export default function CarritoPage() {
@@ -288,8 +288,8 @@ export default function CarritoPage() {
                             alt={nombre}
                             className="block h-full w-full object-contain"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src =
-                                "https://placehold.net/600x600.png";
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = IMAGE_PLACEHOLDER_URL;
                             }}
                           />
                         </figure>
