@@ -25,6 +25,9 @@ import FavoritosPage from "./components/pages/FavoritosPage.tsx";
 import MisPedidosPage from "./components/pages/MisPedidosPage.tsx";
 import PedidoDetallePage from "./components/pages/PedidoDetallePage.tsx";
 
+import { AuthProvider } from "./context/AuthContext.tsx";
+
+
 const router = createBrowserRouter([
   // Public / user routes
   { path: "/", element: <Home /> },
@@ -61,6 +64,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>
 );

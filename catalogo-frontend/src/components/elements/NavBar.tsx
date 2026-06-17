@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Briefcase, House, Heart, ShoppingCart, UserRound, Search, Box, Menu, X } from "lucide-react";
 import { DoorOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
-import { getLoggedUserData, logOut } from "../../services/user";
+import { logOut } from "../../services/user";
+import { useAuth } from "../../context/AuthContext";
+
 
 type NavBarProps = {
     navBarQuery?: string | null;
@@ -11,8 +13,7 @@ type NavBarProps = {
 
 const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isStaff, setIsStaff] = useState(false);
+    const { isLoggedIn, isStaff } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const { pathname } = useLocation();
     const toggleNavMenu = () => setIsOpen(!isOpen);
@@ -27,19 +28,9 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
         }
     };
 
-    const fetchUserData = async () => {
-        try {
-            const userData = await getLoggedUserData();
-            setIsLoggedIn(true);
-            setIsStaff(Boolean(userData.is_staff));
-        } catch (e: unknown) {
-            if ((e as { response?: { status?: number } }).response?.status === 401) {
-                console.log("Es necesario registrarse o iniciar sesión.");
-            }
-        }
-    };
 
-    useEffect(() => { (async () => await fetchUserData())(); }, []);
+
+
 
     const linkClass = (isActive: boolean) =>
         `inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45 ${isActive ? "bg-white/15 underline underline-offset-4" : ""}`;
