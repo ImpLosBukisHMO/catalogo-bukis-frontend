@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { WorkerVariant } from "../../types/worker";
 import {
@@ -10,6 +11,7 @@ import {
   useCrearColor,
   useCrearCategoria,
 } from "../../queries/workerProducts";
+import { normalizeResponse } from "./responseNormalizer";
 import { getStockColor } from "../elements/workerTheme";
 import {
   WorkerDialogRoot,
@@ -23,6 +25,7 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
+import type { WorkerCategoria, WorkerColor } from "../../services/worker";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -122,6 +125,7 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
 // ─── main component ──────────────────────────────────────────────
 export default function WorkerProductsPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // ── Search / filter ──
   const [search, setSearch]       = useState("");
@@ -153,10 +157,22 @@ export default function WorkerProductsPage() {
     isFetching,
   } = useWorkerVariants();
 
-  const { data: categorias = [] } = useWorkerCategorias();
+  const { data: categoriasRaw = [], refetch: refetchCategorias } = useWorkerCategorias();
+  const categorias = useMemo(() => normalizeResponse(categoriasRaw) as WorkerCategoria[], [categoriasRaw]);
+
   const utilitiesOpen = panelOpen || createOpen;
-  const { data: colores = [] }    = useWorkerColores(utilitiesOpen);
-  const { data: productos = [] }  = useWorkerProductosSlim(utilitiesOpen);
+  const { data: coloresRaw = [], refetch: refetchColores } = useWorkerColores(utilitiesOpen);
+  const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
+
+  const { data: productos = [], isLoading: loadingProds, error: errorProds, refetch: refetchProds }  = useWorkerProductosSlim(utilitiesOpen);
+
+  // Forzar actualización de categorías al abrir paneles de creación o utilidades
+  useEffect(() => {
+    if (utilitiesOpen) {
+      refetchCategorias();
+      refetchColores();
+    }
+  }, [utilitiesOpen, refetchCategorias, refetchColores]);
 
   const editarVariante  = useEditarVariante();
   const crearColorM     = useCrearColor();
@@ -171,16 +187,8 @@ export default function WorkerProductsPage() {
 
   // ── Derived data ──
   const categories = useMemo(() => {
-    const catMap = new Map(categorias.map((c) => [c.id, c.nombre]));
-    const set = new Set<string>();
-    variants.forEach((v) => {
-      v.producto.categorias?.forEach((id) => {
-        const name = catMap.get(id);
-        if (name) set.add(name);
-      });
-    });
-    return Array.from(set).sort();
-  }, [variants, categorias]);
+    return (categorias as WorkerCategoria[]).map((c: WorkerCategoria) => c.nombre).sort();
+  }, [categorias]);
 
   const filtered = useMemo(() => {
     const catId = catFilter !== "ALL"
@@ -287,7 +295,7 @@ export default function WorkerProductsPage() {
                   fontWeight: 500,
                 }}
               >
-                ↻ actualizando…
+                ↻ Actualizando…
               </span>
             )}
           </p>
@@ -337,6 +345,9 @@ export default function WorkerProductsPage() {
           categorias={categorias}
           colores={colores}
           productos={productos}
+          isLoadingProductos={loadingProds}
+          errorProductos={errorProds instanceof Error ? errorProds.message : null}
+          onRetryProductos={() => refetchProds()}
         />
       )}
 
@@ -821,6 +832,7 @@ export default function WorkerProductsPage() {
           <Seccion title="Colores">
             <CrearColorForm
               onCreated={() => {
+                queryClient.invalidateQueries({ queryKey: ["worker", "colores"] });
                 crearColorM.reset();
               }}
               mutation={crearColorM}
@@ -828,7 +840,13 @@ export default function WorkerProductsPage() {
           </Seccion>
 
           <Seccion title="Categorías">
-            <CrearCategoriaForm mutation={crearCategoriaM} />
+            <CrearCategoriaForm 
+              mutation={crearCategoriaM} 
+              onCreated={async () => {
+                await queryClient.invalidateQueries({ queryKey: ["worker", "categorias"] });
+                refetchCategorias();
+              }}
+            />
           </Seccion>
 
         </div>
@@ -917,8 +935,10 @@ function CrearColorForm({
 
 function CrearCategoriaForm({
   mutation,
+  onCreated,
 }: {
   mutation: ReturnType<typeof useCrearCategoria>;
+  onCreated?: () => void;
 }) {
   const [nombre, setNombre] = useState("");
   const [error, setError]   = useState("");
@@ -929,6 +949,7 @@ function CrearCategoriaForm({
     try {
       await mutation.mutateAsync(nombre);
       setNombre("");
+      onCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
     }

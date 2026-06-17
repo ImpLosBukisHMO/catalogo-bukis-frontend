@@ -190,7 +190,7 @@ export default function ProductPage() {
       <title>Producto | Importaciones Los Bukis</title>
       <NavBar />
 
-      <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-12">
+      <main className="mx-auto max-w-400 px-4 py-8 sm:px-6 lg:px-12">
           {loading && <p className="text-neutral-600">Cargando producto...</p>}
           {error && <p className="text-bukis-red-700">{error}</p>}
 

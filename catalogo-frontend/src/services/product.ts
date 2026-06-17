@@ -1,13 +1,16 @@
 import API from "../api";
+import { normalizeResponse } from "../components/pages/responseNormalizer";
+import type { Product } from "../types/product";
 
 export async function getProducts() {
   const res = await API.get("/api/productos/");
-  return res.data;
+  return normalizeResponse<Product>(res.data);
 }
 
 export async function getProductById(id: string | number) {
   const res = await API.get(`/api/productos/${id}/`);
-  return res.data;
+  const data = res.data;
+  return data?.datos || data;
 }
 
 export type ProductImage = {

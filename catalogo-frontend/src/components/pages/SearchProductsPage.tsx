@@ -15,7 +15,7 @@ export default function SearchProductsPage() {
     const [searchParams] = useSearchParams();
     const productQuery = searchParams.get("query") || "";
 
-    const [sideBarSearch, setSideBarSearch] = useState<string>('');
+    const [sideBarSearch, setSideBarSearch] = useState<string>(productQuery);
     const [products, setProducts] = useState<ProductCardVM[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [filterCategories, setFilterCategories] = useState<number[]>([]);
@@ -45,13 +45,8 @@ export default function SearchProductsPage() {
 
     const fetchCategories = async () => {
         try {
-            const categoriesData = await getCategories();
-            if (Array.isArray(categoriesData)) {
-                setCategories(categoriesData);
-            } else {
-                console.error("La respuesta de categorías no es un arreglo:", categoriesData);
-                setCategories([]);
-            }
+            const data = await getCategories();
+            setCategories(data);
         } catch (e) {
             console.error("Error al obtener las categorías:", e);
             setError(e instanceof Error ? e.message : "Error desconocido al cargar las categorías.");
@@ -84,59 +79,29 @@ export default function SearchProductsPage() {
     }
 
     const applyFilters = async () => {
-        // Reset products.
-        if ((sideBarSearch.length == 0 && filterCategories.length == 0 &&
-            filterMinPrice == 0 && filterMaxPrice == 0) ||
-            (sideBarSearch.length == 0 && filterCategories.length == 0 &&
-                filterMinPrice == null && filterMaxPrice == null)) {
-            await fetchProductData();
-        }
-        // Apply filter(s).
-        else {
+        setLoading(true);
+        try {
             const productsData: Product[] = await getProducts();
-            const filteredProducts = productsData.filter((p) => {
-                let hasCategory = false;
-                let priceInRange = false;
-                let hasProdQuery = false
+            const filteredProducts = productsData.filter((p: Product) => {
+                const matchesSearch = sideBarSearch === "" ||
+                    p.nombre.toLowerCase().includes(sideBarSearch.toLowerCase());
 
-                // Search query with filter 
-                if (sideBarSearch.length > 0 && (filterCategories.length > 0 || Number(filterMinPrice) > 0 || Number(filterMaxPrice) > 0)) {
-                    if (p.nombre.toLowerCase().includes(sideBarSearch.toLowerCase())) {
-                        hasProdQuery = true;
-                    }
+                // Manejo robusto de categorías (plural, singular o arreglo de objetos)
+                const rawCats = p.categoria ? (Array.isArray(p.categoria) ? p.categoria : [p.categoria]) : [];
+                const productCats = rawCats
+                    .map((c: Category | number) => typeof c === 'object' ? c.id : c)
+                    .filter((id): id is number => typeof id === 'number');
 
-                    if (filterCategories.includes(p.categoria)) {
-                        hasCategory = true;
-                    }
+                const matchesCategory = filterCategories.length === 0 ||
+                    productCats.some((id: number) => filterCategories.includes(id));
 
-                    if ((Number(p.precio) >= filterMinPrice! && Number(p.precio) <= filterMaxPrice!) ||
-                        (Number(filterMinPrice) <= 0 && Number(filterMaxPrice) <= 0)) {
-                        priceInRange = true;
-                    }
+                const price = Number(p.precio);
+                const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) &&
+                    (filterMaxPrice === null || price <= filterMaxPrice);
 
-                    return (hasCategory && (priceInRange || hasProdQuery));
-                }
-
-                // Only search query.
-                else if (sideBarSearch.length > 0) {
-                    if (p.nombre.toLowerCase().includes(sideBarSearch.toLowerCase())) {
-                        return true;
-                    }
-                }
-
-                // Search without query.
-                else {
-                    if ((Number(p.precio) >= filterMinPrice! && Number(p.precio) <= filterMaxPrice!) ||
-                        (Number(filterMinPrice) <= 0 && Number(filterMaxPrice) <= 0)) {
-                        priceInRange = true;
-                    }
-                    if (filterCategories.includes(p.categoria)) {
-                        hasCategory = true;
-                    }
-
-                    return hasCategory && priceInRange;
-                }
+                return matchesSearch && matchesCategory && matchesPrice;
             });
+
             const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
                 id: p.id,
                 nombre: p.nombre,
@@ -146,17 +111,22 @@ export default function SearchProductsPage() {
                 disponible: true,
             }));
             setProducts(mappedProducts);
+        } catch {
+            setError("Error al filtrar productos");
+        } finally {
+            setLoading(false);
         }
     }
 
     useEffect(() => {
+        setSideBarSearch(productQuery);
         (async () => {
             setLoading(true);
             await fetchCategories();
             await mainFetch();
             setLoading(false);
         })();
-    }, [])
+    }, [productQuery])
 
     const handleToggleFavorite = async (product: ProductCardVM) => {
         if (!localStorage.getItem("access")) {
@@ -185,7 +155,7 @@ export default function SearchProductsPage() {
             <NavBar navBarQuery={productQuery || ""} />
             {favMsg && (
                 <div
-                    className={`fixed bottom-6 right-6 z-[999] max-w-xs rounded-2xl px-4 py-3 text-sm font-medium shadow-bukis-soft ${favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"}`}
+                    className={`fixed bottom-6 right-6 z-999 max-w-xs rounded-2xl px-4 py-3 text-sm font-medium shadow-bukis-soft ${favMsg.startsWith("Error") || favMsg.startsWith("Este") ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"}`}
                 >
                     {favMsg}
                 </div>

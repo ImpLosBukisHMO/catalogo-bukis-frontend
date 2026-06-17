@@ -3,7 +3,8 @@ import API from "../api";
 
 export async function getMisPedidos(): Promise<PedidoResumen[]> {
   const res = await API.get("/api/mis-pedidos/");
-  return res.data;
+  const data = res.data;
+  return data?.datos || data?.results || (Array.isArray(data) ? data : []);
 }
 
 export async function getMiPedidoDetalle(id: number): Promise<PedidoDetalle> {
