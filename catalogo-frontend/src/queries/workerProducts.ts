@@ -31,6 +31,7 @@ import {
 } from "../services/worker";
 import type { WorkerCreatedVariant, WorkerUploadedImage } from "../services/worker";
 import { workerKeys } from "./workerKeys";
+import type { WorkerProducto } from "../types/worker";
 
 // ─── useWorkerVariants ────────────────────────────────────────────────────────
 
