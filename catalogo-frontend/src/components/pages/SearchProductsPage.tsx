@@ -219,13 +219,13 @@ export default function SearchProductsPage() {
                         </p>
                         <div className="my-3">
                             <p className="mb-2 text-sm text-neutral-600">Mínimo</p>
-                            <input type="number" min={1} placeholder="Ej.: 1.50" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                            <input type="number" min={0} placeholder="Mayor o igual a $ 1.00 MXN" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={filterMinPrice || ""}
                                 onChange={(e) => { setFilterMinPrice(Number(e.target.value)) }} />
                         </div>
                         <div>
                             <p className="mb-2 text-sm text-neutral-600">Máximo</p>
-                            <input type="number" min={1} placeholder="Ej.: 1500.40" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                            <input type="number" min={1} placeholder="Precio límite" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={filterMaxPrice || ""}
                                 onChange={(e) => { setFilterMaxPrice(Number(e.target.value)) }} />
                         </div>

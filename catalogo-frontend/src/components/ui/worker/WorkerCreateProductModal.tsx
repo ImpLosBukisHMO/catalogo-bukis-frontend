@@ -5,6 +5,7 @@ import {
   useCrearProducto,
   useCrearVariante,
   useSubirImagen,
+  useEditarProducto,
 } from "../../../queries/workerProducts";
 import type {
   WorkerCategoria,
@@ -34,6 +35,8 @@ export type WorkerCreateProductModalProps = {
   isLoadingProductos?: boolean;
   errorProductos?: string | null;
   onRetryProductos?: () => void;
+  editingProduct?: WorkerProducto | null;
+  onEditingFinished?: () => void;
 };
 
 type ProductFormState = {
@@ -156,20 +159,24 @@ export function WorkerCreateProductModal({
   isLoadingProductos,
   errorProductos,
   onRetryProductos,
+  editingProduct,
+  onEditingFinished,
 }: WorkerCreateProductModalProps) {
   const [mode, setMode] = useState<ModalMode>("create-product");
   const [createdProduct, setCreatedProduct] = useState<WorkerProducto | null>(null);
 
   const crearProductoM = useCrearProducto();
+  const editarProductoM = useEditarProducto();
   const crearVarianteM = useCrearVariante();
   const subirImagenM = useSubirImagen();
 
   const isPending =
-    crearProductoM.isPending || crearVarianteM.isPending || subirImagenM.isPending;
+    crearProductoM.isPending || editarProductoM.isPending || crearVarianteM.isPending || subirImagenM.isPending;
 
   const resetFlow = () => {
     setMode("create-product");
     setCreatedProduct(null);
+    onEditingFinished?.();
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -202,13 +209,13 @@ export function WorkerCreateProductModal({
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
               <WorkerDialogTitle>
-                {mode === "create-product" && "Nuevo producto"}
+                {mode === "create-product" && (editingProduct ? "Editar producto" : "Nuevo producto")}
                 {mode === "select-product" && "Elegir producto base"}
                 {mode === "success" && "Producto creado"}
                 {mode === "add-variant" && "Agregar variante"}
               </WorkerDialogTitle>
               <WorkerDialogDescription>
-                {mode === "create-product" && "Cargá el producto base con una foto clara y campos cómodos para usar desde el celular."}
+                {mode === "create-product" && (editingProduct ? "Modificá los datos del producto base." : "Cargá el producto base con una foto clara y campos cómodos para usar desde el celular.")}
                 {mode === "select-product" && "Buscá un producto base ya existente para cargarle una variante nueva."}
                 {mode === "success" && "El producto quedó listo. Revisá el resumen o seguí con la primera variante."}
                 {mode === "add-variant" && "La variante se crea primero y recién después se suben sus imágenes con el id correcto."}
@@ -243,10 +250,21 @@ export function WorkerCreateProductModal({
           {mode === "create-product" && (
             <CreateProductSection
               categorias={categorias}
-              mutation={crearProductoM}
+              onSave={async (data) => {
+                if (editingProduct) {
+                  return (await editarProductoM.mutateAsync({ productId: editingProduct.id, data })) as WorkerProducto;
+                }
+                return (await crearProductoM.mutateAsync(data)) as WorkerProducto;
+              }}
+              editingProduct={editingProduct}
+              productos={productos}
               onCreated={(product) => {
                 setCreatedProduct(product);
-                setMode("success");
+                if (editingProduct) {
+                  onOpenChange(false);
+                } else {
+                  setMode("success");
+                }
               }}
               onSwitchToExisting={() => setMode("select-product")}
             />
@@ -293,9 +311,9 @@ export function WorkerCreateProductModal({
                 kind="primary"
                 type="submit"
                 form={CREATE_PRODUCT_FORM_ID}
-                disabled={crearProductoM.isPending}
+                disabled={isPending}
               >
-                {crearProductoM.isPending ? "Creando…" : "Crear producto"}
+                {isPending ? "Guardando…" : (editingProduct ? "Guardar cambios" : "Crear producto")}
               </ModalButton>
             </>
           )}
@@ -354,16 +372,37 @@ export function WorkerCreateProductModal({
  */
 function CreateProductSection({
   categorias,
-  mutation,
+  onSave,
+  editingProduct,
+  productos,
   onCreated,
   onSwitchToExisting,
 }: {
   categorias: WorkerCategoria[];
-  mutation: ReturnType<typeof useCrearProducto>;
+  onSave: (data: FormData) => Promise<WorkerProducto>;
+  editingProduct?: WorkerProducto | null;
+  productos?: WorkerProductoSlim[];
   onCreated: (product: WorkerProducto) => void;
   onSwitchToExisting: () => void;
 }) {
-  const [form, setForm] = useState<ProductFormState>(defaultProductForm);
+  const [form, setForm] = useState<ProductFormState>(() => {
+    const rawProduct = productos?.find((p) => p.id === editingProduct?.id) || editingProduct;
+    if (rawProduct) {
+      const p = rawProduct as WorkerProducto;
+
+      return {
+        nombre: String(p.nombre || ""),
+        precio: p.precio !== undefined ? String(p.precio) : "",
+        peso: p.peso !== undefined ? String(p.peso) : "",
+        medidas: String(p.medidas || ""),
+        descripcion: String(p.descripcion || ""),
+        capacidad: String(p.capacidad || ""),
+        categoria: Array.isArray(p.categorias) && p.categorias.length ? String(p.categorias[0]) : "",
+      };
+    }
+    return defaultProductForm;
+  });
+
   const [imagen, setImagen] = useState<File | null>(null);
   const [disponible, setDisponible] = useState(true);
   const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
@@ -384,7 +423,7 @@ function CreateProductSection({
     if (!form.peso.trim()) nextFieldErrors.peso = "Ingresá el peso.";
     if (!form.medidas.trim()) nextFieldErrors.medidas = "Ingresá las medidas.";
     if (!form.descripcion.trim()) nextFieldErrors.descripcion = "Ingresá la descripción.";
-    if (!imagen) nextFieldErrors.imagen = "Seleccioná una imagen principal.";
+    if (!imagen && !editingProduct) nextFieldErrors.imagen = "Seleccioná una imagen principal.";
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -405,9 +444,9 @@ function CreateProductSection({
       formData.append("disponible", disponible ? "true" : "false");
       if (form.capacidad.trim()) formData.append("capacidad", form.capacidad.trim());
       if (form.categoria) formData.append("categorias_ids", form.categoria);
-      formData.append("imagen", imagen!);
+      if (imagen) formData.append("imagen", imagen);
 
-      const created = await mutation.mutateAsync(formData);
+      const created = await onSave(formData);
       onCreated(created);
     } catch (error) {
       const parsed = parseProductApiError(error);

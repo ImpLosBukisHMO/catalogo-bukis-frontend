@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import type { WorkerVariant } from "../../types/worker";
+import type { WorkerVariant, WorkerProducto } from "../../types/worker";
 import {
   useWorkerVariants,
+  useWorkerProductos,
+  useWorkerProductosSlim,
   useWorkerCategorias,
   useWorkerColores,
-  useWorkerProductosSlim,
   useEditarVariante,
   useCrearColor,
   useCrearCategoria,
@@ -25,8 +26,13 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
-import type { WorkerCategoria, WorkerColor } from "../../services/worker";
+import type {
+  WorkerCategoria,
+  WorkerColor,
+  WorkerProductoSlim,
+} from "../../services/worker";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
+import { normalizeString } from "../../utils/normalizers";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -135,6 +141,7 @@ export default function WorkerProductsPage() {
   // ── Utility drawer / create modal ──
   const [panelOpen, setPanelOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<WorkerProducto | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const createTriggerRef = useRef<HTMLButtonElement>(null);
   const prevCreateOpenRef = useRef(false);
@@ -166,6 +173,7 @@ export default function WorkerProductsPage() {
   const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
 
   const { data: productos = [], isLoading: loadingProds, error: errorProds, refetch: refetchProds }  = useWorkerProductosSlim(utilitiesOpen);
+  const { data: productosCompletos = [] } = useWorkerProductos();
 
   // Forzar actualización de categorías al abrir paneles de creación o utilidades
   useEffect(() => {
@@ -196,7 +204,8 @@ export default function WorkerProductsPage() {
       ? categorias.find((c) => c.nombre === catFilter)?.id
       : undefined;
     return variants.filter((v) => {
-      const matchName = v.producto.nombre.toLowerCase().includes(search.toLowerCase());
+      const matchName = normalizeString(v.producto.nombre).toLowerCase()
+      .includes(normalizeString(search).toLowerCase());
       const matchCat =
         catFilter === "ALL" ||
         (catId !== undefined && v.producto.categorias?.includes(catId));
@@ -212,6 +221,16 @@ export default function WorkerProductsPage() {
     setEditStock(String(v.stock));
     setEditActivo(v.activo);
     setEditError(null);
+  };
+
+  const handleEditProduct = (p: WorkerProductoSlim) => {
+    const product = productosCompletos.find((fullProduct) => fullProduct.id === p.id);
+    if (product) {
+      setEditingProduct(product);
+    } else {
+      setEditingProduct(p as WorkerProducto);
+    }
+    setCreateOpen(true);
   };
 
   const cancelEdit = () => { setEditId(null); setEditError(null); };
@@ -349,6 +368,8 @@ export default function WorkerProductsPage() {
           isLoadingProductos={loadingProds}
           errorProductos={errorProds instanceof Error ? errorProds.message : null}
           onRetryProductos={() => refetchProds()}
+          editingProduct={editingProduct}
+          onEditingFinished={() => setEditingProduct(null)}
         />
       )}
 
@@ -547,7 +568,23 @@ export default function WorkerProductsPage() {
                         color: "var(--worker-ink)",
                       }}
                     >
-                      {variantName(v)}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {variantName(v)}
+                        <button
+                          onClick={() => handleEditProduct(v.producto as unknown as WorkerProductoSlim)}
+                          title="Editar producto base"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: 14,
+                            opacity: 0.9,
+                            padding: "4px"
+                          }}
+                        >
+                          ⚙️
+                        </button>
+                      </div>
                     </td>
 
                     {/* Item # */}

@@ -20,6 +20,7 @@ import {
   crearColor,
   crearProducto,
   crearVariante,
+  editarProducto,
   editarVariante,
   getWorkerCategorias,
   getWorkerColores,
@@ -154,6 +155,28 @@ export function useCrearProducto() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: FormData) => crearProducto(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: workerKeys.productos() });
+      qc.invalidateQueries({ queryKey: workerKeys.variants() });
+      qc.invalidateQueries({ queryKey: workerKeys.dashboard() });
+    },
+  });
+}
+
+// ─── useEditarProducto ───────────────────────────────────────────────────────
+
+/**
+ * Updates a product base via multipart form data.
+ * On success: invalidates productosList(), variantsList(), and dashboard().
+ */
+export function useEditarProducto() {
+  const qc = useQueryClient();
+  return useMutation<
+    WorkerProducto,
+    Error,
+    { productId: number; data: FormData }
+  >({
+    mutationFn: ({ productId, data }) => editarProducto(productId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.productos() });
       qc.invalidateQueries({ queryKey: workerKeys.variants() });
