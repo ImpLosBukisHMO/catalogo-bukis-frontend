@@ -33,7 +33,7 @@ import type {
   WorkerProductoSlim,
 } from "../../services/worker";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
-import { normalizeString } from "../../utils/normalizers";
+import { stripDiacritics } from "../../utils/normalizers";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -219,8 +219,8 @@ export default function WorkerProductsPage() {
       ? categorias.find((c) => c.nombre === catFilter)?.id
       : undefined;
     return variants.filter((v) => {
-      const matchName = normalizeString(v.producto.nombre).toLowerCase()
-      .includes(normalizeString(search).toLowerCase());
+      const matchName = stripDiacritics(v.producto.nombre).toLowerCase()
+      .includes(stripDiacritics(search).toLowerCase());
       const matchCat =
         catFilter === "ALL" ||
         (catId !== undefined && v.producto.categorias?.includes(catId));
