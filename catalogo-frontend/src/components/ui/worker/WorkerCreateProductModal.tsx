@@ -1181,7 +1181,7 @@ function EditVariantSection({
   const [activo, setActivo] = useState(variant.activo);
   const [precio, setPrecio] = useState(variant.precio ? String(variant.precio) : "");
   const [imagenes, setImagenes] = useState<File[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<EditVariantFieldErrors>({}); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [fieldErrors] = useState<EditVariantFieldErrors>({});
   const [submitError, setSubmitError] = useState("");
 
   const handleSubmit = async (event: FormEvent) => {
