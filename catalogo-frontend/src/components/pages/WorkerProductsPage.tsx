@@ -157,6 +157,7 @@ export default function WorkerProductsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<WorkerProducto | null>(null);
   const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
+  const [editingVariant, setEditingVariant] = useState<WorkerVariant | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const createTriggerRef = useRef<HTMLButtonElement>(null);
   const prevCreateOpenRef = useRef(false);
@@ -252,6 +253,7 @@ export default function WorkerProductsPage() {
     const product = productosCompletos.find((fullProduct) => fullProduct.id === v.producto.id);
     if (product) {
       setEditingProduct(product);
+      setEditingVariant(v);
       setEditingVariantId(v.variant_id);
       setCreateOpen(true);
     }
@@ -394,9 +396,11 @@ export default function WorkerProductsPage() {
           onRetryProductos={() => refetchProds()}
           editingProduct={editingProduct}
           initialVariantId={editingVariantId}
+          initialVariant={editingVariant}
           onEditingFinished={() => {
             setEditingProduct(null);
             setEditingVariantId(null);
+            setEditingVariant(null);
           }}
         />
       )}

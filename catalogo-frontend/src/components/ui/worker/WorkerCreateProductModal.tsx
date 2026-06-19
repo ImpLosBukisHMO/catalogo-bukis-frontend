@@ -39,6 +39,7 @@ export type WorkerCreateProductModalProps = {
   editingProduct?: WorkerProducto | null;
   onEditingFinished?: () => void;
   initialVariantId?: number | null;
+  initialVariant?: WorkerVariant | null;
 };
 
 type ProductFormState = {
@@ -166,6 +167,7 @@ export function WorkerCreateProductModal({
   editingProduct,
   onEditingFinished,
   initialVariantId,
+  initialVariant,
 }: WorkerCreateProductModalProps) {
   
   const [mode, setMode] = useState<ModalMode>(() => {
@@ -180,6 +182,9 @@ export function WorkerCreateProductModal({
   );
 
   const [selectedVariantToEdit, setSelectedVariantToEdit] = useState<WorkerVariant | null>(() => {
+    if (initialVariant) {
+      return initialVariant;
+    }
     if (editingProduct && initialVariantId) {
       return editingProduct.variantes?.find(v => v.variant_id === initialVariantId) ?? null;
     }
@@ -350,7 +355,7 @@ export function WorkerCreateProductModal({
               colores={colores}
               varianteMutation={editarVarianteM}
               imagenMutation={subirImagenM}
-              onCompleted={() => setMode("select-variant-to-edit")}
+              onCompleted={handleCloseClick}
             />
           )}
         </WorkerDialogBody>
@@ -415,10 +420,10 @@ export function WorkerCreateProductModal({
             <>
               <ModalButton
                 kind="secondary"
-                onClick={() => mode === "edit-variant" ? setMode("select-variant-to-edit") : setMode("success")}
+                onClick={() => mode === "edit-variant" ? handleCloseClick() : setMode("success")}
                 disabled={isPending}
               >
-                Volver
+                Cancelar
               </ModalButton>
               {mode === "edit-variant" && (
                 <ModalButton
