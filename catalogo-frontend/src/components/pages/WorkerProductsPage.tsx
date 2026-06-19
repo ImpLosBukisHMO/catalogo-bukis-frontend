@@ -26,6 +26,7 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
+import type { CSSProperties } from "react";
 import type {
   WorkerCategoria,
   WorkerColor,
@@ -129,6 +130,19 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
   );
 }
 
+function iconButtonStyle(disabled: boolean): CSSProperties {
+  return {
+    background: "none",
+    border: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: 16,
+    color: "var(--worker-ink-tertiary)",
+    opacity: disabled ? 0.5 : 1,
+    padding: "2px 6px",
+    borderRadius: 4,
+  };
+}
+
 // ─── main component ──────────────────────────────────────────────
 export default function WorkerProductsPage() {
   const navigate = useNavigate();
@@ -142,6 +156,7 @@ export default function WorkerProductsPage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<WorkerProducto | null>(null);
+  const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const createTriggerRef = useRef<HTMLButtonElement>(null);
   const prevCreateOpenRef = useRef(false);
@@ -173,7 +188,7 @@ export default function WorkerProductsPage() {
   const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
 
   const { data: productos = [], isLoading: loadingProds, error: errorProds, refetch: refetchProds }  = useWorkerProductosSlim(utilitiesOpen);
-  const { data: productosCompletos = [] } = useWorkerProductos();
+  const { data: productosCompletos = [], isLoading: isLoadingProductosCompletos } = useWorkerProductos();
 
   // Forzar actualización de categorías al abrir paneles de creación o utilidades
   useEffect(() => {
@@ -231,6 +246,15 @@ export default function WorkerProductsPage() {
       setEditingProduct(p as WorkerProducto);
     }
     setCreateOpen(true);
+  };
+
+  const handleEditVariantModal = (v: WorkerVariant) => {
+    const product = productosCompletos.find((fullProduct) => fullProduct.id === v.producto.id);
+    if (product) {
+      setEditingProduct(product);
+      setEditingVariantId(v.variant_id);
+      setCreateOpen(true);
+    }
   };
 
   const cancelEdit = () => { setEditId(null); setEditError(null); };
@@ -369,7 +393,11 @@ export default function WorkerProductsPage() {
           errorProductos={errorProds instanceof Error ? errorProds.message : null}
           onRetryProductos={() => refetchProds()}
           editingProduct={editingProduct}
-          onEditingFinished={() => setEditingProduct(null)}
+          initialVariantId={editingVariantId}
+          onEditingFinished={() => {
+            setEditingProduct(null);
+            setEditingVariantId(null);
+          }}
         />
       )}
 
@@ -571,16 +599,11 @@ export default function WorkerProductsPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         {variantName(v)}
                         <button
+                          disabled={isLoadingProductosCompletos}
                           onClick={() => handleEditProduct(v.producto as unknown as WorkerProductoSlim)}
-                          title="Editar producto base"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: 14,
-                            opacity: 0.9,
-                            padding: "4px"
-                          }}
+                          title="Editar producto base" // title es bueno para tooltips
+                          aria-label="Editar producto base" // aria-label para screen readers
+                          style={iconButtonStyle(isLoadingProductosCompletos)}
                         >
                           ⚙️
                         </button>
@@ -727,21 +750,39 @@ export default function WorkerProductsPage() {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => startEdit(v)}
-                          title="Editar"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            fontSize: 18,
-                            cursor: "pointer",
-                            color: "var(--worker-ink-tertiary)",
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                          }}
-                        >
-                          ✏️
-                        </button>
+                        <>
+                          <button
+                            disabled={savingEdit}
+                            onClick={() => startEdit(v)}
+                            title="Editar"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              fontSize: 18,
+                              cursor: "pointer",
+                              color: "var(--worker-ink-tertiary)",
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            disabled={isLoadingProductosCompletos}
+                            onClick={() => handleEditVariantModal(v)}
+                            title="Edición completa de variante (fotos, item, etc)"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              fontSize: 16,
+                              cursor: "pointer",
+                              opacity: isLoadingProductosCompletos ? 0.5 : 1,
+                              padding: "2px 6px",
+                            }}
+                          >
+                            🖼️
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>

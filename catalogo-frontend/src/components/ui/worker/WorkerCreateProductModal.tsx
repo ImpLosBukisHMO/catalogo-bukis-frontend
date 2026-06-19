@@ -6,6 +6,7 @@ import {
   useCrearVariante,
   useSubirImagen,
   useEditarProducto,
+  useEditarVariante,
 } from "../../../queries/workerProducts";
 import type {
   WorkerCategoria,
@@ -13,7 +14,7 @@ import type {
   WorkerProductoSlim,
 } from "../../../services/worker";
 import type { WorkerCreatedVariant } from "../../../services/worker";
-import type { WorkerProducto } from "../../../types/worker";
+import type { WorkerProducto, WorkerVariant } from "../../../types/worker";
 import {
   WorkerDialogBody,
   WorkerDialogContent,
@@ -24,7 +25,7 @@ import {
   WorkerDialogTitle,
 } from "./WorkerDialog";
 
-export type ModalMode = "create-product" | "success" | "add-variant" | "select-product";
+export type ModalMode = "create-product" | "success" | "add-variant" | "select-product" | "edit-base-product" | "select-variant-to-edit" | "edit-variant";
 
 export type WorkerCreateProductModalProps = {
   open: boolean;
@@ -37,6 +38,7 @@ export type WorkerCreateProductModalProps = {
   onRetryProductos?: () => void;
   editingProduct?: WorkerProducto | null;
   onEditingFinished?: () => void;
+  initialVariantId?: number | null;
 };
 
 type ProductFormState = {
@@ -52,6 +54,7 @@ type ProductFormState = {
 type ProductFieldErrors = Partial<Record<keyof ProductFormState | "imagen", string>>;
 
 type VariantFieldErrors = Partial<Record<"colorId" | "item" | "stock", string>>;
+type EditVariantFieldErrors = Partial<Record<"colorId" | "item" | "stock" | "precio", string>>;
 
 type PendingVariantUpload = {
   variant: WorkerCreatedVariant;
@@ -85,6 +88,7 @@ type WorkerPhotoPickerProps =
 
 const CREATE_PRODUCT_FORM_ID = "worker-create-product-form";
 const ADD_VARIANT_FORM_ID = "worker-add-variant-form";
+const EDIT_VARIANT_FORM_ID = "worker-edit-variant-form";
 
 const inputStyle: CSSProperties = {
   width: "100%",
@@ -161,21 +165,40 @@ export function WorkerCreateProductModal({
   onRetryProductos,
   editingProduct,
   onEditingFinished,
+  initialVariantId,
 }: WorkerCreateProductModalProps) {
-  const [mode, setMode] = useState<ModalMode>("create-product");
-  const [createdProduct, setCreatedProduct] = useState<WorkerProducto | null>(null);
+  
+  const [mode, setMode] = useState<ModalMode>(() => {
+    if (editingProduct) {
+      return initialVariantId ? "edit-variant" : "success";
+    }
+    return "create-product";
+  });
+
+  const [createdProduct, setCreatedProduct] = useState<WorkerProducto | null>(
+    editingProduct ?? null
+  );
+
+  const [selectedVariantToEdit, setSelectedVariantToEdit] = useState<WorkerVariant | null>(() => {
+    if (editingProduct && initialVariantId) {
+      return editingProduct.variantes?.find(v => v.variant_id === initialVariantId) ?? null;
+    }
+    return null;
+  });
 
   const crearProductoM = useCrearProducto();
   const editarProductoM = useEditarProducto();
   const crearVarianteM = useCrearVariante();
   const subirImagenM = useSubirImagen();
+  const editarVarianteM = useEditarVariante();
 
   const isPending =
-    crearProductoM.isPending || editarProductoM.isPending || crearVarianteM.isPending || subirImagenM.isPending;
+    crearProductoM.isPending || editarProductoM.isPending || crearVarianteM.isPending || subirImagenM.isPending || editarVarianteM.isPending;
 
   const resetFlow = () => {
     setMode("create-product");
     setCreatedProduct(null);
+    setSelectedVariantToEdit(null);
     onEditingFinished?.();
   };
 
@@ -209,16 +232,22 @@ export function WorkerCreateProductModal({
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
               <WorkerDialogTitle>
-                {mode === "create-product" && (editingProduct ? "Editar producto" : "Nuevo producto")}
+                {mode === "create-product" && "Nuevo producto"}
+                {mode === "edit-base-product" && "Editar producto base"}
                 {mode === "select-product" && "Elegir producto base"}
-                {mode === "success" && "Producto creado"}
+                {mode === "success" && (editingProduct ? "Gestionar producto" : "Producto creado")}
                 {mode === "add-variant" && "Agregar variante"}
+                {mode === "select-variant-to-edit" && "Seleccionar variante"}
+                {mode === "edit-variant" && "Editar variante"}
               </WorkerDialogTitle>
               <WorkerDialogDescription>
-                {mode === "create-product" && (editingProduct ? "Modificá los datos del producto base." : "Cargá el producto base con una foto clara y campos cómodos para usar desde el celular.")}
-                {mode === "select-product" && "Buscá un producto base ya existente para cargarle una variante nueva."}
-                {mode === "success" && "El producto quedó listo. Revisá el resumen o seguí con la primera variante."}
-                {mode === "add-variant" && "La variante se crea primero y recién después se suben sus imágenes con el id correcto."}
+                {mode === "create-product" && "Cargá el producto base con una foto clara."}
+                {mode === "edit-base-product" && "Modificá los datos generales del producto."}
+                {mode === "select-product" && "Buscá un producto base ya existente."}
+                {mode === "success" && "El producto quedó listo. Revisá el resumen o gestioná sus variantes."}
+                {mode === "add-variant" && "Cargá una nueva combinación de color y stock."}
+                {mode === "select-variant-to-edit" && "Elegí qué variante quieres modificar."}
+                {mode === "edit-variant" && "Actualizá stock, precio o fotos de la variante."}
               </WorkerDialogDescription>
             </div>
 
@@ -247,26 +276,27 @@ export function WorkerCreateProductModal({
         </WorkerDialogHeader>
 
         <WorkerDialogBody scrollable>
-          {mode === "create-product" && (
+          {(mode === "create-product" || mode === "edit-base-product") && (
             <CreateProductSection
               categorias={categorias}
               onSave={async (data) => {
-                if (editingProduct) {
-                  return (await editarProductoM.mutateAsync({ productId: editingProduct.id, data })) as WorkerProducto;
+                if (createdProduct) {
+                  return (await editarProductoM.mutateAsync({ productId: createdProduct.id, data })) as WorkerProducto;
                 }
                 return (await crearProductoM.mutateAsync(data)) as WorkerProducto;
               }}
-              editingProduct={editingProduct}
+              initialProduct={createdProduct}
               productos={productos}
               onCreated={(product) => {
                 setCreatedProduct(product);
-                if (editingProduct) {
-                  onOpenChange(false);
+                if (mode === "edit-base-product") {
+                  setMode("success");
                 } else {
                   setMode("success");
                 }
               }}
               onSwitchToExisting={() => setMode("select-product")}
+              isEditing={mode === "edit-base-product"}
             />
           )}
 
@@ -287,6 +317,9 @@ export function WorkerCreateProductModal({
             <SuccessSection
               createdProduct={createdProduct}
               createdProductLabel={createdProductLabel}
+              onEditBase={() => setMode("edit-base-product")}
+              onAddVariant={() => setMode("add-variant")}
+              onManageVariants={() => setMode("select-variant-to-edit")}
             />
           )}
 
@@ -296,13 +329,34 @@ export function WorkerCreateProductModal({
               colores={colores}
               varianteMutation={crearVarianteM}
               imagenMutation={subirImagenM}
-              onCompleted={() => onOpenChange(false)}
+              onCompleted={() => setMode("success")}
+            />
+          )}
+
+          {mode === "select-variant-to-edit" && createdProduct && (
+            <SelectVariantToEditSection
+              product={createdProduct}
+              onVariantSelected={(variant) => {
+                setSelectedVariantToEdit(variant);
+                setMode("edit-variant");
+              }}
+            />
+          )}
+
+          {mode === "edit-variant" && createdProduct && selectedVariantToEdit && (
+            <EditVariantSection
+              product={createdProduct}
+              variant={selectedVariantToEdit}
+              colores={colores}
+              varianteMutation={editarVarianteM}
+              imagenMutation={subirImagenM}
+              onCompleted={() => setMode("select-variant-to-edit")}
             />
           )}
         </WorkerDialogBody>
 
         <WorkerDialogFooter className="worker-dialog-footer--stack-sm">
-          {mode === "create-product" && (
+          {(mode === "create-product" || mode === "edit-base-product") && (
             <>
               <ModalButton kind="secondary" onClick={handleCloseClick} disabled={isPending}>
                 Cancelar
@@ -313,7 +367,7 @@ export function WorkerCreateProductModal({
                 form={CREATE_PRODUCT_FORM_ID}
                 disabled={isPending}
               >
-                {isPending ? "Guardando…" : (editingProduct ? "Guardar cambios" : "Crear producto")}
+                {isPending ? "Guardando…" : (mode === "edit-base-product" ? "Guardar cambios" : "Crear producto")}
               </ModalButton>
             </>
           )}
@@ -356,6 +410,28 @@ export function WorkerCreateProductModal({
               </ModalButton>
             </>
           )}
+
+          {(mode === "select-variant-to-edit" || mode === "edit-variant") && (
+            <>
+              <ModalButton
+                kind="secondary"
+                onClick={() => mode === "edit-variant" ? setMode("select-variant-to-edit") : setMode("success")}
+                disabled={isPending}
+              >
+                Volver
+              </ModalButton>
+              {mode === "edit-variant" && (
+                <ModalButton
+                  kind="primary"
+                  type="submit"
+                  form={EDIT_VARIANT_FORM_ID}
+                  disabled={isPending}
+                >
+                  {isPending ? "Guardando…" : "Actualizar variante"}
+                </ModalButton>
+              )}
+            </>
+          )}
         </WorkerDialogFooter>
       </WorkerDialogContent>
     </WorkerDialogRoot>
@@ -373,22 +449,22 @@ export function WorkerCreateProductModal({
 function CreateProductSection({
   categorias,
   onSave,
-  editingProduct,
-  productos,
+  initialProduct,
   onCreated,
   onSwitchToExisting,
+  isEditing,
 }: {
   categorias: WorkerCategoria[];
   onSave: (data: FormData) => Promise<WorkerProducto>;
-  editingProduct?: WorkerProducto | null;
+  initialProduct?: WorkerProducto | null;
   productos?: WorkerProductoSlim[];
   onCreated: (product: WorkerProducto) => void;
   onSwitchToExisting: () => void;
+  isEditing?: boolean;
 }) {
   const [form, setForm] = useState<ProductFormState>(() => {
-    const rawProduct = productos?.find((p) => p.id === editingProduct?.id) || editingProduct;
-    if (rawProduct) {
-      const p = rawProduct as WorkerProducto;
+    if (initialProduct) {
+      const p = initialProduct as WorkerProducto;
 
       return {
         nombre: String(p.nombre || ""),
@@ -404,7 +480,7 @@ function CreateProductSection({
   });
 
   const [imagen, setImagen] = useState<File | null>(null);
-  const [disponible, setDisponible] = useState(true);
+  const [disponible, setDisponible] = useState(initialProduct?.disponible ?? false);
   const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
   const [submitError, setSubmitError] = useState("");
 
@@ -423,7 +499,7 @@ function CreateProductSection({
     if (!form.peso.trim()) nextFieldErrors.peso = "Ingresá el peso.";
     if (!form.medidas.trim()) nextFieldErrors.medidas = "Ingresá las medidas.";
     if (!form.descripcion.trim()) nextFieldErrors.descripcion = "Ingresá la descripción.";
-    if (!imagen && !editingProduct) nextFieldErrors.imagen = "Seleccioná una imagen principal.";
+    if (!imagen && !isEditing) nextFieldErrors.imagen = "Seleccioná una imagen principal.";
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -457,19 +533,21 @@ function CreateProductSection({
 
   return (
     <form id={CREATE_PRODUCT_FORM_ID} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4 }}>
-        <button
-          type="button"
-          onClick={onSwitchToExisting}
-          style={{
-            ...tertiaryButtonStyle(),
-            borderColor: "var(--worker-rail)",
-            color: "var(--worker-rail)",
-          }}
-        >
-          🔍 Buscar producto base existente
-        </button>
-      </div>
+      {!isEditing && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4 }}>
+          <button
+            type="button"
+            onClick={onSwitchToExisting}
+            style={{
+              ...tertiaryButtonStyle(),
+              borderColor: "var(--worker-rail)",
+              color: "var(--worker-rail)",
+            }}
+          >
+            🔍 Buscar producto base existente
+          </button>
+        </div>
+      )}
       <SectionCard
         title="Datos principales"
         description="Completá lo mínimo necesario para identificar y vender el producto sin apretar campos en horizontal."
@@ -678,15 +756,22 @@ function SelectProductSection({
 function SuccessSection({
   createdProduct,
   createdProductLabel,
+  onEditBase,
 }: {
   createdProduct: WorkerProducto;
   createdProductLabel: string;
+  onEditBase: () => void;
+  onAddVariant: () => void;
+  onManageVariants: () => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <InlineNotice tone="success">
-        Producto creado: <strong>{createdProductLabel}</strong>
-      </InlineNotice>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <InlineNotice tone="success" style={{ flex: 1, margin: 0 }}>
+          Producto: <strong>{createdProductLabel}</strong>
+        </InlineNotice>
+        <button onClick={onEditBase} style={{ ...tertiaryButtonStyle(), marginLeft: 8 }}>Editar Base</button>
+      </div>
 
       <SectionCard
         title="Resumen rápido"
@@ -1044,6 +1129,131 @@ function AddVariantSection({
   );
 }
 
+function SelectVariantToEditSection({
+  product,
+  onVariantSelected,
+}: {
+  product: WorkerProducto;
+  onVariantSelected: (variant: WorkerVariant) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {product.variantes?.map((v) => (
+        <button
+          key={v.variant_id}
+          onClick={() => onVariantSelected(v)}
+          style={{
+            ...inputStyle,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "var(--worker-shelf)",
+            cursor: "pointer"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 14, height: 14, borderRadius: "50%", background: v.color.hex, border: "1px solid var(--worker-border)" }} />
+            <span>{v.color.nombre} - {v.item}</span>
+          </div>
+          <span style={{ fontWeight: 700, color: "var(--worker-rail)" }}>Stock: {v.stock} ✏️</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EditVariantSection({
+  product,
+  variant,
+  varianteMutation,
+  imagenMutation,
+  onCompleted,
+}: {
+  product: WorkerProducto;
+  variant: WorkerVariant;
+  colores: WorkerColor[];
+  varianteMutation: ReturnType<typeof useEditarVariante>;
+  imagenMutation: ReturnType<typeof useSubirImagen>;
+  onCompleted: () => void;
+}) {
+  const [item, setItem] = useState(variant.item || "");
+  const [stock, setStock] = useState(String(variant.stock));
+  const [activo, setActivo] = useState(variant.activo);
+  const [precio, setPrecio] = useState(variant.precio ? String(variant.precio) : "");
+  const [imagenes, setImagenes] = useState<File[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<EditVariantFieldErrors>({}); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [submitError, setSubmitError] = useState("");
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitError("");
+
+    try {
+      await varianteMutation.mutateAsync({
+        variantId: variant.variant_id,
+        data: {
+          stock: Number(stock),
+          activo,
+          item: item.trim(),
+          precio: precio.trim() ? Number(precio) : null
+        },
+      });
+
+      // Subir nuevas imágenes si las hay
+      for (let i = 0; i < imagenes.length; i++) {
+        const formData = new FormData();
+        formData.append("imagen", imagenes[i]);
+        formData.append("variante", String(variant.variant_id));
+        await imagenMutation.mutateAsync({ productoId: product.id, data: formData });
+      }
+
+      onCompleted();
+    } catch (error) {
+      setSubmitError(parseInlineApiError(error));
+    }
+  };
+
+  return (
+    <form id={EDIT_VARIANT_FORM_ID} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <SectionCard title="Datos de la variante" description="Actualizá los valores específicos de esta variante.">
+        <FormField label="Color" required={false}>
+          <div style={{ ...inputStyle, background: "var(--worker-bench)", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 14, height: 14, borderRadius: "50%", background: variant.color.hex }} />
+            {variant.color.nombre}
+          </div>
+        </FormField>
+        <div style={responsiveGridStyle}>
+          <FormField label="Item/SKU" error={fieldErrors.item}>
+            <input type="text" value={item} onChange={(e) => setItem(e.target.value)} style={inputStyle} />
+          </FormField>
+          <FormField label="Stock" error={fieldErrors.stock}>
+            <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} style={inputStyle} />
+          </FormField>
+        </div>
+        <FormField label="Precio Variante (opcional)">
+          <input type="number" step="0.01" value={precio} onChange={(e) => setPrecio(e.target.value)} style={inputStyle} />
+        </FormField>
+        <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
+          <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
+          Variante activa
+        </label>
+      </SectionCard>
+
+      <SectionCard title="Nuevas fotos" description="Agregá más fotos a esta variante. Las fotos existentes se gestionan desde el listado general.">
+        <WorkerPhotoPicker
+          mode="variant"
+          label="Agregar fotos"
+          helper="Seleccioná imágenes adicionales para esta variante."
+          value={imagenes}
+          onChange={setImagenes}
+        />
+      </SectionCard>
+
+      {submitError && <InlineNotice tone="error">{submitError}</InlineNotice>}
+    </form>
+  );
+}
+
 function WorkerPhotoPicker(props: WorkerPhotoPickerProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -1200,9 +1410,11 @@ function SectionCard({
 function InlineNotice({
   tone,
   children,
+  style,
 }: {
   tone: "info" | "success" | "error";
   children: ReactNode;
+  style?: CSSProperties;
 }) {
   const noticeTheme = {
     info: {
@@ -1229,6 +1441,7 @@ function InlineNotice({
         borderRadius: 12,
         background: noticeTheme.background,
         border: `1px solid ${noticeTheme.border}`,
+        ...style,
       }}
     >
       <p style={tone === "success" ? successStyle : { ...errorStyle, color: noticeTheme.color }}>

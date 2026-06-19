@@ -91,25 +91,13 @@ export default function SearchProductsPage() {
             const productsData: Product[] = await getProducts();
             const filteredProducts = productsData.filter((p: Product) => {
                 const normalizedSearch = normalizeSearchText(sideBarSearch);
-                const matchesSearch = normalizedSearch === "" ||
-                    normalizeSearchText(p.nombre).includes(normalizedSearch);
-
-                // Manejo robusto de categorías (plural, singular o arreglo de objetos)
-                const rawCats = p.categoria ? (Array.isArray(p.categoria) ? p.categoria : [p.categoria]) : [];
-                const productCats = rawCats
-                    .map((c: Category | number) => typeof c === 'object' ? c.id : c)
-                    .filter((id): id is number => typeof id === 'number');
-
-                const matchesCategory = filterCategories.length === 0 ||
-                    productCats.some((id: number) => filterCategories.includes(id));
-
+                const matchesSearch = normalizedSearch === "" ||normalizeSearchText(p.nombre).includes(normalizedSearch)
+                const productCats: number[] = p.categorias || []
+                const matchesCategory = filterCategories.length === 0 || productCats.some(cat => filterCategories.includes(cat));
                 const price = Number(p.precio);
-                const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) &&
-                    (filterMaxPrice === null || price <= filterMaxPrice);
-
+                const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) && (filterMaxPrice === null || price <= filterMaxPrice);
                 return matchesSearch && matchesCategory && matchesPrice;
             });
-
             const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
                 id: p.id,
                 nombre: p.nombre,
@@ -119,6 +107,7 @@ export default function SearchProductsPage() {
                 disponible: true,
             }));
             setProducts(mappedProducts);
+            setError("");
         } catch {
             setError("Error al filtrar productos");
         } finally {
@@ -220,14 +209,14 @@ export default function SearchProductsPage() {
                         <div className="my-3">
                             <p className="mb-2 text-sm text-neutral-600">Mínimo</p>
                             <input type="number" min={0} placeholder="Mayor o igual a $ 1.00 MXN" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
-                                value={filterMinPrice || ""}
-                                onChange={(e) => { setFilterMinPrice(Number(e.target.value)) }} />
+                                value={(Number(filterMinPrice) > 0) ? String(filterMinPrice) : ""}
+                                onChange={(e) => { setFilterMinPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null))}} />
                         </div>
                         <div>
                             <p className="mb-2 text-sm text-neutral-600">Máximo</p>
-                            <input type="number" min={1} placeholder="Precio límite" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
-                                value={filterMaxPrice || ""}
-                                onChange={(e) => { setFilterMaxPrice(Number(e.target.value)) }} />
+                            <input type="number" min={0} placeholder="Precio límite" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                                value={(Number(filterMaxPrice) > 0) ? String(filterMaxPrice) : ""}
+                                onChange={(e) => { setFilterMaxPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null)) }} />
                         </div>
                     </div>
                     <div className="mt-4 flex justify-center border-t border-neutral-300 pt-4">

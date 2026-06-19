@@ -136,7 +136,7 @@ export function useEditarVariante() {
       data,
     }: {
       variantId: number;
-      data: { stock?: number; activo?: boolean };
+      data: { stock?: number; activo?: boolean; item?: string, precio?: number | null };
     }) => editarVariante(variantId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.variants() });

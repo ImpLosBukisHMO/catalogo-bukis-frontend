@@ -88,7 +88,7 @@ export async function subirImagen(productoId: number, data: FormData): Promise<W
 
 export async function editarVariante(
   variantId: number,
-  data: { stock?: number; activo?: boolean }
+  data: { stock?: number; activo?: boolean; item?: string; precio?: number | null }
 ): Promise<unknown> {
   const res = await API.patch(`/api/producto-variantes/${variantId}/`, data);
   const resData = res.data;
@@ -118,7 +118,6 @@ export type WorkerColor = { id: number; nombre: string; hex: string; disponible?
 export async function getWorkerColores(): Promise<WorkerColor[]> {
   const res = await API.get("/api/colores/");
   const data = res.data;
-  return Array.isArray(data) ? data : (data?.datos || data?.results || []);
   return normalizeResponse<WorkerColor>(data);
 }
 
