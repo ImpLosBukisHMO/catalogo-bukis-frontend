@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, type ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -62,11 +62,25 @@ const router = createBrowserRouter([
   { path: "*", element: <NotFoundPage /> },
 ]);
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+type AppProps = {
+  router?: ComponentProps<typeof RouterProvider>["router"];
+};
+
+export function App({ router: appRouter = router }: AppProps) {
+  return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <RouterProvider router={appRouter} />
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
-  </StrictMode>
-);
+  );
+}
+
+const rootElement = document.getElementById("root");
+
+if (rootElement) {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+}
