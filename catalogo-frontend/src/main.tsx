@@ -1,7 +1,10 @@
-import { StrictMode } from "react";
+import { StrictMode, type ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router";
+import { queryClient } from "./lib/queryClient.ts";
 
 import Home from "./components/pages/Home.tsx";
 import SignUpPage from "./components/pages/SignUpPage.tsx";
@@ -59,8 +62,25 @@ const router = createBrowserRouter([
   { path: "*", element: <NotFoundPage /> },
 ]);
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>
-);
+type AppProps = {
+  router?: ComponentProps<typeof RouterProvider>["router"];
+};
+
+export function App({ router: appRouter = router }: AppProps) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={appRouter} />
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
+  );
+}
+
+const rootElement = document.getElementById("root");
+
+if (rootElement) {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+}
