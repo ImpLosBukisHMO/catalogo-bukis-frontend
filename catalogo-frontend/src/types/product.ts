@@ -1,7 +1,6 @@
 export type Product = {
   id: number;
   nombre: string;
-  item: string;
   imagen: string | null;
   descripcion: string;
   precio: string;
@@ -17,7 +16,6 @@ export type Product = {
 export type ProductCardVM = {
   id: number;
   nombre: string;
-  sku: string;
   precio: number;
   imagenUrl?: string | null;
   disponible: boolean;

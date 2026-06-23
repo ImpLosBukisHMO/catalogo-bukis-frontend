@@ -40,9 +40,11 @@ const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
           $ {precio.toFixed(2)} MXN
         </p>
 
+        {/* (
         <p className="mt-1 text-xs text-neutral-500">
           Ítem (SKU): {sku}
         </p>
+        ) */}
 
         {disponible ? (
           <p className="mt-3 w-fit rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">

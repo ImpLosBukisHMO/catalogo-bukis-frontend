@@ -83,7 +83,7 @@ export default function ProductPage() {
     (async () => {
       try {
         if (!id) {
-          setError("No se recibió id de producto");
+          setError("No se recibió el ID del producto.");
           return;
         }
 
@@ -169,7 +169,6 @@ export default function ProductPage() {
           .map((p) => ({
             id: p.id,
             nombre: p.nombre,
-            sku: p.item ?? "",
             precio: Number(p.precio),
             imagenUrl: p.imagen ?? null,
             disponible: true,
@@ -268,10 +267,10 @@ export default function ProductPage() {
 
                     <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
                       <div className="font-medium text-neutral-500">
-                        No. ítem
+                        Código de Ítem
                       </div>
                       <div className="text-bukis-ink">
-                        {product.item}
+                        {selectedVariant?.item ?? "N/A"}
                       </div>
                     </div>
 
@@ -313,8 +312,9 @@ export default function ProductPage() {
                   </div>
 
                   {/* Sin divisor antes de color, directo abajo */}
+                  <hr className="my-4 border-bukis-border" />
                   {product.variantes?.length > 0 && (
-                    <div className="mt-6 space-y-3">
+                    <div className="space-y-3 text-sm">
                       <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
                         <div className="font-medium text-neutral-500">
                           Color
