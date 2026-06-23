@@ -63,10 +63,11 @@ export function useWorkerVariants(filters?: { productoId?: number }) {
  * Fetches the worker product list (full WorkerProducto objects).
  * Used by WorkerProductsPage for the utility drawer "Crear Variante" selector.
  */
-export function useWorkerProductos() {
+export function useWorkerProductos(enabled: boolean) {
   return useQuery({
     queryKey: workerKeys.productosList(),
     queryFn: getWorkerProductos,
+    enabled,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
   });

@@ -169,7 +169,7 @@ export function WorkerCreateProductModal({
   initialVariantId,
   initialVariant,
 }: WorkerCreateProductModalProps) {
-  
+
   const [mode, setMode] = useState<ModalMode>(() => {
     if (editingProduct) {
       return initialVariantId ? "edit-variant" : "success";
@@ -223,6 +223,8 @@ export function WorkerCreateProductModal({
     ?? productos.find((producto) => producto.id === createdProduct?.id)?.nombre
     ?? "";
 
+  if (open && initialVariantId && !editingProduct) return null
+
   return (
     <WorkerDialogRoot open={open} onOpenChange={handleOpenChange}>
       <WorkerDialogContent size="lg" layout="adaptive" className="worker-create-dialog">
@@ -255,6 +257,22 @@ export function WorkerCreateProductModal({
                 {mode === "edit-variant" && "Actualizá stock, precio o fotos de la variante."}
               </WorkerDialogDescription>
             </div>
+
+            {mode === "edit-variant" && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4 }}>
+                <button
+                  type="button"
+                  onClick={() => setMode("edit-base-product")}
+                  style={{
+                    ...tertiaryButtonStyle(),
+                    borderColor: "var(--worker-rail)",
+                    color: "var(--worker-rail)",
+                  }}
+                >
+                  Editar Producto Base
+                </button>
+              </div>
+            )}
 
             <button
               type="button"
@@ -677,7 +695,7 @@ function CreateProductSection({
             checked={disponible}
             onChange={(e) => setDisponible(e.target.checked)}
           />
-          Publicar inmediatamente (Disponible en la web)
+          { disponible ? "Publicar en la web (da clic para no publicar)." : "No publicar (da clic para publicar)." }
         </label>
       </SectionCard>
 
@@ -1045,7 +1063,7 @@ function AddVariantSection({
               setActivo(event.target.checked);
             }}
           />
-          Variante activa
+          { activo? "Variante activa (haz clic para desactivarla)." : "Variante no activa (haz clic para activarla)."}
         </label>
       </SectionCard>
 
@@ -1235,12 +1253,12 @@ function EditVariantSection({
             <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} style={inputStyle} />
           </FormField>
         </div>
-        <FormField label="Precio Variante (opcional)">
-          <input type="number" step="0.01" value={precio} onChange={(e) => setPrecio(e.target.value)} style={inputStyle} />
+        <FormField label="Precio de la variante (opcional)">
+          <input type="number" step="0.01" min={1} value={precio} onChange={(e) => setPrecio(e.target.value)} style={inputStyle} />
         </FormField>
         <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
           <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
-          Variante activa
+          { activo? "Variante activa (haz clic para desactivarla)." : "Variante no activa (haz clic para activarla)."}
         </label>
       </SectionCard>
 
