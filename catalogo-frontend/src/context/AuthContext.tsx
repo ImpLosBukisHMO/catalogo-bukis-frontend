@@ -5,6 +5,7 @@ export type AuthState = {
     isStaff: boolean;
     isLoading: boolean;
     refresh: () => Promise<void>;
+    setLoggedOut: () => void;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -13,4 +14,6 @@ export const AuthContext = createContext<AuthState>({
     isStaff: false,
     isLoading: true,
     refresh: async () => {},
+    setLoggedOut: () => {},
+
 });

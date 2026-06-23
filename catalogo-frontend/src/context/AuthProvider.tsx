@@ -6,7 +6,8 @@ import { getLoggedUserData } from "../services/user";
 function readCachedAuth(): { isLoggedIn: boolean; isStaff: boolean } {
     try {
         const raw = localStorage.getItem("me");
-        if (!raw) return { isLoggedIn: false, isStaff: false };
+        const token = localStorage.getItem("token");
+        if (!raw || !token) return { isLoggedIn: false, isStaff: false };
         const me = JSON.parse(raw);
         return { isLoggedIn: true, isStaff: Boolean(me.is_staff) };
     } catch {
@@ -19,6 +20,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoggedIn, setIsLoggedIn] = useState(cached.isLoggedIn);
     const [isStaff, setIsStaff] = useState(cached.isStaff);
     const [isLoading, setIsLoading] = useState(!cached.isLoggedIn);
+    const setLoggedOut = () => {
+        setIsLoggedIn(false);
+        setIsStaff(false);
+        localStorage.removeItem("me");
+        localStorage.removeItem("token");
+    };
 
     const fetchAuth = async () => {
         try {
@@ -40,9 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => { fetchAuth(); }, []);
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, isStaff, isLoading, refresh: fetchAuth }}>
+        <AuthContext.Provider value={{ isLoggedIn, isStaff, isLoading, refresh: fetchAuth, setLoggedOut }}>
             {children}
         </AuthContext.Provider>
     );
 }
-

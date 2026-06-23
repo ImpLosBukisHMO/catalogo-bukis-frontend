@@ -12,7 +12,8 @@ type NavBarProps = {
 
 const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const { isLoggedIn, isStaff } = useAuth();
+    const { isLoggedIn, isStaff, setLoggedOut } = useAuth();
+    // TODO: use isLoading to show a skeleton/placeholder while auth state is being validated
     const [searchQuery, setSearchQuery] = useState('');
     const { pathname } = useLocation();
     const toggleNavMenu = () => setIsOpen(!isOpen);
@@ -26,10 +27,6 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
             window.location.href = "/productos";
         }
     };
-
-
-
-
 
     const linkClass = (isActive: boolean) =>
         `inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45 ${isActive ? "bg-white/15 underline underline-offset-4" : ""}`;
@@ -93,7 +90,10 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                         </Link>
                     )}
                     {isLoggedIn && (
-                        <button className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" onClick={async () => await logOut()} type="button">
+                        <button 
+                        className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" 
+                        onClick={async () => { setLoggedOut(); await logOut(); }} 
+                        type="button">
                             <DoorOpen size={iconSize} />
                             <span>Cerrar Sesión</span>
                         </button>
