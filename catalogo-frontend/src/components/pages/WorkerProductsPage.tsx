@@ -9,6 +9,7 @@ import {
   useEditarVariante,
   useCrearColor,
   useCrearCategoria,
+  useWorkerProductosSlim,
 } from "../../queries/workerProducts";
 import { normalizeResponse } from "./responseNormalizer";
 import { getStockColor } from "../elements/workerTheme";
@@ -26,14 +27,13 @@ import {
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
 import type { CSSProperties } from "react";
 import {
-  getWorkerProductosSlim,
+  getWorkerProducto,
   type WorkerCategoria,
   type WorkerColor,
   type WorkerProductoSlim,
 } from "../../services/worker";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
 import { stripDiacritics } from "../../utils/normalizers";
-import { getProductById } from "../../services/product";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -191,23 +191,13 @@ export default function WorkerProductsPage() {
   const { data: coloresRaw = [], refetch: refetchColores } = useWorkerColores(utilitiesOpen);
   const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
 
-  const [productos, setProductos] = useState<WorkerProductoSlim[]>([])
-  const [loadingProducts, setLoadingProducts] = useState(false)
-  const [errorProds, setErrorProds] = useState<Error | null>(null)
-
-  const loadProducts = async () => {
-    if (productos.length > 0) return
-    setLoadingProducts(true);
-    setErrorProds(null);
-    try {
-      const data = await getWorkerProductosSlim();
-      setProductos(data);
-    } catch (error) {
-      setErrorProds(error instanceof Error ? error : new Error("Error desconocido"));
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
+  const {
+    data: productosSlimRaw = [],
+    isLoading: loadingProducts,
+    error: errorProds,
+    refetch: refetchProductosSlim,
+  } = useWorkerProductosSlim(utilitiesOpen);
+  const productos = useMemo(() => normalizeResponse(productosSlimRaw) as WorkerProductoSlim[], [productosSlimRaw]);
 
   // Forzar actualización de categorías al abrir paneles de creación o utilidades
   useEffect(() => {
@@ -262,7 +252,7 @@ export default function WorkerProductsPage() {
     try {
       const fullProduct = await queryClient.fetchQuery<WorkerProducto>({
         queryKey: ["worker", "producto", productId],
-        queryFn: () => getProductById(productId),
+        queryFn: () => getWorkerProducto(productId),
         staleTime: 5 * 60 * 1000,
       });
       return fullProduct;
@@ -277,7 +267,7 @@ export default function WorkerProductsPage() {
   const handleEditVariantModal = async (v: WorkerVariant) => {
     setLoadingProductId(v.producto.id)
     setEditError(null)
-    await loadProducts();
+    refetchProductosSlim();
 
     try {
       const fullProduct = await fetchFullProduct(v.producto.id);
@@ -429,8 +419,8 @@ export default function WorkerProductsPage() {
           colores={colores}
           productos={productos}
           isLoadingProductos={loadingProducts}
-          errorProductos={errorProds instanceof Error ? errorProds.message : null}
-          onRetryProductos={() => loadProducts()}
+          errorProductos={errorProds ? errorProds.message : null}
+          onRetryProductos={() => refetchProductosSlim()}
           editingProduct={editingProduct}
           initialVariantId={editingVariantId}
           initialVariant={editingVariant}

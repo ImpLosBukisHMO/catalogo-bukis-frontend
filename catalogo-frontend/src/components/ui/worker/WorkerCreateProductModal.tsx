@@ -49,7 +49,7 @@ type ProductFormState = {
   medidas: string;
   descripcion: string;
   capacidad: string;
-  categoria: string;
+  categorias_ids: string[];
 };
 
 type ProductFieldErrors = Partial<Record<keyof ProductFormState | "imagen", string>>;
@@ -136,7 +136,7 @@ const defaultProductForm: ProductFormState = {
   medidas: "",
   descripcion: "",
   capacidad: "",
-  categoria: "",
+  categorias_ids: [],
 };
 
 const sectionCardStyle: CSSProperties = {
@@ -496,7 +496,7 @@ function CreateProductSection({
         medidas: String(p.medidas || ""),
         descripcion: String(p.descripcion || ""),
         capacidad: String(p.capacidad || ""),
-        categoria: Array.isArray(p.categorias) && p.categorias.length ? String(p.categorias[0]) : "",
+        categorias_ids: Array.isArray(p.categorias) ? p.categorias.map(String) : [],
       };
     }
     return defaultProductForm;
@@ -507,7 +507,7 @@ function CreateProductSection({
   const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
   const [submitError, setSubmitError] = useState("");
 
-  const setField = (key: keyof ProductFormState) => (value: string) => {
+  const setField = (key: keyof ProductFormState) => (value: string | string[]) => {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({ ...current, [key]: undefined }));
   };
@@ -542,7 +542,11 @@ function CreateProductSection({
       formData.append("descripcion", form.descripcion.trim());
       formData.append("disponible", disponible ? "true" : "false");
       if (form.capacidad.trim()) formData.append("capacidad", form.capacidad.trim());
-      if (form.categoria) formData.append("categorias_ids", form.categoria);
+      if (form.categorias_ids.length > 0) {
+        form.categorias_ids.forEach((id) => {
+          formData.append("categorias_ids", id);
+        });
+      }
       if (imagen) formData.append("imagen", imagen);
 
       const created = await onSave(formData);
@@ -586,23 +590,6 @@ function CreateProductSection({
             />
           </FormField>
 
-          <FormField label="Categoría" error={fieldErrors.categoria} required={false}>
-            <select
-              value={form.categoria}
-              onChange={(event) => setField("categoria")(event.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}
-            >
-              <option value="">Sin categoría</option>
-              {categorias.map((categoria) => (
-                <option key={categoria.id} value={String(categoria.id)}>
-                  {categoria.nombre}
-                </option>
-              ))}
-            </select>
-          </FormField>
-        </div>
-
-        <div style={responsiveGridStyle}>
           <FormField label="Precio" error={fieldErrors.precio}>
             <input
               type="number"
@@ -614,7 +601,8 @@ function CreateProductSection({
               style={inputStyle}
             />
           </FormField>
-
+        </div>
+        <div style={responsiveGridStyle}>
           <FormField label="Peso" error={fieldErrors.peso}>
             <input
               type="number"
@@ -625,6 +613,54 @@ function CreateProductSection({
               onChange={(event) => setField("peso")(event.target.value)}
               style={inputStyle}
             />
+          </FormField>
+
+          <FormField label="Categorías" error={fieldErrors.categorias_ids} required={false}>
+            <div
+              style={{
+                ...inputStyle,
+                maxHeight: "150px",
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                padding: "10px 12px",
+              }}
+            >
+              {categorias.length === 0 ? (
+                <span style={{ color: "var(--worker-ink-tertiary)", fontSize: 13 }}>No hay categorías disponibles</span>
+              ) : (
+                categorias.map((categoria) => {
+                  const isChecked = form.categorias_ids.includes(String(categoria.id));
+                  return (
+                    <label
+                      key={categoria.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        cursor: "pointer",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          const nextIds = isChecked
+                            ? form.categorias_ids.filter((id) => id !== String(categoria.id))
+                            : [...form.categorias_ids, String(categoria.id)];
+                          setForm((current) => ({ ...current, categorias_ids: nextIds }));
+                          setFieldErrors((current) => ({ ...current, categorias_ids: undefined }));
+                        }}
+                      />
+                      {categoria.nombre}
+                    </label>
+                  );
+                })
+              )}
+            </div>
           </FormField>
         </div>
       </SectionCard>
@@ -1678,7 +1714,7 @@ function parseProductApiError(error: unknown): {
     }
 
     if (key === "categorias_ids") {
-      fieldErrors.categoria = message;
+      fieldErrors.categorias_ids = message;
       return;
     }
 
@@ -1742,6 +1778,6 @@ function isProductFieldKey(key: string): key is keyof ProductFormState {
     "medidas",
     "descripcion",
     "capacidad",
-    "categoria",
+    "categorias_ids",
   ].includes(key);
 }

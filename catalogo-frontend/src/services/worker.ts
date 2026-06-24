@@ -35,6 +35,12 @@ export async function getWorkerProductos(): Promise<WorkerProducto[]> {
   return Array.isArray(data) ? data : (data?.datos || data?.results || []);
 }
 
+export async function getWorkerProducto(id: number): Promise<WorkerProducto> {
+  const res = await API.get(`/api/worker/productos/${id}/`);
+  const resData = res.data;
+  return resData?.datos || resData;
+}
+
 export async function crearProducto(data: FormData): Promise<WorkerProducto> {
   const res = await API.post("/api/worker/productos/", data, {
     headers: { "Content-Type": "multipart/form-data" },
