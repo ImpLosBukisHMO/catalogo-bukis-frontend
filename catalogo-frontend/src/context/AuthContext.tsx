@@ -9,11 +9,4 @@ export type AuthState = {
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const AuthContext = createContext<AuthState>({
-    isLoggedIn: false,
-    isStaff: false,
-    isLoading: true,
-    refresh: async () => {},
-    setLoggedOut: () => {},
-
-});
+export const AuthContext = createContext<AuthState | undefined>(undefined);

@@ -92,7 +92,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                     {isLoggedIn && (
                         <button 
                         className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" 
-                        onClick={async () => { setLoggedOut(); await logOut(); }} 
+                        onClick={async () => await logOut(setLoggedOut)}
                         type="button">
                             <DoorOpen size={iconSize} />
                             <span>Cerrar Sesión</span>
