@@ -1,6 +1,7 @@
 export type WorkerVariant = {
   variant_id: number;
   item: string;
+  precio: number;
   producto: {
     id: number;
     nombre: string;
@@ -77,6 +78,7 @@ export type WorkerProducto = {
   categorias: number[];
   created_at: string;
   updated_at: string;
+  variantes?: WorkerVariant[];
 };
 
 export const ESTADOS_PEDIDO = [

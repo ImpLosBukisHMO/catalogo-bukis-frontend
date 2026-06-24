@@ -8,7 +8,7 @@ export type Product = {
   peso: string;
   medidas: string;
   capacidad: string;
-  categoria: number;
+  categorias: number[];
   created_at: string;
   updated_at: string;
   disponible: boolean;
