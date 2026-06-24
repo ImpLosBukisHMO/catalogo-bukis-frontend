@@ -6,7 +6,7 @@ import { getLoggedUserData } from "../services/user";
 function readCachedAuth(): { isLoggedIn: boolean; isStaff: boolean } {
     try {
         const raw = localStorage.getItem("me");
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("access") ?? localStorage.getItem("token");
         if (!raw || !token) return { isLoggedIn: false, isStaff: false };
         const me = JSON.parse(raw);
         return { isLoggedIn: true, isStaff: Boolean(me.is_staff) };
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsStaff(false);
         localStorage.removeItem("me");
         localStorage.removeItem("token");
+        localStorage.removeItem("access");
     };
 
     const fetchAuth = async () => {
