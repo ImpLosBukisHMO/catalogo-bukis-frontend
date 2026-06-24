@@ -522,6 +522,9 @@ function CreateProductSection({
     if (!form.peso.trim()) nextFieldErrors.peso = "Ingresá el peso.";
     if (!form.medidas.trim()) nextFieldErrors.medidas = "Ingresá las medidas.";
     if (!form.descripcion.trim()) nextFieldErrors.descripcion = "Ingresá la descripción.";
+    if (form.categorias_ids.length === 0) {
+      nextFieldErrors.categorias_ids = "Seleccioná al menos una categoría.";
+    }
     if (!imagen && !isEditing) nextFieldErrors.imagen = "Seleccioná una imagen principal.";
 
     if (Object.keys(nextFieldErrors).length > 0) {
@@ -615,7 +618,7 @@ function CreateProductSection({
             />
           </FormField>
 
-          <FormField label="Categorías" error={fieldErrors.categorias_ids} required={false}>
+          <FormField label="Categorías" error={fieldErrors.categorias_ids}>
             <div
               style={{
                 ...inputStyle,
