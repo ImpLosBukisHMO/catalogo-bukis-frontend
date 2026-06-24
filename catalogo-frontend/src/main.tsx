@@ -28,6 +28,8 @@ import FavoritosPage from "./components/pages/FavoritosPage.tsx";
 import MisPedidosPage from "./components/pages/MisPedidosPage.tsx";
 import PedidoDetallePage from "./components/pages/PedidoDetallePage.tsx";
 
+import { AuthProvider } from "./context/AuthProvider";
+
 const router = createBrowserRouter([
   // Public / user routes
   { path: "/", element: <Home /> },
@@ -68,15 +70,16 @@ type AppProps = {
 
 export function App({ router: appRouter = router }: AppProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={appRouter} />
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={appRouter} />
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </AuthProvider>
   );
 }
 
 const rootElement = document.getElementById("root");
-
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>

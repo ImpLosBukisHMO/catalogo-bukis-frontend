@@ -57,7 +57,7 @@ export async function logIn(correo: string, password: string) {
   }
 }
 
-export async function logOut() {
+export async function logOut(onClearAuth?: () => void) {
   const token = localStorage.getItem("token");
   try {
     // El segundo argumento es el body (vacío), el tercero es la configuración (headers)
@@ -71,6 +71,7 @@ export async function logOut() {
     console.error("Error al cerrar sesión en el servidor:", error);
   } finally {
     // Aseguramos borrar el token localmente pase lo que pase en el servidor
+    onClearAuth?.();
     localStorage.removeItem("token");
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
