@@ -20,6 +20,7 @@ import {
   crearColor,
   crearProducto,
   crearVariante,
+  editarProducto,
   editarVariante,
   getWorkerCategorias,
   getWorkerColores,
@@ -30,6 +31,7 @@ import {
 } from "../services/worker";
 import type { WorkerCreatedVariant, WorkerUploadedImage } from "../services/worker";
 import { workerKeys } from "./workerKeys";
+import type { WorkerProducto } from "../types/worker";
 
 // ─── useWorkerVariants ────────────────────────────────────────────────────────
 
@@ -61,10 +63,11 @@ export function useWorkerVariants(filters?: { productoId?: number }) {
  * Fetches the worker product list (full WorkerProducto objects).
  * Used by WorkerProductsPage for the utility drawer "Crear Variante" selector.
  */
-export function useWorkerProductos() {
+export function useWorkerProductos(enabled: boolean) {
   return useQuery({
     queryKey: workerKeys.productosList(),
     queryFn: getWorkerProductos,
+    enabled,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
   });
@@ -134,7 +137,7 @@ export function useEditarVariante() {
       data,
     }: {
       variantId: number;
-      data: { stock?: number; activo?: boolean };
+      data: { stock?: number; activo?: boolean; item?: string, precio?: number | null };
     }) => editarVariante(variantId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.variants() });
@@ -154,6 +157,28 @@ export function useCrearProducto() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: FormData) => crearProducto(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: workerKeys.productos() });
+      qc.invalidateQueries({ queryKey: workerKeys.variants() });
+      qc.invalidateQueries({ queryKey: workerKeys.dashboard() });
+    },
+  });
+}
+
+// ─── useEditarProducto ───────────────────────────────────────────────────────
+
+/**
+ * Updates a product base via multipart form data.
+ * On success: invalidates productosList(), variantsList(), and dashboard().
+ */
+export function useEditarProducto() {
+  const qc = useQueryClient();
+  return useMutation<
+    WorkerProducto,
+    Error,
+    { productId: number; data: FormData }
+  >({
+    mutationFn: ({ productId, data }) => editarProducto(productId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.productos() });
       qc.invalidateQueries({ queryKey: workerKeys.variants() });

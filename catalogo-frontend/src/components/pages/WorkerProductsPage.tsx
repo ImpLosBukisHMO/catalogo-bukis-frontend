@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import type { WorkerVariant } from "../../types/worker";
+import type { WorkerVariant, WorkerProducto } from "../../types/worker";
 import {
   useWorkerVariants,
   useWorkerCategorias,
   useWorkerColores,
-  useWorkerProductosSlim,
   useEditarVariante,
   useCrearColor,
   useCrearCategoria,
+  useWorkerProductosSlim,
 } from "../../queries/workerProducts";
 import { normalizeResponse } from "./responseNormalizer";
 import { getStockColor } from "../elements/workerTheme";
@@ -25,8 +25,15 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
-import type { WorkerCategoria, WorkerColor } from "../../services/worker";
+import type { CSSProperties } from "react";
+import {
+  getWorkerProducto,
+  type WorkerCategoria,
+  type WorkerColor,
+  type WorkerProductoSlim,
+} from "../../services/worker";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
+import { stripDiacritics } from "../../utils/normalizers";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -109,7 +116,7 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
         marginTop: 4,
         padding: "8px 18px",
         fontSize: 13,
-        fontWeight: 600,
+        fontWeight: 600, 
         color: "#fff",
         background: loading ? "var(--worker-ink-muted)" : "var(--worker-rail)",
         border: "none",
@@ -121,6 +128,19 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
       {loading ? "Guardando…" : label}
     </button>
   );
+}
+
+function iconButtonStyle(disabled: boolean): CSSProperties {
+  return {
+    background: "none",
+    border: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: 16,
+    color: "var(--worker-ink-tertiary)",
+    opacity: disabled ? 0.5 : 1,
+    padding: "2px 6px",
+    borderRadius: 4,
+  };
 }
 
 // ─── main component ──────────────────────────────────────────────
@@ -135,6 +155,9 @@ export default function WorkerProductsPage() {
   // ── Utility drawer / create modal ──
   const [panelOpen, setPanelOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<WorkerProducto | null>(null);
+  const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
+  const [editingVariant, setEditingVariant] = useState<WorkerVariant | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const createTriggerRef = useRef<HTMLButtonElement>(null);
   const prevCreateOpenRef = useRef(false);
@@ -148,6 +171,9 @@ export default function WorkerProductsPage() {
   // ── Confirm dialog ──
   const [confirmOpen, setConfirmOpen]         = useState(false);
   const [pendingEdit, setPendingEdit]         = useState<PendingEdit | null>(null);
+
+  // ── Loading state para fetches individuales (on-demand) ──
+  const [loadingProductId, setLoadingProductId] = useState<number | null>(null);
 
   // ── React Query hooks ──
   const {
@@ -165,7 +191,13 @@ export default function WorkerProductsPage() {
   const { data: coloresRaw = [], refetch: refetchColores } = useWorkerColores(utilitiesOpen);
   const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
 
-  const { data: productos = [], isLoading: loadingProds, error: errorProds, refetch: refetchProds }  = useWorkerProductosSlim(utilitiesOpen);
+  const {
+    data: productosSlimRaw = [],
+    isLoading: loadingProducts,
+    error: errorProds,
+    refetch: refetchProductosSlim,
+  } = useWorkerProductosSlim(utilitiesOpen);
+  const productos = useMemo(() => normalizeResponse(productosSlimRaw) as WorkerProductoSlim[], [productosSlimRaw]);
 
   // Forzar actualización de categorías al abrir paneles de creación o utilidades
   useEffect(() => {
@@ -196,7 +228,8 @@ export default function WorkerProductsPage() {
       ? categorias.find((c) => c.nombre === catFilter)?.id
       : undefined;
     return variants.filter((v) => {
-      const matchName = v.producto.nombre.toLowerCase().includes(search.toLowerCase());
+      const matchName = stripDiacritics(v.producto.nombre).toLowerCase()
+      .includes(stripDiacritics(search).toLowerCase());
       const matchCat =
         catFilter === "ALL" ||
         (catId !== undefined && v.producto.categorias?.includes(catId));
@@ -204,7 +237,6 @@ export default function WorkerProductsPage() {
     });
   }, [variants, search, catFilter, categorias]);
 
-  // normalize variant name for rendering
   const variantName = (v: WorkerVariant) => v.producto.nombre;
 
   const startEdit = (v: WorkerVariant) => {
@@ -212,6 +244,47 @@ export default function WorkerProductsPage() {
     setEditStock(String(v.stock));
     setEditActivo(v.activo);
     setEditError(null);
+  };
+
+  // ── Fetch On-Demand Handler por ID ──
+  const fetchFullProduct = async (productId: number): Promise<WorkerProducto | null> => {
+    setLoadingProductId(productId);
+    try {
+      const fullProduct = await queryClient.fetchQuery<WorkerProducto>({
+        queryKey: ["worker", "producto", productId],
+        queryFn: () => getWorkerProducto(productId),
+        staleTime: 5 * 60 * 1000,
+      });
+      return fullProduct;
+    } catch (err) {
+      console.error("Error cargando detalles del producto:", err);
+      return null;
+    } finally {
+      setLoadingProductId(null);
+    }
+  };
+
+  const handleEditVariantModal = async (v: WorkerVariant) => {
+    setLoadingProductId(v.producto.id)
+    setEditError(null)
+    refetchProductosSlim();
+
+    try {
+      const fullProduct = await fetchFullProduct(v.producto.id);
+
+      if (fullProduct) {
+        setEditingProduct(fullProduct);
+        setEditingVariant(v);
+        setEditingVariantId(v.variant_id);
+        setCreateOpen(true);
+      } else {
+        throw new Error("No se logró obtener toda la información del producto.")
+      }
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : "Error al cargar el producto.")
+    } finally {
+      setLoadingProductId(null)
+    }
   };
 
   const cancelEdit = () => { setEditId(null); setEditError(null); };
@@ -250,7 +323,6 @@ export default function WorkerProductsPage() {
   })();
 
   const isAuthError = fetchErrorMsg?.includes("autenticado");
-
   const savingEdit = editarVariante.isPending;
 
   return (
@@ -346,9 +418,17 @@ export default function WorkerProductsPage() {
           categorias={categorias}
           colores={colores}
           productos={productos}
-          isLoadingProductos={loadingProds}
-          errorProductos={errorProds instanceof Error ? errorProds.message : null}
-          onRetryProductos={() => refetchProds()}
+          isLoadingProductos={loadingProducts}
+          errorProductos={errorProds ? errorProds.message : null}
+          onRetryProductos={() => refetchProductosSlim()}
+          editingProduct={editingProduct}
+          initialVariantId={editingVariantId}
+          initialVariant={editingVariant}
+          onEditingFinished={() => {
+            setEditingProduct(null);
+            setEditingVariantId(null);
+            setEditingVariant(null);
+          }}
         />
       )}
 
@@ -503,6 +583,9 @@ export default function WorkerProductsPage() {
                 const isEditing = editId === v.variant_id;
                 const stockColor = getStockColor(v.stock);
                 const imageSrc = resolveImageUrl(v.imagen_principal);
+                
+                // Evalúa si esta fila específica está cargando su producto detallado
+                const isThisProductLoading = loadingProductId === v.producto.id;
 
                 return (
                   <tr
@@ -547,7 +630,18 @@ export default function WorkerProductsPage() {
                         color: "var(--worker-ink)",
                       }}
                     >
-                      {variantName(v)}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {variantName(v)}
+                        <button
+                          disabled={isThisProductLoading}
+                          onClick={() => handleEditVariantModal(v)}
+                          title="Editar producto base y variante"
+                          aria-label="Editar producto base y variante"
+                          style={iconButtonStyle(isThisProductLoading)}
+                        >
+                          {isThisProductLoading ? "⏳" : "⚙️"}
+                        </button>
+                      </div>
                     </td>
 
                     {/* Item # */}
@@ -691,6 +785,7 @@ export default function WorkerProductsPage() {
                         </div>
                       ) : (
                         <button
+                          disabled={savingEdit}
                           onClick={() => startEdit(v)}
                           title="Editar"
                           style={{
@@ -862,7 +957,6 @@ export default function WorkerProductsPage() {
 }
 
 // ─── sub-forms ───────────────────────────────────────────────────
-
 function CrearColorForm({
   onCreated,
   mutation,
@@ -870,49 +964,40 @@ function CrearColorForm({
   onCreated?: () => void;
   mutation: ReturnType<typeof useCrearColor>;
 }) {
-  const [nombre, setNombre]         = useState("");
-  const [hex, setHex]               = useState("#000000");
-  const [disponible, setDisponible] = useState(true);
-  const [error, setError]           = useState("");
+  const [nombre, setNombre] = useState("");
+  const [hex, setHex] = useState("#000000");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     try {
-      await mutation.mutateAsync({ nombre, hex, disponible });
-      setNombre(""); setHex("#000000"); setDisponible(true);
+      await mutation.mutateAsync({nombre, hex, disponible: false});
+      setNombre("");
+      setHex("#000000");
       onCreated?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+    } catch {
+      // Manejado por el estado del hook de mutación
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <Field label="Nombre" value={nombre} onChange={setNombre} required />
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Field label="Nombre del color" value={nombre} onChange={setNombre} required />
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <label style={{ fontSize: 12, color: "var(--worker-ink-secondary)", fontWeight: 500 }}>
-          HEX *
+          Color Hex
         </label>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             type="color"
             value={hex}
             onChange={(e) => setHex(e.target.value)}
-            style={{
-              width: 40,
-              height: 34,
-              border: "1px solid var(--worker-border)",
-              borderRadius: 6,
-              cursor: "pointer",
-              padding: 2,
-              background: "var(--worker-control-bg)",
-            }}
+            style={{ width: 40, height: 34, padding: 0, border: "none", background: "none", cursor: "pointer" }}
           />
           <input
             type="text"
             value={hex}
             onChange={(e) => setHex(e.target.value)}
+            placeholder="#000000"
             style={{
               flex: 1,
               padding: "7px 10px",
@@ -925,46 +1010,34 @@ function CrearColorForm({
           />
         </div>
       </div>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--worker-ink-secondary)" }}>
-        <input
-          type="checkbox"
-          checked={disponible}
-          onChange={(e) => setDisponible(e.target.checked)}
-        />
-        Disponible
-      </label>
-      {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
       <SaveBtn loading={mutation.isPending} />
     </form>
   );
 }
 
 function CrearCategoriaForm({
-  mutation,
   onCreated,
+  mutation,
 }: {
-  mutation: ReturnType<typeof useCrearCategoria>;
   onCreated?: () => void;
+  mutation: ReturnType<typeof useCrearCategoria>;
 }) {
   const [nombre, setNombre] = useState("");
-  const [error, setError]   = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     try {
       await mutation.mutateAsync(nombre);
       setNombre("");
       onCreated?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+    } catch {
+      // Manejado por la mutación
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <Field label="Nombre" value={nombre} onChange={setNombre} required />
-      {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Field label="Nombre de la categoría" value={nombre} onChange={setNombre} required />
       <SaveBtn loading={mutation.isPending} />
     </form>
   );
