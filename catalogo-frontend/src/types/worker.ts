@@ -1,6 +1,7 @@
 export type WorkerVariant = {
   variant_id: number;
   item: string;
+  codigo_barras: string;
   precio: number;
   producto: {
     id: number;

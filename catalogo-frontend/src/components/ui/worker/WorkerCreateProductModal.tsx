@@ -24,6 +24,8 @@ import {
   WorkerDialogRoot,
   WorkerDialogTitle,
 } from "./WorkerDialog";
+import Barcode from "react-barcode";
+import { useWorkerTheme } from "../../providers/useWorkerTheme";
 
 export type ModalMode = "create-product" | "success" | "add-variant" | "select-product" | "edit-base-product" | "select-variant-to-edit" | "edit-variant";
 
@@ -1242,6 +1244,7 @@ function EditVariantSection({
   const [stock, setStock] = useState(String(variant.stock));
   const [activo, setActivo] = useState(variant.activo);
   const [precio, setPrecio] = useState(variant.precio ? String(variant.precio) : "");
+  const [codigoBarras, setCodigoBarras] = useState(variant.codigo_barras || "");
   const [imagenes, setImagenes] = useState<File[]>([]);
   const [fieldErrors] = useState<EditVariantFieldErrors>({});
   const [submitError, setSubmitError] = useState("");
@@ -1257,7 +1260,8 @@ function EditVariantSection({
           stock: Number(stock),
           activo,
           item: item.trim(),
-          precio: precio.trim() ? Number(precio) : null
+          precio: precio.trim() ? Number(precio) : null,
+          codigo_barras: codigoBarras.trim()
         },
       });
 
@@ -1292,12 +1296,32 @@ function EditVariantSection({
             <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} style={inputStyle} />
           </FormField>
         </div>
-        <FormField label="Precio de la variante (opcional)">
-          <input type="number" step="0.01" min={1} value={precio} onChange={(e) => setPrecio(e.target.value)} style={inputStyle} />
-        </FormField>
+        <div style={responsiveGridStyle}>
+          <FormField label="Precio de la variante (opcional)" required={false}>
+            <input type="number" step="0.01" min={1} value={precio} onChange={(e) => setPrecio(e.target.value)} style={inputStyle} />
+          </FormField>
+          <FormField label="Código de barras">
+            <input type="text" value={codigoBarras} onChange={(e) => setCodigoBarras(e.target.value)} onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+              }
+            }} style={inputStyle} />
+            <div style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}>
+              {codigoBarras ? (
+                <div className="my-3">
+                  <Barcode value={codigoBarras} background="transparent" lineColor={useWorkerTheme().theme == "dark" ? "#ffffff" : "#000000"} width={1.5} height={40} />
+                </div>
+              ) : (<></>)}
+            </div>
+          </FormField>
+        </div>
         <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
           <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
-          { activo? "Variante activa (haz clic para desactivarla)." : "Variante no activa (haz clic para activarla)."}
+          { activo ? "Variante activa (haz clic para desactivarla)." : "Variante no activa (haz clic para activarla)."}
         </label>
       </SectionCard>
 

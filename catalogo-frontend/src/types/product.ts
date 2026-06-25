@@ -30,6 +30,7 @@ export type ColorMini = {
 export type Variant = {
   id: number;
   item: string;
+  codigo_barras: string;
   color: ColorMini;
   precio: string;
   stock: number;

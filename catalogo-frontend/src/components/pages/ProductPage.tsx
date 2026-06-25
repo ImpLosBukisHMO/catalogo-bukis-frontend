@@ -14,6 +14,7 @@ import {
 
 import type { ProductDetail, Variant } from "../../types/product";
 import type { Product, ProductCardVM } from "../../types/product";
+import Barcode from "react-barcode";
 
 function pickDefaultVariantId(variantes: Variant[]): number | null {
   if (!variantes?.length) return null;
@@ -309,6 +310,17 @@ export default function ProductPage() {
                         {product.capacidad || "N/A"}
                       </div>
                     </div>
+
+                    {
+                      selectedVariant?.codigo_barras && (
+                          <div className="flex items-center grid grid-cols-[8rem_minmax(0,1fr)] gap-4 ">
+                            <div className="font-medium text-neutral-500">
+                              Código de Barras
+                            </div>
+                            <Barcode value={selectedVariant?.codigo_barras} lineColor="#000000" background="transparent" width={1.5} height={40} />
+                          </div>
+                        )
+                    }
                   </div>
 
                   {/* Sin divisor antes de color, directo abajo */}
@@ -439,12 +451,6 @@ export default function ProductPage() {
                         >
                           Agregar al carrito
                         </button>
-
-                    <div className="mt-4">
-                      <p className="text-xs text-neutral-400">
-                        Nota: aquí solo validamos payload. El endpoint lo conectamos después.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
