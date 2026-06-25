@@ -35,6 +35,7 @@ import {
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
 import { stripDiacritics } from "../../utils/normalizers";
 import Barcode from "react-barcode";
+import { useWorkerTheme } from "../providers/useWorkerTheme";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -664,7 +665,7 @@ export default function WorkerProductsPage() {
                         color: "var(--worker-ink-secondary)",
                       }}
                     >
-                      {v.codigo_barras && (<Barcode value={v.codigo_barras} background="transparent" width={1} height={40}/>)}
+                      {v.codigo_barras && (<Barcode value={v.codigo_barras} lineColor={useWorkerTheme().theme === "dark" ? "#ffffff" : "#000000"} background="transparent" width={1} height={40}/>)}
                     </td>
 
                     {/* Color */}

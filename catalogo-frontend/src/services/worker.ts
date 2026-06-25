@@ -60,6 +60,7 @@ export async function editarProducto(id: number, data: FormData): Promise<Worker
 export type WorkerCreatedVariant = {
   id: number;
   item: string;
+  codigo_barras: string;
   color: number;
   stock: number;
   activo: boolean;
@@ -75,7 +76,7 @@ export type WorkerUploadedImage = {
 
 export async function crearVariante(
   productoId: number,
-  data: { color: number; stock: number; activo: boolean; item?: string }
+  data: { color: number; stock: number; activo: boolean; item?: string; codigo_barras?: string }
 ): Promise<WorkerCreatedVariant> {
   const res = await API.post(`/api/worker/productos/${productoId}/variantes/`, data);
   const resData = res.data;

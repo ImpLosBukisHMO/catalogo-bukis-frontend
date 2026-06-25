@@ -198,17 +198,17 @@ export function useCrearVariante() {
   return useMutation<
     WorkerCreatedVariant,
     Error,
-    {
-      productoId: number;
-      data: { color: number; stock: number; activo: boolean; item?: string };
-    }
+      {
+        productoId: number;
+        data: { color: number; stock: number; activo: boolean; item?: string; codigo_barras?: string; };
+      }
   >({
     mutationFn: ({
       productoId,
       data,
     }: {
       productoId: number;
-      data: { color: number; stock: number; activo: boolean; item?: string };
+      data: { color: number; stock: number; activo: boolean; item?: string; codigo_barras?: string; };
     }) => crearVariante(productoId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.variants() });

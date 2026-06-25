@@ -56,7 +56,7 @@ type ProductFormState = {
 
 type ProductFieldErrors = Partial<Record<keyof ProductFormState | "imagen", string>>;
 
-type VariantFieldErrors = Partial<Record<"colorId" | "item" | "stock", string>>;
+type VariantFieldErrors = Partial<Record<"colorId" | "item" | "stock" | "codigo_barras", string>>;
 type EditVariantFieldErrors = Partial<Record<"colorId" | "item" | "stock" | "precio", string>>;
 
 type PendingVariantUpload = {
@@ -916,6 +916,7 @@ function AddVariantSection({
   const [stock, setStock] = useState("0");
   const [activo, setActivo] = useState(true);
   const [imagenes, setImagenes] = useState<File[]>([]);
+  const [codigoBarras, setCodigoBarras] = useState("");
   const [esPrincipal, setEsPrincipal] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<VariantFieldErrors>({});
   const [submitError, setSubmitError] = useState("");
@@ -941,6 +942,7 @@ function AddVariantSection({
     if (!colorId) nextFieldErrors.colorId = "Seleccioná un color.";
     if (!item.trim()) nextFieldErrors.item = "Ingresá el número de item.";
     if (!stock.trim()) nextFieldErrors.stock = "Ingresá el stock.";
+    if (!codigoBarras.trim()) nextFieldErrors.codigo_barras = "Ingresá el código de barras.";
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -959,6 +961,7 @@ function AddVariantSection({
       productoId: createdProduct.id,
       colorId,
       item,
+      codigo_barras: codigoBarras,
       stock,
       activo,
       esPrincipal,
@@ -981,6 +984,7 @@ function AddVariantSection({
           stock: Number(stock),
           activo,
           item: item.trim(),
+          codigo_barras: codigoBarras.trim(),
         },
       }) as WorkerCreatedVariant;
 
@@ -1037,28 +1041,28 @@ function AddVariantSection({
         title="Datos de la variante"
         description="Primero generamos la variante. Recién con ese id se habilita la asociación correcta de imágenes."
       >
-        <FormField label="Color" error={fieldErrors.colorId}>
-          <select
-            autoFocus
-            value={colorId}
-            onChange={(event) => {
-              clearPendingUpload();
-              setColorId(event.target.value);
-              setFieldErrors((current) => ({ ...current, colorId: undefined }));
-            }}
-            style={{ ...inputStyle, cursor: "pointer" }}
-          >
-            <option value="">Seleccioná un color</option>
-            {colores.map((color) => (
-              <option key={color.id} value={String(color.id)}>
-                {color.nombre} ({color.hex})
-              </option>
-            ))}
-          </select>
-        </FormField>
-
         <div style={responsiveGridStyle}>
-          <FormField label="No. Item (SKU)" error={fieldErrors.item}>
+          <FormField label="Color" error={fieldErrors.colorId}>
+            <select
+              autoFocus
+              value={colorId}
+              onChange={(event) => {
+                clearPendingUpload();
+                setColorId(event.target.value);
+                setFieldErrors((current) => ({ ...current, colorId: undefined }));
+              }}
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
+              <option value="">Seleccioná un color</option>
+              {colores.map((color) => (
+                <option key={color.id} value={String(color.id)}>
+                  {color.nombre} ({color.hex})
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label="No. Ítem (SKU)" error={fieldErrors.item}>
             <input
               type="text"
               value={item}
@@ -1070,7 +1074,9 @@ function AddVariantSection({
               style={inputStyle}
             />
           </FormField>
+        </div>
 
+        <div style={responsiveGridStyle}>
           <FormField label="Stock" error={fieldErrors.stock}>
             <input
               type="number"
@@ -1084,6 +1090,34 @@ function AddVariantSection({
               }}
               style={inputStyle}
             />
+          </FormField>
+
+          <FormField label="Código de Barras" error={fieldErrors.codigo_barras}>
+            <input 
+            type="text" 
+            value={codigoBarras} 
+            onChange={(event) => {
+                clearPendingUpload();
+                setCodigoBarras(event.target.value);
+                setFieldErrors((current) => ({ ...current, codigoBarras: undefined }))
+            }} 
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+              }
+            }} 
+            style={inputStyle} />
+              <div style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}>
+                {codigoBarras ? (
+                  <div className="my-3">
+                    <Barcode value={codigoBarras} background="transparent" lineColor={useWorkerTheme().theme == "dark" ? "#ffffff" : "#000000"} width={1.5} height={40} />
+                  </div>
+                ) : (<></>)}
+              </div>
           </FormField>
         </div>
 
@@ -1300,7 +1334,7 @@ function EditVariantSection({
           <FormField label="Precio de la variante (opcional)" required={false}>
             <input type="number" step="0.01" min={1} value={precio} onChange={(e) => setPrecio(e.target.value)} style={inputStyle} />
           </FormField>
-          <FormField label="Código de barras">
+          <FormField label="Código de Barras">
             <input type="text" value={codigoBarras} onChange={(e) => setCodigoBarras(e.target.value)} onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -1656,6 +1690,7 @@ function buildVariantUploadRequestKey({
   productoId,
   colorId,
   item,
+  codigo_barras,
   stock,
   activo,
   esPrincipal,
@@ -1664,6 +1699,7 @@ function buildVariantUploadRequestKey({
   productoId: number;
   colorId: string;
   item: string;
+  codigo_barras: string;
   stock: string;
   activo: boolean;
   esPrincipal: boolean;
@@ -1673,6 +1709,7 @@ function buildVariantUploadRequestKey({
     productoId,
     colorId,
     item: item.trim(),
+    codigo_barras: codigo_barras.trim(),
     stock: stock.trim(),
     activo,
     esPrincipal,
