@@ -1031,6 +1031,8 @@ function AddVariantSection({
     }
   };
 
+  const workerTheme = useWorkerTheme().theme;
+
   return (
     <form id={ADD_VARIANT_FORM_ID} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <InlineNotice tone="info">
@@ -1114,7 +1116,7 @@ function AddVariantSection({
               }}>
                 {codigoBarras ? (
                   <div className="my-3">
-                    <Barcode value={codigoBarras} background="transparent" lineColor={useWorkerTheme().theme == "dark" ? "#ffffff" : "#000000"} width={1.5} height={40} />
+                    <Barcode value={codigoBarras} background="transparent" lineColor={workerTheme == "dark" ? "#ffffff" : "#000000"} width={1.5} height={40} />
                   </div>
                 ) : (<></>)}
               </div>
@@ -1313,6 +1315,8 @@ function EditVariantSection({
     }
   };
 
+  const workerTheme = useWorkerTheme().theme;
+
   return (
     <form id={EDIT_VARIANT_FORM_ID} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <SectionCard title="Datos de la variante" description="Actualizá los valores específicos de esta variante.">
@@ -1347,7 +1351,7 @@ function EditVariantSection({
             }}>
               {codigoBarras ? (
                 <div className="my-3">
-                  <Barcode value={codigoBarras} background="transparent" lineColor={useWorkerTheme().theme == "dark" ? "#ffffff" : "#000000"} width={1.5} height={40} />
+                  <Barcode value={codigoBarras} background="transparent" lineColor={workerTheme == "dark" ? "#ffffff" : "#000000"} width={1.5} height={40} />
                 </div>
               ) : (<></>)}
             </div>
