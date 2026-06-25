@@ -10,7 +10,7 @@ type Props = {
 
 const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
   const navigate = useNavigate();
-  const { id, nombre, sku, precio, imagenUrl, disponible } = product;
+  const { id, nombre, precio, imagenUrl, disponible } = product;
   const goToDetail = () => navigate(`/producto/${id}`);
 
   return (
@@ -39,12 +39,6 @@ const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
         <p className="mt-2 text-base font-semibold text-bukis-red-700">
           $ {precio.toFixed(2)} MXN
         </p>
-
-        {/* (
-        <p className="mt-1 text-xs text-neutral-500">
-          Ítem (SKU): {sku}
-        </p>
-        ) */}
 
         {disponible ? (
           <p className="mt-3 w-fit rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">

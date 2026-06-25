@@ -326,6 +326,7 @@ export default function WorkerProductsPage() {
 
   const isAuthError = fetchErrorMsg?.includes("autenticado");
   const savingEdit = editarVariante.isPending;
+  const workerTheme = useWorkerTheme().theme;
 
   return (
     <div
@@ -665,7 +666,7 @@ export default function WorkerProductsPage() {
                         color: "var(--worker-ink-secondary)",
                       }}
                     >
-                      {v.codigo_barras && (<Barcode value={v.codigo_barras} lineColor={useWorkerTheme().theme === "dark" ? "#ffffff" : "#000000"} background="transparent" width={1} height={40}/>)}
+                      {v.codigo_barras && (<Barcode value={v.codigo_barras} lineColor={workerTheme === "dark" ? "#ffffff" : "#000000"} background="transparent" width={1} height={40}/>)}
                     </td>
 
                     {/* Color */}
