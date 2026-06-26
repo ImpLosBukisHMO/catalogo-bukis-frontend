@@ -97,7 +97,7 @@ export async function editarVariante(
   variantId: number,
   data: { stock?: number; activo?: boolean; item?: string; precio?: number | null; }
 ): Promise<unknown> {
-  const res = await API.patch(`/api/producto-variantes/${variantId}/`, data);
+  const res = await API.patch(`/api/worker/variants/${variantId}/`, data);
   const resData = res.data;
   return resData?.datos || resData;
 }
