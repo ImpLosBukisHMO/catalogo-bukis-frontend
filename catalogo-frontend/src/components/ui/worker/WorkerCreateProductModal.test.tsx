@@ -235,7 +235,8 @@ describe("WorkerCreateProductModal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Continuar a la variante" }));
     fillField("Color", "1");
-    fillField("SKU", "SKU-ROJO-1");
+    fillField("No. Ítem", "SKU-ROJO-1");
+    fillField("Código de Barras", "01234ADF0")
     fillField("Stock", "5");
 
     fireEvent.click(screen.getByRole("button", { name: "Continuar a publicación" }));
@@ -256,6 +257,7 @@ describe("WorkerCreateProductModal", () => {
     mockCrearVariante.mockResolvedValue({
       id: 91,
       item: "SKU-ROJO-1",
+      codigo_barras: "01234ADF0",
       color: 1,
       stock: 5,
       activo: false,
@@ -268,7 +270,8 @@ describe("WorkerCreateProductModal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Continuar a la variante" }));
     fillField("Color", "1");
-    fillField("SKU", "SKU-ROJO-1");
+    fillField("No. Ítem", "SKU-ROJO-1");
+    fillField("Código de Barras", "01234ADF0")
     fillField("Stock", "5");
     uploadVariantImage();
 
@@ -325,7 +328,8 @@ describe("WorkerCreateProductModal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Continuar a la variante" }));
     fillField("Color", "1");
-    fillField("SKU", "SKU-ROJO-1");
+    fillField("No. Ítem", "SKU-ROJO-1");
+    fillField("Código de Barras", "01234ADF0")
     fillField("Stock", "5");
     uploadVariantImage();
 
@@ -361,6 +365,7 @@ describe("WorkerCreateProductModal", () => {
         stock: 5,
         activo: true,
         item: "SKU-ROJO-1",
+        codigo_barras: "01234ADF0"
       },
     });
 

@@ -34,6 +34,8 @@ import {
 } from "../../services/worker";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
 import { stripDiacritics } from "../../utils/normalizers";
+import Barcode from "react-barcode";
+import { useWorkerTheme } from "../providers/useWorkerTheme";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -324,6 +326,7 @@ export default function WorkerProductsPage() {
 
   const isAuthError = fetchErrorMsg?.includes("autenticado");
   const savingEdit = editarVariante.isPending;
+  const workerTheme = useWorkerTheme().theme;
 
   return (
     <div
@@ -547,7 +550,7 @@ export default function WorkerProductsPage() {
         </div>
       ) : (
         /* ── Table ── */
-        <div style={{ overflowX: "auto" }}>
+        <div className="max-h-[calc(100vh-180px)]" style={{ overflowX: "auto", overflowY: "auto" }}>
           <table
             style={{
               width: "100%",
@@ -557,12 +560,13 @@ export default function WorkerProductsPage() {
           >
             <thead>
               <tr
+                className="sticky top-0 z-10"
                 style={{
                   background: "#1e293b",
                   color: "#fff",
                 }}
               >
-                {["Imagen", "Nombre", "No.Item", "Color", "Stock", "Activo", ""].map((h) => (
+                {["Imagen", "Nombre", "No. Ítem", "Código", "Color", "Stock", "Activo", ""].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -634,12 +638,12 @@ export default function WorkerProductsPage() {
                         {variantName(v)}
                         <button
                           disabled={isThisProductLoading}
-                          onClick={() => handleEditVariantModal(v)}
+                          onClick={() => { handleEditVariantModal(v); console.log("Variante seleccionada para editar: ", v) }}
                           title="Editar producto base y variante"
                           aria-label="Editar producto base y variante"
                           style={iconButtonStyle(isThisProductLoading)}
                         >
-                          {isThisProductLoading ? "⏳" : "⚙️"}
+                          {isThisProductLoading ? "⏱️" : "⚙️"}
                         </button>
                       </div>
                     </td>
@@ -653,6 +657,16 @@ export default function WorkerProductsPage() {
                       }}
                     >
                       {v.item}
+                    </td>
+
+                    {/* Código de Barras */}
+                    <td
+                      style={{
+                        padding: "4px 0px",
+                        color: "var(--worker-ink-secondary)",
+                      }}
+                    >
+                      {v.codigo_barras && (<Barcode value={v.codigo_barras} lineColor={workerTheme === "dark" ? "#ffffff" : "#000000"} background="transparent" width={1} height={40}/>)}
                     </td>
 
                     {/* Color */}

@@ -33,7 +33,6 @@ export default function SearchProductsPage() {
             const mappedProducts: ProductCardVM[] = productsData.map((p: Product) => ({
                 id: p.id,
                 nombre: p.nombre,
-                sku: p.item ?? "",
                 precio: Number(p.precio),
                 imagenUrl: p.imagen ?? null,
                 disponible: true,
@@ -66,7 +65,6 @@ export default function SearchProductsPage() {
                 const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
                     id: p.id,
                     nombre: p.nombre,
-                    sku: p.item ?? "",
                     precio: Number(p.precio),
                     imagenUrl: p.imagen ?? null,
                     disponible: true,
@@ -97,7 +95,6 @@ export default function SearchProductsPage() {
             const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
                 id: p.id,
                 nombre: p.nombre,
-                sku: p.item ?? "",
                 precio: Number(p.precio),
                 imagenUrl: p.imagen ?? null,
                 disponible: true,
