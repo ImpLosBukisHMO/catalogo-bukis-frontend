@@ -24,6 +24,11 @@ import {
   WorkerDialogRoot,
   WorkerDialogTitle,
 } from "./WorkerDialog";
+import {
+  buildPublishReadinessIssues,
+  getProductPublicationLabel,
+  hasVariantDraftData,
+} from "./workerProductFlow";
 
 export type ModalMode = "create-product" | "success" | "add-variant" | "select-product" | "edit-base-product" | "select-variant-to-edit" | "edit-variant";
 
@@ -61,6 +66,12 @@ type PendingVariantUpload = {
   variant: WorkerCreatedVariant;
   requestKey: string;
   nextImageIndex: number;
+};
+
+type PartialUnifiedCreateState = {
+  product: WorkerProducto;
+  variant: WorkerCreatedVariant | null;
+  failedStep: "variant" | "images" | "publish";
 };
 
 type ApiErrorPayload = {
@@ -240,19 +251,19 @@ export function WorkerCreateProductModal({
             <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
               <WorkerDialogTitle>
                 {mode === "create-product" && "Nuevo producto"}
-                {mode === "edit-base-product" && "Editar producto base"}
-                {mode === "select-product" && "Elegir producto base"}
-                {mode === "success" && (editingProduct ? "Gestionar producto" : "Producto creado")}
+                {mode === "edit-base-product" && "Editar información general"}
+                {mode === "select-product" && "Elegir producto"}
+                {mode === "success" && (editingProduct ? "Gestionar producto" : "Producto guardado")}
                 {mode === "add-variant" && "Agregar variante"}
                 {mode === "select-variant-to-edit" && "Seleccionar variante"}
                 {mode === "edit-variant" && "Editar variante"}
               </WorkerDialogTitle>
               <WorkerDialogDescription>
-                {mode === "create-product" && "Cargá el producto base con una foto clara."}
+                {mode === "create-product" && "Completá la información general, la primera variante y la publicación en un solo flujo."}
                 {mode === "edit-base-product" && "Modificá los datos generales del producto."}
-                {mode === "select-product" && "Buscá un producto base ya existente."}
-                {mode === "success" && "El producto quedó listo. Revisá el resumen o gestioná sus variantes."}
-                {mode === "add-variant" && "Cargá una nueva combinación de color y stock."}
+                {mode === "select-product" && "Buscá un producto existente para seguir con sus variantes."}
+                {mode === "success" && "Revisá el resumen y seguí gestionando variantes cuando lo necesites."}
+                {mode === "add-variant" && "Cargá una nueva combinación de color, SKU, stock y fotos."}
                 {mode === "select-variant-to-edit" && "Elegí qué variante quieres modificar."}
                 {mode === "edit-variant" && "Actualizá stock, precio o fotos de la variante."}
               </WorkerDialogDescription>
@@ -269,7 +280,7 @@ export function WorkerCreateProductModal({
                     color: "var(--worker-rail)",
                   }}
                 >
-                  Editar Producto Base
+                  Editar información general
                 </button>
               </div>
             )}
@@ -300,27 +311,39 @@ export function WorkerCreateProductModal({
 
         <WorkerDialogBody scrollable>
           {(mode === "create-product" || mode === "edit-base-product") && (
-            <CreateProductSection
-              categorias={categorias}
-              onSave={async (data) => {
-                if (createdProduct) {
-                  return (await editarProductoM.mutateAsync({ productId: createdProduct.id, data })) as WorkerProducto;
-                }
-                return (await crearProductoM.mutateAsync(data)) as WorkerProducto;
-              }}
-              initialProduct={createdProduct}
-              productos={productos}
-              onCreated={(product) => {
-                setCreatedProduct(product);
-                if (mode === "edit-base-product") {
+            mode === "create-product" ? (
+              <UnifiedCreateProductSection
+                categorias={categorias}
+                colores={colores}
+                crearProductoM={crearProductoM}
+                editarProductoM={editarProductoM}
+                crearVarianteM={crearVarianteM}
+                subirImagenM={subirImagenM}
+                onAbortAfterPartialCreate={handleCloseClick}
+                onCreated={(product) => {
+                  setCreatedProduct(product);
                   setMode("success");
-                } else {
+                }}
+              />
+            ) : (
+              <CreateProductSection
+                categorias={categorias}
+                onSave={async (data) => {
+                  if (createdProduct) {
+                    return (await editarProductoM.mutateAsync({ productId: createdProduct.id, data })) as WorkerProducto;
+                  }
+                  return (await crearProductoM.mutateAsync(data)) as WorkerProducto;
+                }}
+                initialProduct={createdProduct}
+                productos={productos}
+                onCreated={(product) => {
+                  setCreatedProduct(product);
                   setMode("success");
-                }
-              }}
-              onSwitchToExisting={() => setMode("select-product")}
-              isEditing={mode === "edit-base-product"}
-            />
+                }}
+                onSwitchToExisting={() => setMode("select-product")}
+                isEditing={mode === "edit-base-product"}
+              />
+            )
           )}
 
           {mode === "select-product" && (
@@ -379,7 +402,7 @@ export function WorkerCreateProductModal({
         </WorkerDialogBody>
 
         <WorkerDialogFooter className="worker-dialog-footer--stack-sm">
-          {(mode === "create-product" || mode === "edit-base-product") && (
+          {mode === "edit-base-product" && (
             <>
               <ModalButton kind="secondary" onClick={handleCloseClick} disabled={isPending}>
                 Cancelar
@@ -405,7 +428,7 @@ export function WorkerCreateProductModal({
 
           {mode === "success" && (
             <>
-              <ModalButton kind="secondary" onClick={() => onOpenChange(false)}>
+              <ModalButton kind="secondary" onClick={handleCloseClick}>
                 Cerrar
               </ModalButton>
               <ModalButton kind="primary" onClick={() => setMode("add-variant")}>
@@ -458,6 +481,513 @@ export function WorkerCreateProductModal({
         </WorkerDialogFooter>
       </WorkerDialogContent>
     </WorkerDialogRoot>
+  );
+}
+
+function UnifiedCreateProductSection({
+  categorias,
+  colores,
+  crearProductoM,
+  editarProductoM,
+  crearVarianteM,
+  subirImagenM,
+  onAbortAfterPartialCreate,
+  onCreated,
+}: {
+  categorias: WorkerCategoria[];
+  colores: WorkerColor[];
+  crearProductoM: ReturnType<typeof useCrearProducto>;
+  editarProductoM: ReturnType<typeof useEditarProducto>;
+  crearVarianteM: ReturnType<typeof useCrearVariante>;
+  subirImagenM: ReturnType<typeof useSubirImagen>;
+  onAbortAfterPartialCreate: () => void;
+  onCreated: (product: WorkerProducto) => void;
+}) {
+  const [step, setStep] = useState<"general" | "variant" | "publication">("general");
+  const [form, setForm] = useState<ProductFormState>(defaultProductForm);
+  const [imagen, setImagen] = useState<File | null>(null);
+  const [colorId, setColorId] = useState("");
+  const [item, setItem] = useState("");
+  const [stock, setStock] = useState("");
+  const [activo, setActivo] = useState(true);
+  const [imagenes, setImagenes] = useState<File[]>([]);
+  const [esPrincipal, setEsPrincipal] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
+  const [variantErrors, setVariantErrors] = useState<VariantFieldErrors>({});
+  const [submitError, setSubmitError] = useState("");
+  const [partialCreationState, setPartialCreationState] = useState<PartialUnifiedCreateState | null>(null);
+  const submitInFlightRef = useRef(false);
+  const [isSubmitLocked, setIsSubmitLocked] = useState(false);
+
+  const isPending =
+    crearProductoM.isPending
+    || editarProductoM.isPending
+    || crearVarianteM.isPending
+    || subirImagenM.isPending;
+  const isSubmissionPending = isPending || isSubmitLocked;
+
+  const variantDraftStarted = hasVariantDraftData({
+    colorId,
+    item,
+    stock,
+    activo,
+    imagesCount: imagenes.length,
+  });
+
+  const publishIssues = useMemo(() => buildPublishReadinessIssues({
+    product: {
+      precio: form.precio,
+      categorias_ids: form.categorias_ids,
+    },
+    variant: {
+      colorId,
+      item,
+      stock,
+      activo,
+      imagesCount: imagenes.length,
+    },
+  }), [activo, colorId, form.categorias_ids, form.precio, imagenes.length, item, stock]);
+
+  const setField = (key: keyof ProductFormState) => (value: string | string[]) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => ({ ...current, [key]: undefined }));
+  };
+
+  const validateGeneralStep = () => {
+    const nextFieldErrors: ProductFieldErrors = {};
+
+    if (!form.nombre.trim()) nextFieldErrors.nombre = "Ingresá el nombre.";
+    if (!form.precio.trim()) nextFieldErrors.precio = "Ingresá el precio.";
+    if (!form.peso.trim()) nextFieldErrors.peso = "Ingresá el peso.";
+    if (!form.medidas.trim()) nextFieldErrors.medidas = "Ingresá las medidas.";
+    if (!form.descripcion.trim()) nextFieldErrors.descripcion = "Ingresá la descripción.";
+    if (!imagen) nextFieldErrors.imagen = "Seleccioná una imagen principal.";
+
+    setFieldErrors(nextFieldErrors);
+    return Object.keys(nextFieldErrors).length === 0;
+  };
+
+  const validateVariantForDraft = () => {
+    if (!variantDraftStarted) {
+      setVariantErrors({});
+      return true;
+    }
+
+    const nextErrors: VariantFieldErrors = {};
+    if (!colorId.trim()) nextErrors.colorId = "Seleccioná un color.";
+    if (!item.trim()) nextErrors.item = "Ingresá el SKU de la variante.";
+    if (!stock.trim()) nextErrors.stock = "Ingresá el stock de la variante.";
+
+    setVariantErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const uploadVariantImages = async (productoId: number, variantId: number) => {
+    for (let index = 0; index < imagenes.length; index += 1) {
+      const formData = new FormData();
+      formData.append("imagen", imagenes[index]);
+      formData.append("orden", String(index));
+      formData.append("es_principal", index === 0 && esPrincipal ? "true" : "false");
+      formData.append("variante", String(variantId));
+      await subirImagenM.mutateAsync({ productoId, data: formData });
+    }
+  };
+
+  const buildProductFormData = (estado: "draft" | "active") => {
+    const formData = new FormData();
+    formData.append("nombre", form.nombre.trim());
+    formData.append("precio", form.precio);
+    formData.append("peso", form.peso);
+    formData.append("medidas", form.medidas.trim());
+    formData.append("descripcion", form.descripcion.trim());
+    formData.append("disponible", estado === "active" ? "true" : "false");
+    formData.append("estado", estado);
+    if (form.capacidad.trim()) formData.append("capacidad", form.capacidad.trim());
+    form.categorias_ids.forEach((id) => formData.append("categorias_ids", id));
+    if (imagen) formData.append("imagen", imagen);
+    return formData;
+  };
+
+  const handleSave = async (intent: "draft" | "publish") => {
+    if (partialCreationState) {
+      setSubmitError(buildPartialUnifiedCreateMessage(partialCreationState));
+      return;
+    }
+
+    if (submitInFlightRef.current || isPending) {
+      return;
+    }
+
+    submitInFlightRef.current = true;
+    setIsSubmitLocked(true);
+
+    setSubmitError("");
+    let createdProduct: WorkerProducto | null = null;
+    let createdVariant: WorkerCreatedVariant | null = null;
+    let failedStep: PartialUnifiedCreateState["failedStep"] = "variant";
+
+    try {
+      const generalValid = validateGeneralStep();
+      const variantValid = validateVariantForDraft();
+
+      if (!generalValid) {
+        setStep("general");
+        return;
+      }
+
+      if (!variantValid) {
+        setStep("variant");
+        return;
+      }
+
+      if (intent === "publish" && publishIssues.length > 0) {
+        setFieldErrors((current) => ({
+          ...current,
+          categorias_ids: form.categorias_ids.length === 0
+            ? "Seleccioná al menos una categoría para publicar."
+            : current.categorias_ids,
+        }));
+        setVariantErrors((current) => ({
+          ...current,
+          colorId: !colorId.trim() ? "Seleccioná un color." : current.colorId,
+          item: !item.trim() ? "Ingresá el SKU de la variante." : current.item,
+          stock: !stock.trim() ? "Ingresá el stock de la variante." : current.stock,
+        }));
+        setStep("publication");
+        return;
+      }
+
+      createdProduct = await crearProductoM.mutateAsync(buildProductFormData("draft")) as WorkerProducto;
+
+      if (variantDraftStarted) {
+        failedStep = "variant";
+        createdVariant = await crearVarianteM.mutateAsync({
+          productoId: createdProduct.id,
+          data: {
+            color: Number(colorId),
+            stock: Number(stock),
+            activo,
+            item: item.trim(),
+          },
+        }) as WorkerCreatedVariant;
+
+        if (imagenes.length > 0) {
+          failedStep = "images";
+          await uploadVariantImages(createdProduct.id, createdVariant.id);
+        }
+      }
+
+      if (intent === "publish") {
+        failedStep = "publish";
+        const publishedProduct = await editarProductoM.mutateAsync({
+          productId: createdProduct.id,
+          data: buildProductFormData("active"),
+        }) as WorkerProducto;
+        setPartialCreationState(null);
+        onCreated(publishedProduct);
+        return;
+      }
+
+      setPartialCreationState(null);
+      onCreated(createdProduct);
+    } catch (error) {
+      if (createdProduct) {
+        const nextPartialState: PartialUnifiedCreateState = {
+          product: createdProduct,
+          variant: createdVariant,
+          failedStep,
+        };
+
+        setPartialCreationState(nextPartialState);
+        setSubmitError(buildPartialUnifiedCreateMessage(nextPartialState));
+        return;
+      }
+
+      const parsed = parseProductApiError(error);
+      setFieldErrors((current) => ({ ...current, ...parsed.fieldErrors }));
+      setSubmitError(parsed.submitError || parseInlineApiError(error));
+    } finally {
+      submitInFlightRef.current = false;
+      setIsSubmitLocked(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <SectionCard
+        title="Progreso"
+        description="Guiamos la creación en tres pasos para que el producto se sienta completo antes de publicarlo."
+      >
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+          {[
+            { key: "general", label: "1. Información general" },
+            { key: "variant", label: "2. Primera variante" },
+            { key: "publication", label: "3. Publicación" },
+          ].map((stepItem, index) => {
+            const stepOrder = ["general", "variant", "publication"];
+            const isCurrent = stepItem.key === step;
+            const isDone = stepOrder.indexOf(step) > index;
+            return (
+              <button
+                key={stepItem.key}
+                type="button"
+                onClick={() => setStep(stepItem.key as "general" | "variant" | "publication")}
+                style={{
+                  ...secondaryButtonStyle(false),
+                  justifyContent: "flex-start",
+                  textAlign: "left",
+                  borderColor: isCurrent ? "var(--worker-rail)" : "var(--worker-border)",
+                  background: isCurrent ? "var(--worker-overlay)" : "var(--worker-bench)",
+                  color: isCurrent ? "var(--worker-rail)" : "var(--worker-ink-secondary)",
+                  fontWeight: isCurrent || isDone ? 700 : 600,
+                }}
+              >
+                {isDone ? "✓ " : ""}
+                {stepItem.label}
+              </button>
+            );
+          })}
+        </div>
+      </SectionCard>
+
+      {step === "general" && (
+        <>
+          <SectionCard
+            title="Información general"
+            description="Completá los datos compartidos del producto. La categoría ayuda a publicar, pero no bloquea guardar el borrador."
+          >
+            <div style={responsiveGridStyle}>
+              <FormField label="Nombre" error={fieldErrors.nombre}>
+                <input autoFocus type="text" value={form.nombre} onChange={(event) => setField("nombre")(event.target.value)} style={inputStyle} />
+              </FormField>
+              <FormField label="Precio" error={fieldErrors.precio}>
+                <input type="number" min="0" step="0.01" inputMode="decimal" value={form.precio} onChange={(event) => setField("precio")(event.target.value)} style={inputStyle} />
+              </FormField>
+            </div>
+
+            <div style={responsiveGridStyle}>
+              <FormField label="Peso" error={fieldErrors.peso}>
+                <input type="number" min="0" step="0.01" inputMode="decimal" value={form.peso} onChange={(event) => setField("peso")(event.target.value)} style={inputStyle} />
+              </FormField>
+              <FormField label="Medidas" error={fieldErrors.medidas}>
+                <input type="text" value={form.medidas} onChange={(event) => setField("medidas")(event.target.value)} style={inputStyle} />
+              </FormField>
+            </div>
+
+            <div style={responsiveGridStyle}>
+              <FormField label="Capacidad" error={fieldErrors.capacidad} required={false}>
+                <input type="text" value={form.capacidad} onChange={(event) => setField("capacidad")(event.target.value)} style={inputStyle} />
+              </FormField>
+              <FormField label="Categorías" error={fieldErrors.categorias_ids} required={false}>
+                <div style={{ ...inputStyle, maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px" }}>
+                  {categorias.length === 0 ? (
+                    <span style={{ color: "var(--worker-ink-tertiary)", fontSize: 13 }}>No hay categorías disponibles</span>
+                  ) : categorias.map((categoria) => {
+                    const isChecked = form.categorias_ids.includes(String(categoria.id));
+                    return (
+                      <label key={categoria.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "var(--worker-ink-secondary)" }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(event) => {
+                            const categoryId = String(categoria.id);
+                            const shouldInclude = event.target.checked;
+                            setForm((current) => ({
+                              ...current,
+                              categorias_ids: shouldInclude
+                                ? current.categorias_ids.includes(categoryId)
+                                  ? current.categorias_ids
+                                  : [...current.categorias_ids, categoryId]
+                                : current.categorias_ids.filter((id) => id !== categoryId),
+                            }));
+                            setFieldErrors((current) => ({ ...current, categorias_ids: undefined }));
+                          }}
+                        />
+                        {categoria.nombre}
+                      </label>
+                    );
+                  })}
+                </div>
+              </FormField>
+            </div>
+
+            <FormField label="Descripción" error={fieldErrors.descripcion}>
+              <textarea value={form.descripcion} onChange={(event) => setField("descripcion")(event.target.value)} rows={5} style={{ ...inputStyle, resize: "vertical", minHeight: 120 }} />
+            </FormField>
+          </SectionCard>
+
+          <SectionCard
+            title="Imagen principal del producto"
+            description="La usamos como referencia general. Las imágenes por color se cargan en la primera variante."
+          >
+            <WorkerPhotoPicker
+              mode="product"
+              label="Foto principal"
+              helper="Podés sacar la foto en el momento o elegirla desde la galería."
+              error={fieldErrors.imagen}
+              value={imagen}
+              onChange={(nextImage) => {
+                setImagen(nextImage);
+                setFieldErrors((current) => ({ ...current, imagen: undefined }));
+              }}
+            />
+          </SectionCard>
+        </>
+      )}
+
+      {step === "variant" && (
+        <>
+          <SectionCard
+            title="Primera variante"
+            description="Este paso es opcional si solo querés guardar un borrador. Para publicar sí necesitás completar color, SKU, stock e imágenes."
+          >
+            <InlineNotice tone="info" style={{ marginBottom: 12 }}>
+              Si todavía no tenés la variante lista, podés seguir y guardar el producto como borrador.
+            </InlineNotice>
+
+            <FormField label="Color" error={variantErrors.colorId} required={false}>
+              <select
+                autoFocus
+                value={colorId}
+                onChange={(event) => {
+                  setColorId(event.target.value);
+                  setVariantErrors((current) => ({ ...current, colorId: undefined }));
+                }}
+                style={{ ...inputStyle, cursor: "pointer" }}
+              >
+                <option value="">Seleccioná un color</option>
+                {colores.map((color) => (
+                  <option key={color.id} value={String(color.id)}>
+                    {color.nombre} ({color.hex})
+                  </option>
+                ))}
+              </select>
+            </FormField>
+
+            <div style={responsiveGridStyle}>
+              <FormField label="SKU" error={variantErrors.item} required={false}>
+                <input type="text" value={item} onChange={(event) => {
+                  setItem(event.target.value);
+                  setVariantErrors((current) => ({ ...current, item: undefined }));
+                }} style={inputStyle} />
+              </FormField>
+              <FormField label="Stock" error={variantErrors.stock} required={false}>
+                <input type="number" min="0" inputMode="numeric" value={stock} onChange={(event) => {
+                  setStock(event.target.value);
+                  setVariantErrors((current) => ({ ...current, stock: undefined }));
+                }} style={inputStyle} />
+              </FormField>
+            </div>
+
+            <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, color: "var(--worker-ink-secondary)" }}>
+              <input type="checkbox" checked={activo} onChange={(event) => setActivo(event.target.checked)} />
+              {activo ? "La variante quedará activa cuando publiques el producto." : "La variante quedará inactiva hasta que la actives."}
+            </label>
+          </SectionCard>
+
+          <SectionCard
+            title="Fotos de la variante"
+            description="Estas imágenes sí cuentan para la publicación porque representan el color específico."
+          >
+            <WorkerPhotoPicker
+              mode="variant"
+              label="Fotos de la primera variante"
+              helper="Podés agregar una foto desde cámara o varias desde la galería."
+              value={imagenes}
+              onChange={setImagenes}
+            />
+
+            {imagenes.length > 0 && (
+              <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, color: "var(--worker-ink-secondary)" }}>
+                <input type="checkbox" checked={esPrincipal} onChange={(event) => setEsPrincipal(event.target.checked)} />
+                Marcar la primera foto como principal de la variante
+              </label>
+            )}
+          </SectionCard>
+        </>
+      )}
+
+      {step === "publication" && (
+        <>
+          <SectionCard
+            title="Publicación"
+            description="Podés guardar como borrador aunque falte la variante. Para publicar, te mostramos exactamente qué falta."
+          >
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+              <SummaryItem label="Nombre" value={form.nombre || "—"} />
+              <SummaryItem label="Categorías" value={form.categorias_ids.length > 0 ? `${form.categorias_ids.length} seleccionada(s)` : "Sin categorías"} />
+              <SummaryItem label="Primera variante" value={variantDraftStarted ? "Capturada para revisión" : "Todavía no agregada"} />
+              <SummaryItem label="Publicación" value={publishIssues.length === 0 ? "Lista para publicar" : "Guardar como borrador"} />
+            </div>
+          </SectionCard>
+
+          {publishIssues.length === 0 ? (
+            <InlineNotice tone="success">
+              Todo listo: el producto cumple con los requisitos para publicar.
+            </InlineNotice>
+          ) : (
+            <SectionCard
+              title="Requisitos para publicar"
+              description="Estas señales ayudan a corregir el flujo antes de depender de la validación final del backend."
+            >
+              <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 8, color: "var(--worker-error-fg)" }}>
+                {publishIssues.map((issue) => (
+                  <li key={issue.code} style={{ fontSize: 14, lineHeight: 1.5 }}>
+                    {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+        </>
+      )}
+
+      {submitError && <InlineNotice tone="error">{submitError}</InlineNotice>}
+
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <ModalButton kind="secondary" onClick={() => {
+          if (step === "general") return;
+          setStep(step === "publication" ? "variant" : "general");
+        }} disabled={isSubmissionPending || step === "general" || partialCreationState !== null}>
+          Atrás
+        </ModalButton>
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {step !== "publication" ? (
+              <ModalButton kind="primary" onClick={() => {
+                if (step === "general") {
+                  if (validateGeneralStep()) {
+                    setSubmitError("");
+                    setStep("variant");
+                  }
+                  return;
+                }
+                setSubmitError("");
+                setStep("publication");
+              }} disabled={isSubmissionPending}>
+                {step === "general" ? "Continuar a la variante" : "Continuar a publicación"}
+              </ModalButton>
+          ) : (
+            <>
+              {partialCreationState ? (
+                <ModalButton kind="primary" onClick={onAbortAfterPartialCreate}>
+                  Cerrar para evitar duplicados
+                </ModalButton>
+              ) : (
+                <>
+                  <ModalButton kind="secondary" onClick={() => void handleSave("draft")} disabled={isSubmissionPending}>
+                    {isSubmissionPending ? "Guardando…" : "Guardar borrador"}
+                  </ModalButton>
+                  <ModalButton kind="primary" onClick={() => void handleSave("publish")} disabled={isSubmissionPending}>
+                    {isSubmissionPending ? "Publicando…" : "Publicar producto"}
+                  </ModalButton>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -574,7 +1104,7 @@ function CreateProductSection({
               color: "var(--worker-rail)",
             }}
           >
-            🔍 Buscar producto base existente
+            🔍 Usar un producto existente
           </button>
         </div>
       )}
@@ -650,11 +1180,17 @@ function CreateProductSection({
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => {
-                          const nextIds = isChecked
-                            ? form.categorias_ids.filter((id) => id !== String(categoria.id))
-                            : [...form.categorias_ids, String(categoria.id)];
-                          setForm((current) => ({ ...current, categorias_ids: nextIds }));
+                        onChange={(event) => {
+                          const categoryId = String(categoria.id);
+                          const shouldInclude = event.target.checked;
+                          setForm((current) => ({
+                            ...current,
+                            categorias_ids: shouldInclude
+                              ? current.categorias_ids.includes(categoryId)
+                                ? current.categorias_ids
+                                : [...current.categorias_ids, categoryId]
+                              : current.categorias_ids.filter((id) => id !== categoryId),
+                          }));
                           setFieldErrors((current) => ({ ...current, categorias_ids: undefined }));
                         }}
                       />
@@ -734,7 +1270,7 @@ function CreateProductSection({
             checked={disponible}
             onChange={(e) => setDisponible(e.target.checked)}
           />
-          { disponible ? "Publicar en la web (da clic para no publicar)." : "No publicar (da clic para publicar)." }
+          { disponible ? "Publicar en la web (haz clic para dejarlo oculto)." : "No publicar (haz clic para mostrarlo)." }
         </label>
       </SectionCard>
 
@@ -832,8 +1368,18 @@ function SuccessSection({
         <InlineNotice tone="success" style={{ flex: 1, margin: 0 }}>
           Producto: <strong>{createdProductLabel}</strong>
         </InlineNotice>
-        <button onClick={onEditBase} style={{ ...tertiaryButtonStyle(), marginLeft: 8 }}>Editar Base</button>
+        <button onClick={onEditBase} style={{ ...tertiaryButtonStyle(), marginLeft: 8 }}>Editar información</button>
       </div>
+
+      <SectionCard
+        title="Estado actual"
+        description="Este resumen refleja si el producto quedó como borrador o si ya está listo para mostrarse en la tienda."
+      >
+        <div style={responsiveGridStyle}>
+          <SummaryItem label="Estado" value={getProductPublicationLabel(createdProduct.estado)} />
+          <SummaryItem label="Visible en tienda" value={createdProduct.disponible ? "Sí" : "No"} />
+        </div>
+      </SectionCard>
 
       <SectionCard
         title="Resumen rápido"
@@ -1028,7 +1574,7 @@ function AddVariantSection({
   return (
     <form id={ADD_VARIANT_FORM_ID} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <InlineNotice tone="info">
-        Producto base: <strong style={{ color: "var(--worker-ink)" }}>{createdProduct.nombre}</strong>
+        Producto seleccionado: <strong style={{ color: "var(--worker-ink)" }}>{createdProduct.nombre}</strong>
       </InlineNotice>
 
       <SectionCard
@@ -1102,7 +1648,7 @@ function AddVariantSection({
               setActivo(event.target.checked);
             }}
           />
-          { activo? "Variante activa (haz clic para desactivarla)." : "Variante no activa (haz clic para activarla)."}
+          { activo? "Variante activa (haz clic para desactivarla)." : "Variante inactiva (haz clic para activarla)."}
         </label>
       </SectionCard>
 
@@ -1297,7 +1843,7 @@ function EditVariantSection({
         </FormField>
         <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
           <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
-          { activo? "Variante activa (haz clic para desactivarla)." : "Variante no activa (haz clic para activarla)."}
+          { activo? "Variante activa (haz clic para desactivarla)." : "Variante inactiva (haz clic para activarla)."}
         </label>
       </SectionCard>
 
@@ -1664,6 +2210,20 @@ function buildVariantUploadRequestKey({
 function createdVariantRetryMessageSuffix(canRetryExistingVariant: boolean) {
   if (!canRetryExistingVariant) return "";
   return " La variante ya fue creada; reintentá para seguir con las fotos pendientes sin duplicarla.";
+}
+
+function buildPartialUnifiedCreateMessage(state: PartialUnifiedCreateState) {
+  const productLabel = state.product.nombre || `#${state.product.id}`;
+
+  if (state.failedStep === "variant") {
+    return `El producto ${productLabel} ya se creó como borrador, pero falló la creación de la primera variante. Cerrá este flujo y retomá desde ese producto para evitar duplicados.`;
+  }
+
+  if (state.failedStep === "images") {
+    return `El producto ${productLabel} y su primera variante ya fueron creados, pero falló la carga de imágenes. Cerrá este flujo y retomá desde ese producto para evitar duplicados.`;
+  }
+
+  return `El producto ${productLabel} ya fue creado, pero no se pudo completar la publicación. Cerrá este flujo y retomá desde ese producto para evitar duplicados.`;
 }
 
 function useObjectPreviewUrls(files: File[]) {

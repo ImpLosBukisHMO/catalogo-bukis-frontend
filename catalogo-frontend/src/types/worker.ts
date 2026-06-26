@@ -75,6 +75,7 @@ export type WorkerProducto = {
   medidas: string;
   capacidad: string | null;
   disponible: boolean;
+  estado?: "draft" | "active" | "archived" | string;
   categorias: number[];
   created_at: string;
   updated_at: string;
