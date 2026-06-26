@@ -513,6 +513,7 @@ function UnifiedCreateProductSection({
   const [stock, setStock] = useState("");
   const [activo, setActivo] = useState(true);
   const [imagenes, setImagenes] = useState<File[]>([]);
+  const [codigoBarras, setCodigoBarras] = useState("");
   const [esPrincipal, setEsPrincipal] = useState(true);
   const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
   const [variantErrors, setVariantErrors] = useState<VariantFieldErrors>({});
@@ -579,6 +580,7 @@ function UnifiedCreateProductSection({
     if (!colorId.trim()) nextErrors.colorId = "Seleccioná un color.";
     if (!item.trim()) nextErrors.item = "Ingresá el SKU de la variante.";
     if (!stock.trim()) nextErrors.stock = "Ingresá el stock de la variante.";
+    if (!codigoBarras.trim()) nextErrors.codigo_barras = "Ingresá el código de barras.";
 
     setVariantErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -670,6 +672,7 @@ function UnifiedCreateProductSection({
             stock: Number(stock),
             activo,
             item: item.trim(),
+            codigo_barras: codigoBarras.trim(),
           },
         }) as WorkerCreatedVariant;
 
@@ -713,6 +716,8 @@ function UnifiedCreateProductSection({
       setIsSubmitLocked(false);
     }
   };
+
+  const workerTheme = useWorkerTheme().theme
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -847,31 +852,55 @@ function UnifiedCreateProductSection({
               Si todavía no tenés la variante lista, podés seguir y guardar el producto como borrador.
             </InlineNotice>
 
-            <FormField label="Color" error={variantErrors.colorId} required={false}>
-              <select
-                autoFocus
-                value={colorId}
-                onChange={(event) => {
-                  setColorId(event.target.value);
-                  setVariantErrors((current) => ({ ...current, colorId: undefined }));
-                }}
-                style={{ ...inputStyle, cursor: "pointer" }}
-              >
-                <option value="">Seleccioná un color</option>
-                {colores.map((color) => (
-                  <option key={color.id} value={String(color.id)}>
-                    {color.nombre} ({color.hex})
-                  </option>
-                ))}
-              </select>
-            </FormField>
-
             <div style={responsiveGridStyle}>
-              <FormField label="SKU" error={variantErrors.item} required={false}>
+              <FormField label="Color" error={variantErrors.colorId} required={false}>
+                <select
+                  autoFocus
+                  value={colorId}
+                  onChange={(event) => {
+                    setColorId(event.target.value);
+                    setVariantErrors((current) => ({ ...current, colorId: undefined }));
+                  }}
+                  style={{ ...inputStyle, cursor: "pointer" }}
+                >
+                  <option value="">Seleccioná un color</option>
+                  {colores.map((color) => (
+                    <option key={color.id} value={String(color.id)}>
+                      {color.nombre} ({color.hex})
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="No. Ítem" error={variantErrors.item} required={false}>
                 <input type="text" value={item} onChange={(event) => {
                   setItem(event.target.value);
                   setVariantErrors((current) => ({ ...current, item: undefined }));
                 }} style={inputStyle} />
+              </FormField>
+            </div>
+
+            <div style={responsiveGridStyle}>
+              <FormField label="Código de Barras" error={variantErrors.codigo_barras} required={false}>
+                <input type="text" value={codigoBarras} onChange={(event) => {
+                  setCodigoBarras(event.target.value);
+                  setVariantErrors((current) => ({ ...current, item: undefined }));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                  }
+                }} style={inputStyle} />
+                <div style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}>
+                  {codigoBarras ? (
+                    <div className="my-3">
+                      <Barcode value={codigoBarras} background="transparent" lineColor={workerTheme == "dark" ? "#ffffff" : "#000000"} width={1.5} height={40} />
+                    </div>
+                  ) : (<></>)}
+                </div>
               </FormField>
               <FormField label="Stock" error={variantErrors.stock} required={false}>
                 <input type="number" min="0" inputMode="numeric" value={stock} onChange={(event) => {
