@@ -516,12 +516,15 @@ function UnifiedCreateProductSection({
   const [variantErrors, setVariantErrors] = useState<VariantFieldErrors>({});
   const [submitError, setSubmitError] = useState("");
   const [partialCreationState, setPartialCreationState] = useState<PartialUnifiedCreateState | null>(null);
+  const submitInFlightRef = useRef(false);
+  const [isSubmitLocked, setIsSubmitLocked] = useState(false);
 
   const isPending =
     crearProductoM.isPending
     || editarProductoM.isPending
     || crearVarianteM.isPending
     || subirImagenM.isPending;
+  const isSubmissionPending = isPending || isSubmitLocked;
 
   const variantDraftStarted = hasVariantDraftData({
     colorId,
@@ -611,43 +614,49 @@ function UnifiedCreateProductSection({
       return;
     }
 
+    if (submitInFlightRef.current || isPending) {
+      return;
+    }
+
+    submitInFlightRef.current = true;
+    setIsSubmitLocked(true);
+
     setSubmitError("");
-
-    const generalValid = validateGeneralStep();
-    const variantValid = validateVariantForDraft();
-
-    if (!generalValid) {
-      setStep("general");
-      return;
-    }
-
-    if (!variantValid) {
-      setStep("variant");
-      return;
-    }
-
-    if (intent === "publish" && publishIssues.length > 0) {
-      setFieldErrors((current) => ({
-        ...current,
-        categorias_ids: form.categorias_ids.length === 0
-          ? "Seleccioná al menos una categoría para publicar."
-          : current.categorias_ids,
-      }));
-      setVariantErrors((current) => ({
-        ...current,
-        colorId: !colorId.trim() ? "Seleccioná un color." : current.colorId,
-        item: !item.trim() ? "Ingresá el SKU de la variante." : current.item,
-        stock: !stock.trim() ? "Ingresá el stock de la variante." : current.stock,
-      }));
-      setStep("publication");
-      return;
-    }
-
     let createdProduct: WorkerProducto | null = null;
     let createdVariant: WorkerCreatedVariant | null = null;
     let failedStep: PartialUnifiedCreateState["failedStep"] = "variant";
 
     try {
+      const generalValid = validateGeneralStep();
+      const variantValid = validateVariantForDraft();
+
+      if (!generalValid) {
+        setStep("general");
+        return;
+      }
+
+      if (!variantValid) {
+        setStep("variant");
+        return;
+      }
+
+      if (intent === "publish" && publishIssues.length > 0) {
+        setFieldErrors((current) => ({
+          ...current,
+          categorias_ids: form.categorias_ids.length === 0
+            ? "Seleccioná al menos una categoría para publicar."
+            : current.categorias_ids,
+        }));
+        setVariantErrors((current) => ({
+          ...current,
+          colorId: !colorId.trim() ? "Seleccioná un color." : current.colorId,
+          item: !item.trim() ? "Ingresá el SKU de la variante." : current.item,
+          stock: !stock.trim() ? "Ingresá el stock de la variante." : current.stock,
+        }));
+        setStep("publication");
+        return;
+      }
+
       createdProduct = await crearProductoM.mutateAsync(buildProductFormData("draft")) as WorkerProducto;
 
       if (variantDraftStarted) {
@@ -697,6 +706,9 @@ function UnifiedCreateProductSection({
       const parsed = parseProductApiError(error);
       setFieldErrors((current) => ({ ...current, ...parsed.fieldErrors }));
       setSubmitError(parsed.submitError || parseInlineApiError(error));
+    } finally {
+      submitInFlightRef.current = false;
+      setIsSubmitLocked(false);
     }
   };
 
@@ -777,11 +789,17 @@ function UnifiedCreateProductSection({
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {
-                            const nextIds = isChecked
-                              ? form.categorias_ids.filter((id) => id !== String(categoria.id))
-                              : [...form.categorias_ids, String(categoria.id)];
-                            setForm((current) => ({ ...current, categorias_ids: nextIds }));
+                          onChange={(event) => {
+                            const categoryId = String(categoria.id);
+                            const shouldInclude = event.target.checked;
+                            setForm((current) => ({
+                              ...current,
+                              categorias_ids: shouldInclude
+                                ? current.categorias_ids.includes(categoryId)
+                                  ? current.categorias_ids
+                                  : [...current.categorias_ids, categoryId]
+                                : current.categorias_ids.filter((id) => id !== categoryId),
+                            }));
                             setFieldErrors((current) => ({ ...current, categorias_ids: undefined }));
                           }}
                         />
@@ -930,25 +948,25 @@ function UnifiedCreateProductSection({
         <ModalButton kind="secondary" onClick={() => {
           if (step === "general") return;
           setStep(step === "publication" ? "variant" : "general");
-        }} disabled={isPending || step === "general" || partialCreationState !== null}>
+        }} disabled={isSubmissionPending || step === "general" || partialCreationState !== null}>
           Atrás
         </ModalButton>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {step !== "publication" ? (
-            <ModalButton kind="primary" onClick={() => {
-              if (step === "general") {
-                if (validateGeneralStep()) {
-                  setSubmitError("");
-                  setStep("variant");
+              <ModalButton kind="primary" onClick={() => {
+                if (step === "general") {
+                  if (validateGeneralStep()) {
+                    setSubmitError("");
+                    setStep("variant");
+                  }
+                  return;
                 }
-                return;
-              }
-              setSubmitError("");
-              setStep("publication");
-            }} disabled={isPending}>
-              {step === "general" ? "Continuar a la variante" : "Continuar a publicación"}
-            </ModalButton>
+                setSubmitError("");
+                setStep("publication");
+              }} disabled={isSubmissionPending}>
+                {step === "general" ? "Continuar a la variante" : "Continuar a publicación"}
+              </ModalButton>
           ) : (
             <>
               {partialCreationState ? (
@@ -957,11 +975,11 @@ function UnifiedCreateProductSection({
                 </ModalButton>
               ) : (
                 <>
-                  <ModalButton kind="secondary" onClick={() => void handleSave("draft")} disabled={isPending}>
-                    {isPending ? "Guardando…" : "Guardar borrador"}
+                  <ModalButton kind="secondary" onClick={() => void handleSave("draft")} disabled={isSubmissionPending}>
+                    {isSubmissionPending ? "Guardando…" : "Guardar borrador"}
                   </ModalButton>
-                  <ModalButton kind="primary" onClick={() => void handleSave("publish")} disabled={isPending}>
-                    {isPending ? "Publicando…" : "Publicar producto"}
+                  <ModalButton kind="primary" onClick={() => void handleSave("publish")} disabled={isSubmissionPending}>
+                    {isSubmissionPending ? "Publicando…" : "Publicar producto"}
                   </ModalButton>
                 </>
               )}
@@ -1162,11 +1180,17 @@ function CreateProductSection({
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => {
-                          const nextIds = isChecked
-                            ? form.categorias_ids.filter((id) => id !== String(categoria.id))
-                            : [...form.categorias_ids, String(categoria.id)];
-                          setForm((current) => ({ ...current, categorias_ids: nextIds }));
+                        onChange={(event) => {
+                          const categoryId = String(categoria.id);
+                          const shouldInclude = event.target.checked;
+                          setForm((current) => ({
+                            ...current,
+                            categorias_ids: shouldInclude
+                              ? current.categorias_ids.includes(categoryId)
+                                ? current.categorias_ids
+                                : [...current.categorias_ids, categoryId]
+                              : current.categorias_ids.filter((id) => id !== categoryId),
+                          }));
                           setFieldErrors((current) => ({ ...current, categorias_ids: undefined }));
                         }}
                       />
