@@ -60,6 +60,7 @@ export async function editarProducto(id: number, data: FormData): Promise<Worker
 export type WorkerCreatedVariant = {
   id: number;
   item: string;
+  codigo_barras: string;
   color: number;
   stock: number;
   activo: boolean;
@@ -75,7 +76,7 @@ export type WorkerUploadedImage = {
 
 export async function crearVariante(
   productoId: number,
-  data: { color: number; stock: number; activo: boolean; item?: string }
+  data: { color: number; stock: number; activo: boolean; item?: string; codigo_barras?: string }
 ): Promise<WorkerCreatedVariant> {
   const res = await API.post(`/api/worker/productos/${productoId}/variantes/`, data);
   const resData = res.data;
@@ -94,9 +95,9 @@ export async function subirImagen(productoId: number, data: FormData): Promise<W
 
 export async function editarVariante(
   variantId: number,
-  data: { stock?: number; activo?: boolean; item?: string; precio?: number | null }
+  data: { stock?: number; activo?: boolean; item?: string; precio?: number | null; }
 ): Promise<unknown> {
-  const res = await API.patch(`/api/producto-variantes/${variantId}/`, data);
+  const res = await API.patch(`/api/worker/variants/${variantId}/`, data);
   const resData = res.data;
   return resData?.datos || resData;
 }

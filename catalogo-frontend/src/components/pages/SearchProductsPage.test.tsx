@@ -38,7 +38,6 @@ function buildProduct(id: number, nombre: string): Product {
   return {
     id,
     nombre,
-    item: `SKU-${id}`,
     imagen: null,
     descripcion: "",
     precio: "10.00",
