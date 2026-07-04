@@ -76,7 +76,7 @@ export function useWorkerProductos(enabled: boolean) {
 // ─── useWorkerProductosSlim ───────────────────────────────────────────────────
 
 /**
- * Fetches a slim product list (id + nombre) from the public /api/productos/ endpoint.
+ * Fetches a slim product list (id + nombre) from the /api/worker/productos/ endpoint.
  * Used by the variant creation drawer to populate the product selector.
  * Enabled only when the drawer is open to avoid unnecessary fetches.
  */

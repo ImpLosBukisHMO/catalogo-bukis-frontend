@@ -143,7 +143,8 @@ export async function crearColor(data: {
 export type WorkerProductoSlim = { id: number; nombre: string };
 
 export async function getWorkerProductosSlim(): Promise<WorkerProductoSlim[]> {
-  // Cambiamos al endpoint de worker para que el creador vea todos los productos base
-  const res = await API.get("/api/worker/productos/");
+  // page_size=100 is required: backend default is 20 (backend#39 sets max_page_size=100).
+  // Without this param workers can only see the first 20 products in the variant drawer.
+  const res = await API.get("/api/worker/productos/?page_size=100");
   return normalizeResponse<WorkerProductoSlim>(res.data);
 }
