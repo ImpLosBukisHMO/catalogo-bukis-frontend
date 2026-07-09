@@ -23,6 +23,8 @@ function Home() {
           precio: Number(p.precio),
           imagenUrl: p.imagen ?? null,
           disponible: true,
+          categoria: p.categoria ?? null,
+          descuento_especial: p.descuento_especial ?? null,
         }));
 
 

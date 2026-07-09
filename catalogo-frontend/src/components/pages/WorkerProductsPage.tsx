@@ -25,6 +25,7 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
+import { WorkerAddVariantModal } from "../ui/worker/WorkerAddVariantModal";
 import type { CSSProperties } from "react";
 import {
   getWorkerProducto,
@@ -34,8 +35,6 @@ import {
 } from "../../services/worker";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
 import { stripDiacritics } from "../../utils/normalizers";
-import Barcode from "react-barcode";
-import { useWorkerTheme } from "../providers/useWorkerTheme";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -157,6 +156,7 @@ export default function WorkerProductsPage() {
   // ── Utility drawer / create modal ──
   const [panelOpen, setPanelOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [addVariantOpen, setAddVariantOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<WorkerProducto | null>(null);
   const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
   const [editingVariant, setEditingVariant] = useState<WorkerVariant | null>(null);
@@ -189,7 +189,7 @@ export default function WorkerProductsPage() {
   const { data: categoriasRaw = [], refetch: refetchCategorias } = useWorkerCategorias();
   const categorias = useMemo(() => normalizeResponse(categoriasRaw) as WorkerCategoria[], [categoriasRaw]);
 
-  const utilitiesOpen = panelOpen || createOpen;
+  const utilitiesOpen = panelOpen || createOpen || addVariantOpen;
   const { data: coloresRaw = [], refetch: refetchColores } = useWorkerColores(utilitiesOpen);
   const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
 
@@ -233,8 +233,8 @@ export default function WorkerProductsPage() {
       const matchName = stripDiacritics(v.producto.nombre).toLowerCase()
       .includes(stripDiacritics(search).toLowerCase());
       const matchCat =
-        catFilter === "ALL" ||
-        (catId !== undefined && v.producto.categorias?.includes(catId));
+        catId === undefined ||
+        (catId !== undefined && v.producto.categoria?.id === catId);
       return matchName && matchCat;
     });
   }, [variants, search, catFilter, categorias]);
@@ -326,7 +326,6 @@ export default function WorkerProductsPage() {
 
   const isAuthError = fetchErrorMsg?.includes("autenticado");
   const savingEdit = editarVariante.isPending;
-  const workerTheme = useWorkerTheme().theme;
 
   return (
     <div
@@ -397,6 +396,22 @@ export default function WorkerProductsPage() {
           </button>
 
           <button
+            onClick={() => setAddVariantOpen(true)}
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#ffffff",
+              background: "var(--worker-inventory-fg)",
+              border: "1px solid var(--worker-border)",
+              borderRadius: 7,
+              cursor: "pointer",
+            }}
+          >
+            Agregar Variante
+          </button>
+
+          <button
             onClick={() => setPanelOpen((open) => !open)}
             style={{
               padding: "8px 16px",
@@ -432,6 +447,19 @@ export default function WorkerProductsPage() {
             setEditingVariantId(null);
             setEditingVariant(null);
           }}
+        />
+      )}
+
+      {addVariantOpen && (
+        <WorkerAddVariantModal
+          open={addVariantOpen}
+          onOpenChange={setAddVariantOpen}
+          categorias={categorias}
+          colores={colores}
+          productos={productos}
+          isLoadingProductos={loadingProducts}
+          errorProductos={errorProds ? errorProds.message : null}
+          onRetryProductos={() => refetchProductosSlim()}
         />
       )}
 
@@ -566,15 +594,15 @@ export default function WorkerProductsPage() {
                   color: "#fff",
                 }}
               >
-                {["Imagen", "Nombre", "No. Ítem", "Código", "Color", "Stock", "Activo", ""].map((h) => (
+                {["Imagen", "Nombre", "No. Ítem", "Categoría", "Precio Original", "Precio con Descuento", "Código", "Color", "Stock", "Activo", ""].map((h) => (
                   <th
                     key={h}
                     style={{
-                      padding: "10px 14px",
-                      whiteSpace: "nowrap",
+                      padding: "4px 10px",
+                      whiteSpace: "wrap",
                       fontWeight: 600,
                       fontSize: 13,
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     {h}
@@ -602,19 +630,22 @@ export default function WorkerProductsPage() {
                     }}
                   >
                     {/* Image */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td style={{ padding: "8px" }}>
                       {imageSrc ? (
-                        <img
-                          src={imageSrc}
-                          alt=""
-                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }}
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = IMAGE_PLACEHOLDER_URL;
-                          }}
-                        />
+                        <div className="w-full justify-items-center">
+                          <img
+                            src={imageSrc}
+                            alt=""
+                            style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = IMAGE_PLACEHOLDER_URL;
+                            }}
+                          />
+                        </div>
                       ) : (
                         <div
+                          className="w-full justify-items-center"
                           style={{
                             width: 40,
                             height: 40,
@@ -629,13 +660,18 @@ export default function WorkerProductsPage() {
                     {/* Name */}
                     <td
                       style={{
-                        padding: "8px 16px",
+                        padding: "8px 0px",
                         fontWeight: 500,
                         color: "var(--worker-ink)",
+                        textAlign: "center",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {variantName(v)}
+                      <div 
+                        className="flex justify-center-safe content-center"
+                        style={{ alignItems: "center", }}>
+                        <p style={{ whiteSpace: "wrap", }}>
+                          {variantName(v)}
+                        </p>
                         <button
                           disabled={isThisProductLoading}
                           onClick={() => { handleEditVariantModal(v); console.log("Variante seleccionada para editar: ", v) }}
@@ -648,15 +684,61 @@ export default function WorkerProductsPage() {
                       </div>
                     </td>
 
-                    {/* Item # */}
+                    {/* Ítem # */}
                     <td
                       style={{
-                        padding: "8px 16px",
+                        padding: "8px",
                         fontSize: 13,
                         color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
                       }}
                     >
                       {v.item}
+                    </td>
+
+                    {/* Categoría */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {v.producto.categoria?.nombre}
+                    </td>
+
+                    {/* Precio Original */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
+                      }}
+                    >
+                      $ {Number(v.producto.precio_original).toFixed(2)} MXN
+                    </td>
+                    
+                    {/* Precio con Descuento */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink)",
+                        fontWeight: 500,
+                        textAlign: "center",
+                      }}
+                    >
+                      {(() => {
+                          const precioFinal = Number(v.producto.precio);
+                          const descuento = v.producto.descuento_especial || v.producto.categoria?.descuento;
+
+                          if (descuento && descuento.es_valido) {
+                            return `$ ${precioFinal.toFixed(2)} MXN (-${descuento.porcentaje.toFixed(2)} %)`
+                          }
+                          return `$ ${precioFinal.toFixed(2)} MXN (-0.00 %)`
+                        })()}
                     </td>
 
                     {/* Código de Barras */}
@@ -664,14 +746,16 @@ export default function WorkerProductsPage() {
                       style={{
                         padding: "4px 0px",
                         color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
                       }}
                     >
-                      {v.codigo_barras && (<Barcode value={v.codigo_barras} lineColor={workerTheme === "dark" ? "#ffffff" : "#000000"} background="transparent" width={1} height={40}/>)}
+                      {v.codigo_barras}
                     </td>
 
                     {/* Color */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td style={{ padding: "8px", }}>
                       <span
+                        className="flex justify-center-safe content-center"
                         style={{
                           display: "flex",
                           gap: 8,
@@ -696,7 +780,7 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Stock */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td style={{ padding: "8px", textAlign: "center", }}>
                       {isEditing ? (
                         <input
                           type="number"
@@ -719,6 +803,7 @@ export default function WorkerProductsPage() {
                             fontWeight: 600,
                             color: stockColor,
                             fontSize: 14,
+                            textAlign: "center",
                           }}
                         >
                           {v.stock}
@@ -727,7 +812,13 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Active */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td
+                      style={{
+                        padding: "8px",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                    >
                       {isEditing ? (
                         <input
                           type="checkbox"
@@ -760,7 +851,7 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Actions */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td style={{ padding: "8px" }}>
                       {isEditing ? (
                         <div style={{ display: "flex", gap: 8 }}>
                           <button

@@ -1,12 +1,5 @@
 import API from "../api";
 
-export type Category = {
-  id: number | null;
-  nombre: string | null;
-  updated_at: string | null;
-  created_at: string | null;
-}
-
 export async function getCategories() {
   const res = await API.get("/api/categorias/", {
     headers: { Accept: "application/json" },

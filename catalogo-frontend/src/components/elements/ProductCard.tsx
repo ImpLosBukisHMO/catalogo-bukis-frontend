@@ -1,17 +1,39 @@
-import { CornerDownRight, Heart } from "lucide-react";
 import { useNavigate } from "react-router";
+import { CornerDownRight, Heart } from "lucide-react";
 import type { ProductCardVM } from "../../types/product";
 
 type Props = {
   product: ProductCardVM;
   className?: string;
   onToggleFavorite?: (product: ProductCardVM) => void;
+  isLikedByUser?: boolean;
 };
 
-const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
+const ProductCard = ({ product, className, onToggleFavorite, isLikedByUser = false }: Props) => {
   const navigate = useNavigate();
-  const { id, nombre, precio, imagenUrl, disponible } = product;
+  const {
+    id, nombre, precio, imagenUrl, disponible, categoria, descuento_especial
+  } = product;
+
   const goToDetail = () => navigate(`/producto/${id}`);
+
+  const specialDiscount = descuento_especial;
+  const generalDiscount = categoria?.descuento;
+  const productBasePrice = Number(precio) || 0;
+
+  let finalProductPrice = productBasePrice;
+  let hasDiscount = false;
+  let percentage = 0;
+
+  if (specialDiscount && specialDiscount.es_valido) {
+    percentage = Number(specialDiscount.porcentaje) || 0;
+    finalProductPrice = productBasePrice - (productBasePrice * percentage / 100);
+    hasDiscount = true;
+  } else if (generalDiscount && generalDiscount.es_valido) {
+    percentage = Number(generalDiscount.porcentaje) || 0;
+    finalProductPrice = productBasePrice - (productBasePrice * percentage / 100);
+    hasDiscount = true;
+  }
 
   return (
     <div
@@ -36,9 +58,17 @@ const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
           {nombre}
         </p>
 
-        <p className="mt-2 text-base font-semibold text-bukis-red-700">
+        <p className={`${hasDiscount ? "line-through" : ""} mt-2 text-base font-semibold text-bukis-ink`}>
           $ {precio.toFixed(2)} MXN
         </p>
+        {hasDiscount && (
+            <p
+              style={hasDiscount ? { fontSize: "1.1em" } : {}}
+              className="mt-2 text-base font-semibold text-bukis-red-700"
+            >
+              $ {finalProductPrice.toFixed(2)} MXN (-{percentage.toFixed(2)} %)
+            </p>
+          )}
 
         {disponible ? (
           <p className="mt-3 w-fit rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
@@ -63,14 +93,21 @@ const ProductCard = ({ product, className, onToggleFavorite }: Props) => {
           </button>
 
           <button
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-500 transition hover:border-bukis-red-600 hover:text-bukis-red-600 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
+            className={
+              `inline-flex h-10 w-10 items-center justify-center rounded-full border bg-white
+              ${
+                isLikedByUser ?
+                "text-bukis-red-600 border-bukis-red-600/60 transition hover:border-bukis-red-700 hover:text-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-700/35" :
+                "text-neutral-500 border-neutral-400 transition hover:border-bukis-ink hover:text-bukis-ink focus:outline-none focus:ring-2 focus:ring-bukis-ink/35"
+              }`
+            }
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite?.(product);
             }}
             aria-label="Agregar a favoritos"
           >
-            <Heart size={24} />
+            <Heart size={24} enableBackground={""}/>
           </button>
         </div>
       </div>

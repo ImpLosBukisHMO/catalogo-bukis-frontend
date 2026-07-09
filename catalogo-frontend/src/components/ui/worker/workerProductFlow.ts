@@ -2,7 +2,7 @@ export type ProductPublicationState = "draft" | "active" | "archived";
 
 export type CreateFlowProductInput = {
   precio: string;
-  categorias_ids: string[];
+  categoria_id: string;
 };
 
 export type CreateFlowVariantInput = {
@@ -48,7 +48,7 @@ export function buildPublishReadinessIssues({
 }): PublishReadinessIssue[] {
   const issues: PublishReadinessIssue[] = [];
 
-  if (product.categorias_ids.length === 0) {
+  if (!product.categoria_id) {
     issues.push({
       code: "missing-category",
       message: "Agrega al menos una categoría antes de publicar.",

@@ -7,8 +7,8 @@ import { Search } from "lucide-react";
 import { getProducts, getProductById } from "../../services/product";
 import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
-import type { Category } from "../../services/category";
-import { addFavorito } from "../../services/favoritos";
+import type { Categoria } from "../../types/categoria";
+import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
 import { stripDiacritics } from "../../utils/normalizers";
 
 const normalizeSearchText = (value: string) => stripDiacritics(value).toLowerCase();
@@ -19,13 +19,14 @@ export default function SearchProductsPage() {
 
     const [sideBarSearch, setSideBarSearch] = useState<string>(productQuery);
     const [products, setProducts] = useState<ProductCardVM[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
+    const [categories, setCategories] = useState<Categoria[]>([]);
     const [filterCategories, setFilterCategories] = useState<number[]>([]);
     const [filterMinPrice, setFilterMinPrice] = useState<number | null>(null);
     const [filterMaxPrice, setFilterMaxPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [favMsg, setFavMsg] = useState<string | null>(null);
+    const [favoritos, setFavoritos] = useState<{ id: number; producto_id: number }[]>([]);
 
     const fetchProductData = async () => {
         try {
@@ -35,7 +36,9 @@ export default function SearchProductsPage() {
                 nombre: p.nombre,
                 precio: Number(p.precio),
                 imagenUrl: p.imagen ?? null,
-                disponible: true,
+                disponible: p.disponible,
+                categoria: p.categoria ?? null,
+                descuento_especial: p.descuento_especial ?? null,
             }));
             setProducts(mappedProducts);
         } catch (e) {
@@ -68,6 +71,8 @@ export default function SearchProductsPage() {
                     precio: Number(p.precio),
                     imagenUrl: p.imagen ?? null,
                     disponible: true,
+                    categoria: p.categoria ?? null,
+                    descuento_especial: p.descuento_especial ?? null,
                 }));
                 setProducts(mappedProducts);
             } catch (e) {
@@ -86,11 +91,11 @@ export default function SearchProductsPage() {
             const filteredProducts = productsData.filter((p: Product) => {
                 const normalizedSearch = normalizeSearchText(sideBarSearch);
                 const matchesSearch = normalizedSearch === "" ||normalizeSearchText(p.nombre).includes(normalizedSearch)
-                const productCats: number[] = p.categorias || []
-                const matchesCategory = filterCategories.length === 0 || productCats.some(cat => filterCategories.includes(cat));
+                const productCat: number | null = p.categoria?.id || null;
+                const matchesCategoria = filterCategories.length === 0 || (productCat !== null && filterCategories.includes(productCat));
                 const price = Number(p.precio);
                 const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) && (filterMaxPrice === null || price <= filterMaxPrice);
-                return matchesSearch && matchesCategory && matchesPrice;
+                return matchesSearch && matchesCategoria && matchesPrice;
             });
             const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
                 id: p.id,
@@ -98,6 +103,8 @@ export default function SearchProductsPage() {
                 precio: Number(p.precio),
                 imagenUrl: p.imagen ?? null,
                 disponible: true,
+                categoria: p.categoria ?? null,
+                descuento_especial: p.descuento_especial ?? null,
             }));
             setProducts(mappedProducts);
             setError("");
@@ -114,6 +121,14 @@ export default function SearchProductsPage() {
             setLoading(true);
             await fetchCategories();
             await mainFetch();
+            if (localStorage.getItem("access")) {
+                try {
+                    const favsData = await getFavoritos();
+                    setFavoritos(favsData.map(f => ({ id: f.id, producto_id: f.variante.producto_id })));
+                } catch (e) {
+                    console.error("Error fetching favorites", e);
+                }
+            }
             setLoading(false);
         })();
     }, [productQuery])
@@ -124,6 +139,15 @@ export default function SearchProductsPage() {
             return;
         }
         try {
+            const existingFav = favoritos.find(f => f.producto_id === product.id);
+            if (existingFav) {
+                await removeFavorito(existingFav.id);
+                setFavoritos(prev => prev.filter(f => f.id !== existingFav.id));
+                setFavMsg(`"${product.nombre}" eliminado de favoritos.`);
+                setTimeout(() => setFavMsg(null), 3000);
+                return;
+            }
+
             const detail = await getProductById(product.id);
             const variantes = detail.variantes ?? [];
             const varianteId = (variantes.find((v: unknown) => (v as { disponible: boolean }).disponible) ?? variantes[0])?.id;
@@ -132,10 +156,12 @@ export default function SearchProductsPage() {
                 setTimeout(() => setFavMsg(null), 3000);
                 return;
             }
-            await addFavorito(varianteId);
+            const newFav = await addFavorito(varianteId);
+            setFavoritos(prev => [...prev, { id: newFav.id, producto_id: newFav.variante.producto_id }]);
             setFavMsg(`"${product.nombre}" agregado a favoritos.`);
+            setTimeout(() => setFavMsg(null), 3000);
         } catch {
-            setFavMsg("Error al agregar a favoritos.");
+            setFavMsg("Error al actualizar favoritos.");
         }
         setTimeout(() => setFavMsg(null), 3000);
     };
@@ -269,7 +295,12 @@ export default function SearchProductsPage() {
                                 <div className="grid max-h-[95vh] grid-cols-1 gap-4 overflow-auto p-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                     {
                                         products.map((p) => (
-                                            <ProductCard key={p.id} product={p} onToggleFavorite={handleToggleFavorite} />
+                                            <ProductCard 
+                                                key={p.id} 
+                                                product={p} 
+                                                onToggleFavorite={handleToggleFavorite} 
+                                                isLikedByUser={favoritos.some(f => f.producto_id === p.id)}
+                                            />
                                         ))
                                     }
                                 </div>

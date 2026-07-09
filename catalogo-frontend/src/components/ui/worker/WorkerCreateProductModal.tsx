@@ -56,7 +56,7 @@ type ProductFormState = {
   medidas: string;
   descripcion: string;
   capacidad: string;
-  categorias_ids: string[];
+  categoria_id: string;
 };
 
 type ProductFieldErrors = Partial<Record<keyof ProductFormState | "imagen", string>>;
@@ -101,7 +101,7 @@ type WorkerPhotoPickerProps =
   };
 
 const CREATE_PRODUCT_FORM_ID = "worker-create-product-form";
-const ADD_VARIANT_FORM_ID = "worker-add-variant-form";
+export const ADD_VARIANT_FORM_ID = "worker-add-variant-form";
 const EDIT_VARIANT_FORM_ID = "worker-edit-variant-form";
 
 const inputStyle: CSSProperties = {
@@ -149,7 +149,7 @@ const defaultProductForm: ProductFormState = {
   medidas: "",
   descripcion: "",
   capacidad: "",
-  categorias_ids: [],
+  categoria_id: "",
 };
 
 const sectionCardStyle: CSSProperties = {
@@ -540,7 +540,7 @@ function UnifiedCreateProductSection({
   const publishIssues = useMemo(() => buildPublishReadinessIssues({
     product: {
       precio: form.precio,
-      categorias_ids: form.categorias_ids,
+      categoria_id: form.categoria_id,
     },
     variant: {
       colorId,
@@ -549,7 +549,7 @@ function UnifiedCreateProductSection({
       activo,
       imagesCount: imagenes.length,
     },
-  }), [activo, colorId, form.categorias_ids, form.precio, imagenes.length, item, stock]);
+  }), [activo, colorId, form.categoria_id, form.precio, imagenes.length, item, stock]);
 
   const setField = (key: keyof ProductFormState) => (value: string | string[]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -606,8 +606,8 @@ function UnifiedCreateProductSection({
     formData.append("descripcion", form.descripcion.trim());
     formData.append("disponible", estado === "active" ? "true" : "false");
     formData.append("estado", estado);
-    if (form.capacidad.trim()) formData.append("capacidad", form.capacidad.trim());
-    form.categorias_ids.forEach((id) => formData.append("categorias_ids", id));
+    if (form.capacidad) formData.append("capacidad", form.capacidad);
+    if (form.categoria_id) formData.append("categoria_id", form.categoria_id);
     if (imagen) formData.append("imagen", imagen);
     return formData;
   };
@@ -647,9 +647,7 @@ function UnifiedCreateProductSection({
       if (intent === "publish" && publishIssues.length > 0) {
         setFieldErrors((current) => ({
           ...current,
-          categorias_ids: form.categorias_ids.length === 0
-            ? "Seleccioná al menos una categoría para publicar."
-            : current.categorias_ids,
+          categoria_id: !form.categoria_id ? "Seleccioná una categoría para publicar." : current.categoria_id,
         }));
         setVariantErrors((current) => ({
           ...current,
@@ -785,36 +783,22 @@ function UnifiedCreateProductSection({
               <FormField label="Capacidad" error={fieldErrors.capacidad} required={false}>
                 <input type="text" value={form.capacidad} onChange={(event) => setField("capacidad")(event.target.value)} style={inputStyle} />
               </FormField>
-              <FormField label="Categorías" error={fieldErrors.categorias_ids} required={false}>
-                <div style={{ ...inputStyle, maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px" }}>
-                  {categorias.length === 0 ? (
-                    <span style={{ color: "var(--worker-ink-tertiary)", fontSize: 13 }}>No hay categorías disponibles</span>
-                  ) : categorias.map((categoria) => {
-                    const isChecked = form.categorias_ids.includes(String(categoria.id));
-                    return (
-                      <label key={categoria.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "var(--worker-ink-secondary)" }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(event) => {
-                            const categoryId = String(categoria.id);
-                            const shouldInclude = event.target.checked;
-                            setForm((current) => ({
-                              ...current,
-                              categorias_ids: shouldInclude
-                                ? current.categorias_ids.includes(categoryId)
-                                  ? current.categorias_ids
-                                  : [...current.categorias_ids, categoryId]
-                                : current.categorias_ids.filter((id) => id !== categoryId),
-                            }));
-                            setFieldErrors((current) => ({ ...current, categorias_ids: undefined }));
-                          }}
-                        />
-                        {categoria.nombre}
-                      </label>
-                    );
-                  })}
-                </div>
+              <FormField label="Categoría" error={fieldErrors.categoria_id} required={false}>
+                <select
+                  value={form.categoria_id}
+                  onChange={(e) => {
+                    setForm((curr) => ({ ...curr, categoria_id: e.target.value }));
+                    setFieldErrors((curr) => ({ ...curr, categoria_id: undefined }));
+                  }}
+                  style={{ ...inputStyle, padding: "10px 12px", background: "var(--worker-canvas)", color: "var(--worker-ink)" }}
+                >
+                  <option value="">Selecciona una categoría...</option>
+                  {categorias.map((categoria) => (
+                    <option key={categoria.id} value={String(categoria.id)}>
+                      {categoria.nombre}
+                    </option>
+                  ))}
+                </select>
               </FormField>
             </div>
 
@@ -889,7 +873,8 @@ function UnifiedCreateProductSection({
                   if (e.key === "Enter") {
                     e.preventDefault();
                   }
-                }} style={inputStyle} />
+                }}
+                style={inputStyle} />
                 <div style={{
                   display: "flex",
                   justifyContent: "center",
@@ -946,7 +931,7 @@ function UnifiedCreateProductSection({
           >
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
               <SummaryItem label="Nombre" value={form.nombre || "—"} />
-              <SummaryItem label="Categorías" value={form.categorias_ids.length > 0 ? `${form.categorias_ids.length} seleccionada(s)` : "Sin categorías"} />
+              <SummaryItem label="Categoría" value={form.categoria_id ? categorias.find(c => String(c.id) === form.categoria_id)?.nombre || form.categoria_id : "Sin categoría"} />
               <SummaryItem label="Primera variante" value={variantDraftStarted ? "Capturada para revisión" : "Todavía no agregada"} />
               <SummaryItem label="Publicación" value={publishIssues.length === 0 ? "Lista para publicar" : "Guardar como borrador"} />
             </div>
@@ -1022,14 +1007,6 @@ function UnifiedCreateProductSection({
   );
 }
 
-/**
- * Intent: a worker often uses this flow while standing with a phone and product in hand.
- * Palette: paper/shelf/rail worker tokens keep the warm workshop feel already established.
- * Depth: borders + quiet layered surfaces keep sections readable without noisy shadows.
- * Surfaces: canvas -> shelf card -> control backgrounds preserve subtle elevation.
- * Typography: compact, medium-weight labels and strong titles prioritize scanning speed.
- * Spacing: 4px base expanded into 8/12/16px groups for thumb-friendly rhythm.
- */
 function CreateProductSection({
   categorias,
   onSave,
@@ -1056,8 +1033,8 @@ function CreateProductSection({
         peso: p.peso !== undefined ? String(p.peso) : "",
         medidas: String(p.medidas || ""),
         descripcion: String(p.descripcion || ""),
-        capacidad: String(p.capacidad || ""),
-        categorias_ids: Array.isArray(p.categorias) ? p.categorias.map(String) : [],
+        capacidad: p.capacidad || "",
+        categoria_id: p.categoria ? String(p.categoria) : "",
       };
     }
     return defaultProductForm;
@@ -1083,8 +1060,8 @@ function CreateProductSection({
     if (!form.peso.trim()) nextFieldErrors.peso = "Ingresá el peso.";
     if (!form.medidas.trim()) nextFieldErrors.medidas = "Ingresá las medidas.";
     if (!form.descripcion.trim()) nextFieldErrors.descripcion = "Ingresá la descripción.";
-    if (form.categorias_ids.length === 0) {
-      nextFieldErrors.categorias_ids = "Seleccioná al menos una categoría.";
+    if (!form.categoria_id) {
+      nextFieldErrors.categoria_id = "Seleccioná una categoría.";
     }
     if (!imagen && !isEditing) nextFieldErrors.imagen = "Seleccioná una imagen principal.";
 
@@ -1105,11 +1082,9 @@ function CreateProductSection({
       formData.append("medidas", form.medidas.trim());
       formData.append("descripcion", form.descripcion.trim());
       formData.append("disponible", disponible ? "true" : "false");
-      if (form.capacidad.trim()) formData.append("capacidad", form.capacidad.trim());
-      if (form.categorias_ids.length > 0) {
-        form.categorias_ids.forEach((id) => {
-          formData.append("categorias_ids", id);
-        });
+      if (form.capacidad) formData.append("capacidad", form.capacidad);
+      if (form.categoria_id) {
+        formData.append("categoria_id", form.categoria_id);
       }
       if (imagen) formData.append("imagen", imagen);
 
@@ -1179,58 +1154,22 @@ function CreateProductSection({
             />
           </FormField>
 
-          <FormField label="Categorías" error={fieldErrors.categorias_ids}>
-            <div
-              style={{
-                ...inputStyle,
-                maxHeight: "150px",
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                padding: "10px 12px",
+          <FormField label="Categoría" error={fieldErrors.categoria_id}>
+            <select
+              value={form.categoria_id}
+              onChange={(e) => {
+                setForm((curr) => ({ ...curr, categoria_id: e.target.value }));
+                setFieldErrors((curr) => ({ ...curr, categoria_id: undefined }));
               }}
+              style={{ ...inputStyle, padding: "10px 12px", background: "var(--worker-canvas)", color: "var(--worker-ink)" }}
             >
-              {categorias.length === 0 ? (
-                <span style={{ color: "var(--worker-ink-tertiary)", fontSize: 13 }}>No hay categorías disponibles</span>
-              ) : (
-                categorias.map((categoria) => {
-                  const isChecked = form.categorias_ids.includes(String(categoria.id));
-                  return (
-                    <label
-                      key={categoria.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        cursor: "pointer",
-                        fontSize: 13,
-                        color: "var(--worker-ink-secondary)",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(event) => {
-                          const categoryId = String(categoria.id);
-                          const shouldInclude = event.target.checked;
-                          setForm((current) => ({
-                            ...current,
-                            categorias_ids: shouldInclude
-                              ? current.categorias_ids.includes(categoryId)
-                                ? current.categorias_ids
-                                : [...current.categorias_ids, categoryId]
-                              : current.categorias_ids.filter((id) => id !== categoryId),
-                          }));
-                          setFieldErrors((current) => ({ ...current, categorias_ids: undefined }));
-                        }}
-                      />
-                      {categoria.nombre}
-                    </label>
-                  );
-                })
-              )}
-            </div>
+              <option value="">Selecciona una categoría...</option>
+              {categorias.map((categoria) => (
+                <option key={categoria.id} value={String(categoria.id)}>
+                  {categoria.nombre}
+                </option>
+              ))}
+            </select>
           </FormField>
         </div>
       </SectionCard>
@@ -1314,7 +1253,7 @@ function CreateProductSection({
   );
 }
 
-function SelectProductSection({
+export function SelectProductSection({
   productos,
   loading,
   error,
@@ -1473,7 +1412,7 @@ function SuccessSection({
  * Typography: short labels and helper copy prioritize scanability during a standing/mobile workflow.
  * Spacing: repeated 12/16px groupings keep the form readable and thumb-safe.
  */
-function AddVariantSection({
+export function AddVariantSection({
   createdProduct,
   colores,
   varianteMutation,
@@ -2084,7 +2023,7 @@ function WorkerPhotoPicker(props: WorkerPhotoPickerProps) {
   );
 }
 
-function SectionCard({
+export function SectionCard({
   title,
   description,
   children,
@@ -2106,12 +2045,12 @@ function SectionCard({
   );
 }
 
-function InlineNotice({
+export function InlineNotice({
   tone,
   children,
   style,
 }: {
-  tone: "info" | "success" | "error";
+  tone: "info" | "success" | "error" | "critical";
   children: ReactNode;
   style?: CSSProperties;
 }) {
@@ -2127,6 +2066,11 @@ function InlineNotice({
       color: "var(--worker-inventory-fg)",
     },
     error: {
+      background: "var(--worker-error-bg)",
+      border: "var(--worker-error-border)",
+      color: "var(--worker-error-fg)",
+    },
+    critical: {
       background: "var(--worker-error-bg)",
       border: "var(--worker-error-border)",
       color: "var(--worker-error-fg)",
@@ -2190,7 +2134,7 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ModalButton({
+export function ModalButton({
   children,
   onClick,
   disabled = false,
@@ -2259,7 +2203,7 @@ function tertiaryButtonStyle(): CSSProperties {
   };
 }
 
-function variantePendingCopy(isCreating: boolean, isUploading: boolean): string {
+export function variantePendingCopy(isCreating: boolean, isUploading: boolean): string {
   if (isCreating) return "Creando variante…";
   if (isUploading) return "Subiendo fotos…";
   return "Guardar variante";
@@ -2370,8 +2314,8 @@ function parseProductApiError(error: unknown): {
       return;
     }
 
-    if (key === "categorias_ids") {
-      fieldErrors.categorias_ids = message;
+    if (key === "categoria_id") {
+      fieldErrors.categoria_id = message;
       return;
     }
 
@@ -2389,7 +2333,7 @@ function parseProductApiError(error: unknown): {
   });
 
   return {
-    fieldErrors,
+    fieldErrors: fieldErrors,
     submitError: submitError || fallback.submitError,
   };
 }
@@ -2433,8 +2377,8 @@ function isProductFieldKey(key: string): key is keyof ProductFormState {
     "precio",
     "peso",
     "medidas",
-    "descripcion",
     "capacidad",
-    "categorias_ids",
+    "categoria_id",
   ].includes(key);
 }
+

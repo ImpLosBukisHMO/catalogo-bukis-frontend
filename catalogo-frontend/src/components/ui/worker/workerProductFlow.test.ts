@@ -15,7 +15,7 @@ describe("workerProductFlow", () => {
 
   it("lists publish blockers for incomplete draft data", () => {
     const issues = buildPublishReadinessIssues({
-      product: { precio: "", categorias_ids: [] },
+      product: { precio: "", categoria_id: "" },
       variant: {
         colorId: "",
         item: "",
@@ -33,7 +33,7 @@ describe("workerProductFlow", () => {
 
   it("reports field-level blockers when a variant exists but is not publishable", () => {
     const issues = buildPublishReadinessIssues({
-      product: { precio: "", categorias_ids: ["1"] },
+      product: { precio: "", categoria_id: "1" },
       variant: {
         colorId: "",
         item: "",
@@ -55,7 +55,7 @@ describe("workerProductFlow", () => {
 
   it("uses the product price as publish fallback and maps labels", () => {
     const issues = buildPublishReadinessIssues({
-      product: { precio: "249.00", categorias_ids: ["1"] },
+      product: { precio: "249.00", categoria_id: "1" },
       variant: {
         colorId: "7",
         item: "SKU-1",

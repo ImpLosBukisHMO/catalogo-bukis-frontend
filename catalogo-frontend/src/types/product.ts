@@ -1,3 +1,5 @@
+import type { Discount } from "./descuento";
+
 export type Product = {
   id: number;
   nombre: string;
@@ -7,7 +9,12 @@ export type Product = {
   peso: string;
   medidas: string;
   capacidad: string;
-  categorias: number[];
+  categoria: {
+    id: number;
+    nombre: string;
+    descuento?: Discount | null;
+  } | null;
+  descuento_especial?: Discount | null;
   created_at: string;
   updated_at: string;
   disponible: boolean;
@@ -19,6 +26,12 @@ export type ProductCardVM = {
   precio: number;
   imagenUrl?: string | null;
   disponible: boolean;
+  categoria: {
+    id: number;
+    nombre: string;
+    descuento?: Discount | null;
+  } | null;
+  descuento_especial?: Discount | null;
 };
 
 export type ColorMini = {
@@ -36,6 +49,18 @@ export type Variant = {
   stock: number;
   activo: boolean;
   disponible: boolean;
+  producto?: {
+    id: number;
+    nombre: string;
+    imagen: string | null;
+    precio: string;
+    categoria: {
+      id: number;
+      nombre: string;
+      descuento_general?: Discount | null;
+    } | null;
+    descuento_especial?: Discount | null;
+  };
 };
 
 export type ProductDetail = Product & {
