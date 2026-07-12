@@ -75,8 +75,9 @@ export function WorkerCreateDiscountModal({ open, onOpenChange }: WorkerCreateDi
           setFechaFin("");
           setActivo(true);
         },
-        onError: (err: any) => {
-          setErrorMsg(err?.response?.data?.message || err.message || "Ocurrió un error al crear el descuento.");
+        onError: (err: unknown) => {
+          const apiError = err as { response?: { data?: { message?: string } }; message?: string };
+          setErrorMsg(apiError?.response?.data?.message || apiError?.message || "Ocurrió un error al crear el descuento.");
         },
       }
     );

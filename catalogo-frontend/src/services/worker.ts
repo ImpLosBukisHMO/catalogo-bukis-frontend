@@ -125,7 +125,7 @@ export async function asignarDescuentoCategoria(categoriaId: number, descuentoId
   return data?.datos || data;
 }
 
-export async function asignarDescuentoProducto(productoId: number, descuentoId: number | null): Promise<any> {
+export async function asignarDescuentoProducto(productoId: number, descuentoId: number | null): Promise<WorkerProducto> {
   const res = await API.patch(`/api/worker/productos/${productoId}/`, { descuento: descuentoId });
   const data = res.data;
   return data?.datos || data;

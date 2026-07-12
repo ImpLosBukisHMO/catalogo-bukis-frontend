@@ -31,6 +31,7 @@ import {
 } from "./workerProductFlow";
 import Barcode from "react-barcode";
 import { useWorkerTheme } from "../../providers/useWorkerTheme";
+import { variantePendingCopy } from "../../../utils/normalizers";
 
 export type ModalMode = "create-product" | "success" | "add-variant" | "select-product" | "edit-base-product" | "select-variant-to-edit" | "edit-variant";
 
@@ -2201,12 +2202,6 @@ function tertiaryButtonStyle(): CSSProperties {
     borderRadius: 999,
     cursor: "pointer",
   };
-}
-
-export function variantePendingCopy(isCreating: boolean, isUploading: boolean): string {
-  if (isCreating) return "Creando variante…";
-  if (isUploading) return "Subiendo fotos…";
-  return "Guardar variante";
 }
 
 function buildVariantUploadRequestKey({

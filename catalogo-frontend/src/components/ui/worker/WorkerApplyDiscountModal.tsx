@@ -91,8 +91,9 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
       setSelectedDescuento("");
       setConfirmarReemplazo(false);
     },
-    onError: (err: any) => {
-      setErrorMsg(err?.response?.data?.message || err.message || "Ocurrió un error al aplicar el descuento.");
+    onError: (err: unknown) => {
+      const apiError = err as { response?: { data?: { message?: string } }; message?: string };
+      setErrorMsg(apiError?.response?.data?.message || apiError?.message || "Ocurrió un error al aplicar el descuento.");
     }
   });
 
