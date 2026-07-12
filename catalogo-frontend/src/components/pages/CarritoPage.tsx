@@ -47,14 +47,14 @@ function getProductName(item: CartItem): string {
   );
 }
 
-function getProductDesc(item: CartItem): string {
+/*function getProductDesc(item: CartItem): string {
   return String(
     nested(item, "producto", "descripcion") ??
     item.descripcion_producto ??
     item.descripcion ??
     ""
   );
-}
+}*/
 
 function getColorName(item: CartItem): string {
   return String(
