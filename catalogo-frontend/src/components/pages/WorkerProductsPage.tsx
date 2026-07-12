@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Clock, Pencil, Settings } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { WorkerVariant, WorkerProducto } from "../../types/worker";
@@ -34,7 +35,7 @@ import {
   type WorkerProductoSlim,
 } from "../../services/worker";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
-import { stripDiacritics } from "../../utils/normalizers";
+import { formatMoney, stripDiacritics } from "../../utils/normalizers";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -679,7 +680,7 @@ export default function WorkerProductsPage() {
                           aria-label="Editar producto base y variante"
                           style={iconButtonStyle(isThisProductLoading)}
                         >
-                          {isThisProductLoading ? "⏱️" : "⚙️"}
+                          {isThisProductLoading ? <Clock size={18}/> : <Settings size={18}/>}
                         </button>
                       </div>
                     </td>
@@ -717,7 +718,7 @@ export default function WorkerProductsPage() {
                         textAlign: "center",
                       }}
                     >
-                      $ {Number(v.producto.precio_original).toFixed(2)} MXN
+                      {formatMoney(Number(v.producto.precio_original))}
                     </td>
                     
                     {/* Precio con Descuento */}
@@ -735,9 +736,9 @@ export default function WorkerProductsPage() {
                           const descuento = v.producto.descuento_especial || v.producto.categoria?.descuento;
 
                           if (descuento && descuento.es_valido) {
-                            return `$ ${precioFinal.toFixed(2)} MXN (-${descuento.porcentaje.toFixed(2)} %)`
+                            return `${formatMoney(precioFinal)} (-${descuento.porcentaje.toFixed(2)} %)`
                           }
-                          return `$ ${precioFinal.toFixed(2)} MXN (-0.00 %)`
+                          return `${formatMoney(precioFinal)} (-0.00 %)`
                         })()}
                     </td>
 
@@ -903,7 +904,7 @@ export default function WorkerProductsPage() {
                             borderRadius: 4,
                           }}
                         >
-                          ✏️
+                          <Pencil size={18}/>
                         </button>
                       )}
                     </td>

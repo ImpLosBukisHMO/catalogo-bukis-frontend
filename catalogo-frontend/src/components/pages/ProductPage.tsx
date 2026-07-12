@@ -14,6 +14,7 @@ import {
 import type { ProductDetail, Variant } from "../../types/product";
 import type { Product, ProductCardVM } from "../../types/product";
 import Barcode from "react-barcode";
+import { addFavorito, removeFavorito, getFavoritos } from "../../services/favoritos";
 
 
 function pickDefaultVariantId(variantes: Variant[]): number | null {
@@ -51,6 +52,9 @@ export default function ProductPage() {
   const [moreProducts, setMoreProducts] = useState<ProductCardVM[]>([]);
   const [moreLoading, setMoreLoading] = useState(false);
   const [moreError, setMoreError] = useState<string | null>(null);
+
+  const [favMsg, setFavMsg] = useState<string | null>(null);
+  const [favoritos, setFavoritos] = useState<{ id: number; producto_id: number }[]>([]);
 
   const selectedVariant = useMemo(() => {
     if (!product || selectedVariantId == null) return null;
@@ -132,7 +136,6 @@ export default function ProductPage() {
 
       try {
         setImgLoading(true);
-
         let imgs: ProductImage[] = [];
 
         if (selectedVariantId != null) {
@@ -144,7 +147,6 @@ export default function ProductPage() {
         }
 
         setImages(imgs);
-
         const principal = imgs.find((i) => i.es_principal) ?? imgs[0] ?? null;
         setActiveImageId(principal?.id ?? null);
       } catch {
@@ -155,6 +157,22 @@ export default function ProductPage() {
       }
     })();
   }, [product, selectedVariantId]);
+
+  useEffect(() => {
+    const fetchFavoritos = async () => {
+      if (isLoggedIn) {
+        try {
+          const data = await getFavoritos();
+          const formattedData = data.map((f) => ({ id: f.id, producto_id: f.variante.producto_id }))
+          setFavoritos(formattedData);
+        } catch (error) {
+          console.error("Error al cargar errores favoritos.", error)
+        }
+      }
+    }
+
+    fetchFavoritos();
+  }, [isLoggedIn])
 
   // Cargar “Más productos” usando el mismo ProductCard del Home
   useEffect(() => {
@@ -214,6 +232,44 @@ export default function ProductPage() {
 
     return { finalProductPrice: finalPrice, hasDiscount: discounted, percentage: porcentaje };
   }, [selectedVariant, displayedPrice, product]);
+
+  const isLikedByUser = (productID: number) => {
+    return favoritos.some(f => f.producto_id === productID)
+  }
+
+  const handleToggleFavorite = async (product: ProductCardVM | ProductDetail) => {
+    if (!localStorage.getItem("access")) {
+        window.location.href = "/iniciar-sesion";
+        return;
+    }
+
+    try {
+        const existingFav = favoritos.find(f => f.producto_id === product.id);
+        if (existingFav) {
+            await removeFavorito(existingFav.id);
+            setFavoritos(prev => prev.filter(f => f.id !== existingFav.id));
+            setFavMsg(`"${product.nombre}" eliminado de favoritos.`);
+            setTimeout(() => setFavMsg(null), 3000);
+            return;
+        }
+
+        const detail = await getProductById(product.id);
+        const variantes = detail.variantes ?? [];
+        const varianteId = (variantes.find((v: unknown) => (v as { disponible: boolean }).disponible) ?? variantes[0])?.id;
+        if (!varianteId) {
+            setFavMsg("Este producto no tiene variantes disponibles.");
+            setTimeout(() => setFavMsg(null), 3000);
+            return;
+        }
+        const newFav = await addFavorito(varianteId);
+        setFavoritos(prev => [...prev, { id: newFav.id, producto_id: newFav.variante.producto_id }]);
+        setFavMsg(`"${product.nombre}" agregado a favoritos.`);
+        setTimeout(() => setFavMsg(null), 3000);
+    } catch {
+        setFavMsg("Error al actualizar favoritos.");
+    }
+    setTimeout(() => setFavMsg(null), 3000);
+  };
 
   return (
     <>
@@ -285,60 +341,63 @@ export default function ProductPage() {
 
                 <hr className="my-4 border-bukis-border" />
 
-                <div className="space-y-3 text-sm">
+                <div className="space-y-3">
                   {isLoggedIn && (<div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                    <div className="font-medium text-neutral-500">
+                    <div className="text-base font-medium text-neutral-500">
                       Precio
                     </div>
-                    <div className="font-semibold text-bukis-red-700">
-                      <span className={`${hasDiscount ? "line-through" : ""}`}>
+                    <div>
+                      <p className={`text-base font-semibold ${hasDiscount ? "line-through text-neutral-700" : "text-bukis-ink"}`}>
                         {`$ ${productBasePrice.toFixed(2)} MXN`}
-                      </span>
-                      {hasDiscount && (<span> &nbsp;&nbsp;{`$ ${finalProductPrice.toFixed(2)} MXN (-${percentage.toFixed(2)} %)`} </span>)}
+                      </p>
+                      {hasDiscount && (
+                        <p className="text-lg font-bold text-bukis-red-700">
+                          {`$ ${finalProductPrice.toFixed(2)} MXN (-${percentage.toFixed(2)} %)`}
+                        </p>)}
                     </div>
                   </div>)}
 
                   <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                    <div className="font-medium text-neutral-500">
+                    <div className="text-base font-medium text-neutral-500">
                       Descripción
                     </div>
-                    <div className="text-bukis-ink">
+                    <div className="text-base text-bukis-ink wrap-break-word">
                       {product.descripcion}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                    <div className="font-medium text-neutral-500">
+                    <div className="text-base font-medium text-neutral-500">
                       Ítem
                     </div>
-                    <div className="text-bukis-ink">
+                    <div className="text-base text-bukis-ink wrap-break-word">
                       {selectedVariant?.item ?? "N/A"}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                    <div className="font-medium text-neutral-500">
+                    <div className="text-base font-medium text-neutral-500">
                       Peso
                     </div>
-                    <div className="text-bukis-ink">
+                    <div className="text-base text-bukis-ink">
                       {product.peso}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                    <div className="font-medium text-neutral-500">
+                    <div className="text-base font-medium text-neutral-500">
                       Medidas
                     </div>
-                    <div className="text-bukis-ink">
+                    <div className="text-base text-bukis-ink wrap-break-word">
                       {product.medidas}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                    <div className="font-medium text-neutral-500">
+                    <div className="text-base font-medium text-neutral-500">
                       Capacidad
                     </div>
-                    <div className="text-bukis-ink">
+                    <div className="text-base text-bukis-ink">
                       {product.capacidad || "N/A"}
                     </div>
                   </div>
@@ -346,10 +405,10 @@ export default function ProductPage() {
                   {
                     selectedVariant?.codigo_barras && (
                       <div className="items-center grid grid-cols-[8rem_minmax(0,1fr)] gap-2 ">
-                        <div className="font-medium text-neutral-500">
+                        <div className="text-base font-medium text-neutral-500">
                           Código de Barras
                         </div>
-                        <Barcode value={selectedVariant?.codigo_barras} fontSize={14} font="Arial" lineColor="#000000" background="transparent" width={1} height={40} />
+                        <Barcode value={selectedVariant?.codigo_barras} font="Inter" fontSize={15} lineColor="#000000" background="transparent" width={1} height={40} />
                       </div>
                     )
                   }
@@ -357,21 +416,21 @@ export default function ProductPage() {
 
                 <hr className="my-4 border-bukis-border" />
                 {product.variantes?.length > 0 && (
-                  <div className="space-y-3 text-sm">
+                  <div className="space-y-3">
                     <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                      <div className="font-medium text-neutral-500">
+                      <div className="text-base font-medium text-neutral-500">
                         Color
                       </div>
-                      <div className="text-bukis-ink">
+                      <div className="text-base text-bukis-ink">
                         {selectedVariant?.color?.nombre ?? "Selecciona"}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
-                      <div className="font-medium text-neutral-500">
+                      <div className="text-base font-medium text-neutral-500">
                         Disponibilidad
                       </div>
-                      <div className={isDisponible ? "font-medium text-emerald-700" : "font-medium text-red-700"}>
+                      <div className={isDisponible ? "text-base font-semibold text-emerald-700" : "text-base font-semibold text-red-700"}>
                         {isDisponible ? "Disponible" : "No disponible"}
                       </div>
                     </div>
@@ -441,47 +500,60 @@ export default function ProductPage() {
                     )}
 
                     {selectedVariant && isDisponible && stock > 0 && (
-                      <p className="mt-2 text-sm text-neutral-300">
+                      <p className="mt-2 text-sm font-semibold text-neutral-300">
                         Disponible para compra
                       </p>
                     )}
                   </div>
 
-                  <button
-                    className="mt-4 w-full rounded-xl bg-amber-400 px-4 py-3 font-semibold text-neutral-950 transition hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300/50 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={!validation.ok}
-                    onClick={async () => {
-                      if (!validation.ok) {
-                        setQtyError(validation.msg);
-                        return;
-                      }
+                  <div className="mt-4 w-full grid">
+                    <button
+                      className="cursor-pointer w-full rounded-xl bg-amber-400 px-4 py-3 font-semibold text-neutral-950 transition hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300/50 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!validation.ok}
+                      onClick={async () => {
+                        if (!validation.ok) {
+                          setQtyError(validation.msg);
+                          return;
+                        }
 
-                      if (!selectedVariant) {
-                        setQtyError("Selecciona una variante.");
-                        return;
-                      }
+                        if (!selectedVariant) {
+                          setQtyError("Selecciona una variante.");
+                          return;
+                        }
 
-                      if (!isLoggedIn) {
-                        window.location.href = "/iniciar-sesion";
-                        return;
-                      }
+                        if (!isLoggedIn) {
+                          window.location.href = "/iniciar-sesion";
+                          return;
+                        }
 
-                      try {
-                        await addItem(selectedVariant.id, qty as number);
-                        alert("Producto agregado al carrito");
-                      } catch (error: unknown) {
-                        const detail =
-                          error != null &&
-                          typeof error === "object" &&
-                          "response" in error &&
-                          (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
-                        alert(detail ?? "Error al agregar al carrito");
-                      }
-                    }}
+                        try {
+                          await addItem(selectedVariant.id, qty as number);
+                          alert("Producto agregado al carrito");
+                        } catch (error: unknown) {
+                          const detail =
+                            error != null &&
+                            typeof error === "object" &&
+                            "response" in error &&
+                            (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+                          alert(detail ?? "Error al agregar al carrito");
+                        }
+                      }}
 
-                  >
-                    Agregar al carrito
-                  </button>
+                    >
+                      Agregar al carrito
+                    </button>
+                    <button
+                      className="cursor-pointer mt-4 inline-flex items-center justify-center gap-2 rounded-xl border border-red-600 px-4 py-3 text-base font-semibold text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => handleToggleFavorite(product)}
+                    >
+                      {isLikedByUser(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+                    </button>
+                  </div>
+                  <div className="mt-2 w-full">
+                    <p className="text-center text-sm font-semibold text-emerald-300">
+                      {favMsg}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -500,7 +572,12 @@ export default function ProductPage() {
               {!moreLoading && !moreError && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {moreProducts.map((p) => (
-                    <ProductCard key={p.id} product={p} />
+                    <ProductCard
+                      key={p.id}
+                      product={p}
+                      onToggleFavorite={handleToggleFavorite} 
+                      isLikedByUser={isLikedByUser(p.id)}
+                    />
                   ))}
                 </div>
               )}

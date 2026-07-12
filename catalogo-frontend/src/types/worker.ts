@@ -58,6 +58,7 @@ export type WorkerPedidoItem = {
   color: string;
   color_hex: string;
   precio_unitario: string;
+  descuento_porcentaje: string;
   subtotal: string;
   imagen: string;
 };

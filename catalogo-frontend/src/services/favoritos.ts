@@ -6,6 +6,11 @@ export async function getFavoritos(): Promise<FavoritoVariante[]> {
   return res.data;
 }
 
+export async function getFavorito(id: number): Promise<FavoritoVariante> {
+  const res = await API.get(`/api/productos-favoritos/${id}`);
+  return res.data;
+}
+
 export async function addFavorito(varianteId: number): Promise<FavoritoVariante> {
   const res = await API.post("/api/productos-favoritos/", { variante_id: varianteId });
   return res.data;

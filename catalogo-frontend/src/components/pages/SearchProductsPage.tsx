@@ -21,7 +21,7 @@ export default function SearchProductsPage() {
     const [products, setProducts] = useState<ProductCardVM[]>([]);
     const [categories, setCategories] = useState<Categoria[]>([]);
     const [filterCategories, setFilterCategories] = useState<number[]>([]);
-    const [filterMinPrice, setFilterMinPrice] = useState<number | null>(null);
+    const [filterMinPrice, setFilterMinPrice] = useState<number | null>(1);
     const [filterMaxPrice, setFilterMaxPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -93,7 +93,13 @@ export default function SearchProductsPage() {
                 const matchesSearch = normalizedSearch === "" ||normalizeSearchText(p.nombre).includes(normalizedSearch)
                 const productCat: number | null = p.categoria?.id || null;
                 const matchesCategoria = filterCategories.length === 0 || (productCat !== null && filterCategories.includes(productCat));
-                const price = Number(p.precio);
+                let price = Number(p.precio) || 0;
+                if (p.descuento_especial && p.descuento_especial.es_valido) {
+                    price = price - (price * p.descuento_especial.porcentaje / 100);
+                }
+                else if (p.categoria?.descuento && p.categoria?.descuento.es_valido) {
+                    price = price - (price * p.categoria.descuento.porcentaje / 100);
+                }
                 const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) && (filterMaxPrice === null || price <= filterMaxPrice);
                 return matchesSearch && matchesCategoria && matchesPrice;
             });
@@ -138,6 +144,7 @@ export default function SearchProductsPage() {
             window.location.href = "/iniciar-sesion";
             return;
         }
+
         try {
             const existingFav = favoritos.find(f => f.producto_id === product.id);
             if (existingFav) {
@@ -227,13 +234,13 @@ export default function SearchProductsPage() {
                         </p>
                         <div className="my-3">
                             <p className="mb-2 text-sm text-neutral-600">Mínimo</p>
-                            <input type="number" min={0} placeholder="Ejemplo: 1.50" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
-                                value={(Number(filterMinPrice) > 0) ? String(filterMinPrice) : ""}
+                            <input type="number" min={1} placeholder="Ejemplo: 1.50" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                                value={(Number(filterMinPrice) > 0) ? String(filterMinPrice) : 1}
                                 onChange={(e) => { setFilterMinPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null))}} />
                         </div>
                         <div>
                             <p className="mb-2 text-sm text-neutral-600">Máximo</p>
-                            <input type="number" min={0} placeholder="Ejemplo: 100.00" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                            <input type="number" min={1} placeholder="Ejemplo: 100.00" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={(Number(filterMaxPrice) > 0) ? String(filterMaxPrice) : ""}
                                 onChange={(e) => { setFilterMaxPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null)) }} />
                         </div>

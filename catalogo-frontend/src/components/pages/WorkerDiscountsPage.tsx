@@ -17,6 +17,7 @@ import { useNavigate } from "react-router";
 import { stripDiacritics } from "../../utils/normalizers";
 import { WorkerCreateDiscountModal } from "../ui/worker/WorkerCreateDiscountModal";
 import { WorkerApplyDiscountModal } from "../ui/worker/WorkerApplyDiscountModal";
+import { Pencil } from "lucide-react";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingDiscountEdit = {
@@ -724,7 +725,7 @@ export function WorkerDiscountsPage() {
                             borderRadius: 4,
                           }}
                         >
-                          ✏️
+                          <Pencil size={18}/>
                         </button>
                       )}
                     </td>

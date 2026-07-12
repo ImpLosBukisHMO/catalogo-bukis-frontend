@@ -79,27 +79,31 @@ function ItemRow({ item }: { item: PedidoItem }) {
         />
       </figure>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: "#fff", fontWeight: 600, marginBottom: 2 }}>
+      <div className="flex-1 min-w-0">
+        <p className="text-lg font-bold text-white mb-2">
           {item.producto_nombre_snapshot}
-          {item.producto_item_snapshot ? ` — ${item.producto_item_snapshot}` : ""}
         </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div className="mb-2 flex items-center gap-2">
           <span
+            className="inline-block h-4 w-4 rounded-full"
             style={{
-              width: 12,
-              height: 12,
-              borderRadius: 999,
               background: item.color_hex_snapshot || "#ccc",
-              border: "1px solid rgba(255,255,255,0.2)",
-              display: "inline-block",
-              flexShrink: 0,
+              border: "1px solid rgba(255,255,255,0.3)",
             }}
           />
-          <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 13 }}>
+          <span className="inline-flex items-center rounded-full bg-white/12 px-2.5 py-0.5 text-xs font-medium text-white">
             {item.color_nombre_snapshot}
           </span>
         </div>
+
+        <p className="mt-1 text-sm text-white/80 m-0">
+          <span className="underline">No. Ítem:</span> <span className="font-semibold">{item.producto_item_snapshot}</span>
+        </p>
+        
+        <p className="mt-1 text-sm text-white/80 m-0">
+          <span className="underline">Precio unitario:</span>
+          <span className="font-semibold">&nbsp;{money(item.precio_unitario_snapshot)}</span>
+        </p>
       </div>
 
       <div style={{ textAlign: "right", minWidth: 160 }}>

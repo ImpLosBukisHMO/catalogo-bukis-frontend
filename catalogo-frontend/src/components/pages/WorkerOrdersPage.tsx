@@ -33,6 +33,7 @@ import {
   WorkerDialogCancel,
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
+import { formatMoney } from "../../utils/normalizers";
 
 // ─── Status change confirmation dialog ────────────────────────────────────────
 
@@ -526,7 +527,7 @@ export default function WorkerOrdersPage() {
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  ${Number(selected.precio_total).toFixed(2)}
+                  {formatMoney(Number(selected.precio_total))}
                 </p>
               </div>
             </div>
@@ -698,7 +699,7 @@ export default function WorkerOrdersPage() {
                           </span>
                         </div>
                         <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--worker-ink-tertiary)" }}>
-                          ${Number(item.precio_unitario).toFixed(2)} c/u
+                          {formatMoney(Number(item.precio_unitario))} c/u
                         </p>
                       </div>
 
@@ -716,7 +717,7 @@ export default function WorkerOrdersPage() {
                             fontVariantNumeric: "tabular-nums",
                           }}
                         >
-                          ${Number(item.subtotal).toFixed(2)}
+                          {formatMoney(Number(item.subtotal))}
                         </p>
                       </div>
                     </div>
@@ -740,7 +741,7 @@ export default function WorkerOrdersPage() {
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  ${Number(selected.precio_total).toFixed(2)}
+                  {formatMoney(Number(selected.precio_total))}
                 </span>
               </div>
 
