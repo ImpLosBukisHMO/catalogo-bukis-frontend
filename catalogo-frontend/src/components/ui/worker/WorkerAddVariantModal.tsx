@@ -18,9 +18,9 @@ import {
   SectionCard,
   InlineNotice,
   ModalButton,
-  variantePendingCopy,
   ADD_VARIANT_FORM_ID,
 } from "./WorkerCreateProductModal";
+import { variantePendingCopy } from "../../../utils/normalizers";
 
 // ─── AddVariantModalMode ──────────────────────────────────────────────────────
 export type AddVariantModalMode = "select-product" | "add-variant" | "success";

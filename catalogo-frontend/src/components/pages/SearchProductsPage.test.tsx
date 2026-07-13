@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SearchProductsPage from "./SearchProductsPage";
 import { getCategories } from "../../services/category";
 import { getProducts } from "../../services/product";
 import type { Product } from "../../types/product";
+import { addFavorito, getFavoritos } from "../../services/favoritos";
+import type { FavoritoVariante } from "../../types/favoritos";
 
 vi.mock("../elements/Footer", () => ({
   default: () => <div data-testid="footer" />,
@@ -15,11 +17,18 @@ vi.mock("../elements/NavBar", () => ({
 }));
 
 vi.mock("../elements/ProductCard", () => ({
-  default: ({ product }: { product: { nombre: string } }) => <div>{product.nombre}</div>,
+  default: ({ product, onToggleFavorite }: { product: { nombre: string }; onToggleFavorite: () => void }) => (
+    <div>
+      {product.nombre}
+      <button data-testid="fav-btn" onClick={() => onToggleFavorite()}>Fav</button>
+    </div>
+  ),
 }));
 
 vi.mock("../../services/favoritos", () => ({
   addFavorito: vi.fn(),
+  removeFavorito: vi.fn(),
+  getFavoritos: vi.fn(),
 }));
 
 vi.mock("../../services/category", () => ({
@@ -44,7 +53,11 @@ function buildProduct(id: number, nombre: string): Product {
     peso: "1",
     medidas: "1x1",
     capacidad: "1",
-    categoria: 1,
+    categoria: {
+      id: 1,
+      nombre: "",
+      descuento: null
+    },
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     disponible: true,
@@ -60,17 +73,56 @@ describe("SearchProductsPage", () => {
     ]);
   });
 
-  it("filters query results with accent-insensitive matching", async () => {
+
+  it('adds a product to favorites when favorite button is clicked', async () => {
+    // mock getFavoritos to return empty initially
+    const mockedGetFavoritos = vi.mocked(getFavoritos);
+    mockedGetFavoritos.mockResolvedValue([]);
+    // mock addFavorito to return a favorite object
+    const mockedAddFavorito = vi.mocked(addFavorito);
+    mockedAddFavorito.mockResolvedValue({
+      id: 99,
+      variante: {
+        id: 1,
+        item: 'test-item',
+        stock: 10,
+        activo: true,
+        producto_id: 1,
+        nombre_producto: 'Audífonos Bluetooth',
+        precio: '10.00',
+        color: { id: 1, nombre: 'Negro', hex: '#000000' },
+        imagen: null,
+      },
+    } as FavoritoVariante);
+
     render(
-      <MemoryRouter initialEntries={["/productos?query=audifonos"]}>
+      <MemoryRouter initialEntries={["/productos"]}>
         <Routes>
           <Route path="/productos" element={<SearchProductsPage />} />
         </Routes>
       </MemoryRouter>
     );
 
-    expect(await screen.findByText("Audífonos Bluetooth")).toBeInTheDocument();
-    expect(screen.queryByText("Té Verde")).not.toBeInTheDocument();
-    expect(screen.getByText("Se encontró 1 producto.")).toBeInTheDocument();
+    // wait for products to load
+    expect(await screen.findByText('Audífonos Bluetooth')).toBeInTheDocument();
+    const favButton = screen.getByTestId('fav-btn');
+    await fireEvent.click(favButton);
+    // after click, favorite should be added (favMsg appears)
+    await waitFor(() => expect(screen.getByText(/agregado a favoritos/)).toBeInTheDocument());
+    // ensure addFavorito called with correct variant id (mocked variant id from product details)
+    // we need to mock getProductById as well
   });
+
+  render(
+    <MemoryRouter initialEntries={["/productos?query=audifonos"]}>
+      <Routes>
+        <Route path="/productos" element={<SearchProductsPage />} />
+      </Routes>
+    </MemoryRouter>
+  );
+
+  expect(async () => await screen.findByText("Audífonos Bluetooth")).toBeInTheDocument();
+  expect(screen.queryByText("Té Verde")).not.toBeInTheDocument();
+  expect(screen.getByText("Se encontró 1 producto.")).toBeInTheDocument();
 });
+

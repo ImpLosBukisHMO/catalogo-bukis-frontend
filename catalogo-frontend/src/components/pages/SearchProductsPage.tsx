@@ -9,7 +9,7 @@ import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
 import type { Categoria } from "../../types/categoria";
 import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
-import { stripDiacritics } from "../../utils/normalizers";
+import { formatMoney, stripDiacritics } from "../../utils/normalizers";
 
 const normalizeSearchText = (value: string) => stripDiacritics(value).toLowerCase();
 
@@ -21,7 +21,7 @@ export default function SearchProductsPage() {
     const [products, setProducts] = useState<ProductCardVM[]>([]);
     const [categories, setCategories] = useState<Categoria[]>([]);
     const [filterCategories, setFilterCategories] = useState<number[]>([]);
-    const [filterMinPrice, setFilterMinPrice] = useState<number | null>(1);
+    const [filterMinPrice, setFilterMinPrice] = useState<number | null>(null);
     const [filterMaxPrice, setFilterMaxPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -233,13 +233,13 @@ export default function SearchProductsPage() {
                             Rango de precios (MXN)
                         </p>
                         <div className="my-3">
-                            <p className="mb-2 text-sm text-neutral-600">Mínimo</p>
-                            <input type="number" min={1} placeholder="Ejemplo: 1.50" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
-                                value={(Number(filterMinPrice) > 0) ? String(filterMinPrice) : 1}
+                            <p className="mb-2 text-sm text-neutral-600"><span className="font-semibold">Mínimo</span> ({formatMoney(1)} en adelante)</p>
+                            <input type="number" min={1} placeholder="Ejemplo: 1.00" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                                value={(Number(filterMinPrice) > 0) ? String(filterMinPrice) : ""}
                                 onChange={(e) => { setFilterMinPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null))}} />
                         </div>
                         <div>
-                            <p className="mb-2 text-sm text-neutral-600">Máximo</p>
+                            <p className="mb-2 text-sm text-neutral-600"><span className="font-semibold">Máximo</span> (mayor que el precio mínimo)</p>
                             <input type="number" min={1} placeholder="Ejemplo: 100.00" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={(Number(filterMaxPrice) > 0) ? String(filterMaxPrice) : ""}
                                 onChange={(e) => { setFilterMaxPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null)) }} />
@@ -248,7 +248,7 @@ export default function SearchProductsPage() {
                     <div className="mt-4 flex justify-center border-t border-neutral-300 pt-4">
                         <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35 disabled:cursor-not-allowed disabled:opacity-60"
                             onClick={applyFilters}
-                            disabled={(Number(filterMinPrice) > Number(filterMaxPrice))}>
+                            disabled={filterMaxPrice !== null && (Number(filterMinPrice) > Number(filterMaxPrice))}>
                             <Search size={20} /><span>Aplicar filtro(s)</span>
                         </button>
                     </div>
