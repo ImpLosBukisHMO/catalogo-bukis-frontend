@@ -18,7 +18,7 @@ vi.mock("../elements/NavBar", () => ({
 }));
 
 vi.mock("../elements/ProductCard", () => ({
-  default: ({ product, onToggleFavorite }: { product: { id: number; nombre: string }; onToggleFavorite: (p: { id: number; nome: string }) => void }) => (
+  default: ({ product, onToggleFavorite }: { product: { id: number; nombre: string }; onToggleFavorite: (p: { id: number; nombre: string }) => void }) => (
     <div>
       {product.nombre}
       <button type="button" data-testid="fav-btn" onClick={() => onToggleFavorite(product)}>Fav</button>

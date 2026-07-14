@@ -282,12 +282,12 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
               )}
             </div>
 
-            {errorMsg && <InlineNotice type="error">{errorMsg}</InlineNotice>}
+            {errorMsg && <InlineNotice tone="error">{errorMsg}</InlineNotice>}
 
             <WorkerDialogFooter>
               <ModalButton
                 type="button"
-                variant="secondary"
+                kind="secondary"
                 onClick={() => onOpenChange(false)}
                 disabled={isPending}
               >
@@ -295,7 +295,7 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
               </ModalButton>
               <ModalButton
                 type="submit"
-                variant="primary"
+                kind="primary"
                 disabled={isPending || descuentos.length === 0}
               >
                 {isPending ? "Aplicando…" : "Aplicar descuento"}
