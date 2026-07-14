@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   WorkerDialogAction,
   WorkerDialogBody,
@@ -18,6 +19,8 @@ import { stripDiacritics } from "../../utils/normalizers";
 import { WorkerCreateDiscountModal } from "../ui/worker/WorkerCreateDiscountModal";
 import { WorkerApplyDiscountModal } from "../ui/worker/WorkerApplyDiscountModal";
 import { Pencil } from "lucide-react";
+import { getWorkerCategorias } from "../../services/worker";
+import { workerKeys } from "../../queries/workerKeys";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingDiscountEdit = {
@@ -73,6 +76,17 @@ export function WorkerDiscountsPage() {
   const { data: tiposDescuento = [] } = useWorkerTiposDescuento();
   const tiposDescArray = tiposDescuento;
 
+  const { data: categorias = [] } = useQuery({
+    queryKey: workerKeys.categories(),
+    queryFn: getWorkerCategorias,
+  });
+
+  // Categorías que ya tienen asignado el descuento que se está editando
+  const categoriasConEsteDescuento = useMemo(() => {
+    if (editId === null) return [];
+    return categorias.filter(c => c.descuento_general === editId).map(c => c.nombre);
+  }, [editId, categorias]);
+
   useEffect(() => {
     if (!createOpen && prevCreateOpenRef.current) {
       createTriggerRef.current?.focus();
@@ -89,12 +103,21 @@ export function WorkerDiscountsPage() {
     });
   }, [search, descuentos, descTypeFilter]);
 
-  // Convierte cualquier fecha ISO a formato YYYY-MM-DD requerido por input[type=date]
+  // Convierte cualquier fecha ISO a formato YYYY-MM-DDThh:mm requerido por input[type=datetime-local]
   const toDateInput = (iso: Date | string | undefined | null): string => {
     if (!iso) return "";
     const d = typeof iso === "string" ? new Date(iso) : iso;
     if (isNaN(d.getTime())) return "";
-    return d.toISOString().split("T")[0];
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
+  const formatDateDisplay = (iso: Date | string | undefined | null): string => {
+    if (!iso) return "-";
+    const d = typeof iso === "string" ? new Date(iso) : iso;
+    if (isNaN(d.getTime())) return "-";
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   const startEdit = (d: Discount) => {
@@ -335,6 +358,29 @@ export function WorkerDiscountsPage() {
         </div>
       )}
 
+      {/* ── Warning: este descuento ya está asignado a categorías ── */}
+      {categoriasConEsteDescuento.length > 0 && (
+        <div
+          style={{
+            marginBottom: "1rem",
+            padding: "10px 14px",
+            background: "#fffbeb",
+            border: "1px solid #fcd34d",
+            borderRadius: 7,
+            fontSize: 13,
+            color: "#92400e",
+          }}
+        >
+          ⚠️ Este descuento ya está asignado a{" "}
+          {categoriasConEsteDescuento.length === 1
+            ? "la categoría"
+            : "las categorías"}:{" "}
+          <strong>{categoriasConEsteDescuento.join(", ")}</strong>.
+          {" "}Los cambios que guardes afectarán a todos los productos de{" "}
+          {categoriasConEsteDescuento.length === 1 ? "esa categoría" : "esas categorías"}.
+        </div>
+      )}
+
       {/* ── Fetch error ── */}
       {fetchErrorMsg && (
         <div
@@ -567,7 +613,7 @@ export function WorkerDiscountsPage() {
                             verticalAlign: "middle",
                           }}>
                           <input
-                            type="date"
+                            type="datetime-local"
                             value={editFechaInicio}
                             onChange={(e) => setEditFechaInicio(e.target.value)}
                             style={{
@@ -588,7 +634,7 @@ export function WorkerDiscountsPage() {
                             textAlign: "center",
                           }}
                         >
-                          {d.fecha_inicio ? d.fecha_inicio.toString().split('T')[0] : "-"}
+                          {formatDateDisplay(d.fecha_inicio)}
                         </td>
                     }
 
@@ -601,7 +647,7 @@ export function WorkerDiscountsPage() {
                             verticalAlign: "middle",
                           }}>
                           <input
-                            type="date"
+                            type="datetime-local"
                             value={editFechaFin}
                             onChange={(e) => setEditFechaFin(e.target.value)}
                             style={{
@@ -621,7 +667,7 @@ export function WorkerDiscountsPage() {
                             textAlign: "center",
                             verticalAlign: "middle",
                           }}>
-                          {d.fecha_fin ? d.fecha_fin.toString().split('T')[0] : "-"}
+                          {formatDateDisplay(d.fecha_fin)}
                         </td>
                       )}
 

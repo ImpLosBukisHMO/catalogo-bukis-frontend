@@ -55,8 +55,8 @@ function buildProduct(id: number, nombre: string): Product {
     capacidad: "1",
     categoria: {
       id: 1,
-      nombre: "",
-      descuento: null
+      nombre: 'Electrónicos',
+      descuento_general: null
     },
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -103,9 +103,10 @@ describe("SearchProductsPage", () => {
       </MemoryRouter>
     );
 
-    // wait for products to load
+    // wait for products to load — the mock returns 2 products, so there will
+    // be 2 fav buttons; we target the first one (Audífonos Bluetooth)
     expect(await screen.findByText('Audífonos Bluetooth')).toBeInTheDocument();
-    const favButton = screen.getByTestId('fav-btn');
+    const [favButton] = screen.getAllByTestId('fav-btn');
     await fireEvent.click(favButton);
     // after click, favorite should be added (favMsg appears)
     await waitFor(() => expect(screen.getByText(/agregado a favoritos/)).toBeInTheDocument());

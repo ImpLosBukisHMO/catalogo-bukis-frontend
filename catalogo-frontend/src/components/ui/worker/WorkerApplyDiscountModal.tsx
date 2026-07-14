@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   WorkerDialogRoot,
@@ -15,6 +15,7 @@ import { useWorkerDescuentos } from "../../../queries/workerDescuentos";
 import { useWorkerProductos } from "../../../queries/workerProducts";
 import type { Discount } from "../../../types/descuento";
 import { normalizeResponse } from "../../pages/responseNormalizer";
+import { workerKeys } from "../../../queries/workerKeys";
 
 export type WorkerApplyDiscountModalProps = {
   open: boolean;
@@ -28,9 +29,25 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
   const [selectedDescuento, setSelectedDescuento] = useState<number | "">("");
   const [confirmarReemplazo, setConfirmarReemplazo] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProductDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ── Data fetching ─────────────────────────────────────────────────────────
+  // Uses workerKeys.categories() (["worker","categories"]) so invalidation after
+  // applying a discount correctly refreshes this list and the warning banner.
   const { data: categorias = [], isLoading: loadingCat } = useQuery({
-    queryKey: ["worker", "categorias"],
+    queryKey: workerKeys.categories(),
     queryFn: getWorkerCategorias,
   });
 
@@ -48,8 +65,9 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
   }, [descuentosRaw, tipoDescuento]);
 
   // ── Detect existing discount ──────────────────────────────────────────────
-  // For "general" mode: check if selected category has a discount (descuento field is a number/id)
-  // For "especial" mode: check if selected product has a descuento id
+  // For "general" mode: check if selected category has a discount assigned
+  // (even if inactive/expired) so we warn the worker before overwriting it.
+  // For "especial" mode: same check for the selected product.
   const descuentoVigente = useMemo<{ nombre: string; porcentaje: number } | null>(() => {
     if (!selectedTargetId) return null;
 
@@ -57,13 +75,13 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
 
     if (tipoDescuento === "general") {
       const cat = categorias.find(c => c.id === selectedTargetId);
-      if (!cat || !cat.descuento) return null;
-      const disc = allDescuentos.find(d => d.id === cat.descuento);
+      if (!cat || !cat.descuento_general) return null;
+      const disc = allDescuentos.find(d => d.id === Number(cat.descuento_general));
       return disc ? { nombre: disc.nombre, porcentaje: Number(disc.porcentaje) } : null;
     } else {
       const prod = productosBase.find(p => p.id === selectedTargetId);
-      if (!prod || !prod.descuento) return null;
-      const disc = allDescuentos.find(d => d.id === prod.descuento);
+      if (!prod || !prod.descuento_especial) return null;
+      const disc = allDescuentos.find(d => d.id === Number(prod.descuento_especial));
       return disc ? { nombre: disc.nombre, porcentaje: Number(disc.porcentaje) } : null;
     }
   }, [selectedTargetId, categorias, productosBase, descuentosRaw, tipoDescuento]);
@@ -72,6 +90,14 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
     setSelectedTargetId(id);
     setConfirmarReemplazo(false);
     setErrorMsg(null);
+    if (id !== "" && tipoDescuento === "especial") {
+      const prod = productosBase.find((p) => p.id === id);
+      if (prod) {
+        setProductSearchTerm(prod.nombre);
+      }
+    } else if (id === "") {
+      setProductSearchTerm("");
+    }
   };
 
   const applyMutation = useMutation({
@@ -83,9 +109,11 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["worker", "categorias"] });
-      queryClient.invalidateQueries({ queryKey: ["worker", "variants"] });
-      queryClient.invalidateQueries({ queryKey: ["worker", "productos"] });
+      // Invalidate using the canonical keys so all consumers (modal, products page, etc.)
+      // see the fresh data without a manual reload.
+      queryClient.invalidateQueries({ queryKey: workerKeys.categories() });
+      queryClient.invalidateQueries({ queryKey: workerKeys.variants() });
+      queryClient.invalidateQueries({ queryKey: workerKeys.productos() });
       onOpenChange(false);
       setSelectedTargetId("");
       setSelectedDescuento("");
@@ -118,126 +146,112 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
     <WorkerDialogRoot
       open={open}
       onOpenChange={(nextOpen) => {
-        if (isPending) return;
+        if (!nextOpen) {
+          setSelectedTargetId("");
+          setSelectedDescuento("");
+          setConfirmarReemplazo(false);
+          setErrorMsg(null);
+          setProductSearchTerm("");
+          setIsProductDropdownOpen(false);
+        }
         onOpenChange(nextOpen);
       }}
     >
-      <WorkerDialogContent size="md">
+      <WorkerDialogContent>
         <WorkerDialogHeader>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <WorkerDialogTitle>Aplicar Descuento {tipoDescuento.charAt(0).toUpperCase() + tipoDescuento.slice(1)}</WorkerDialogTitle>
-              <WorkerDialogDescription>
-                {tipoDescuento === "general"
-                  ? "Selecciona la categoría a la cual se le aplicará el descuento."
-                  : "Selecciona el producto al cual se le aplicará el descuento."}
-              </WorkerDialogDescription>
-            </div>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending}
-              style={{
-                background: "none",
-                border: "1px solid var(--worker-border-soft)",
-                fontSize: 20,
-                lineHeight: 1,
-                color: isPending ? "var(--worker-ink-muted)" : "var(--worker-ink-tertiary)",
-                cursor: isPending ? "not-allowed" : "pointer",
-                padding: "6px 10px",
-                borderRadius: 10,
-                flexShrink: 0,
-              }}
-            >
-              ✕
-            </button>
-          </div>
+          <WorkerDialogTitle>
+            {tipoDescuento === "general"
+              ? "Aplicar descuento general a categoría"
+              : "Aplicar descuento especial a producto"}
+          </WorkerDialogTitle>
+          <WorkerDialogDescription>
+            {tipoDescuento === "general"
+              ? "Selecciona la categoría a la cual se le aplicará el descuento."
+              : "Selecciona el producto al cual se le aplicará el descuento."}
+          </WorkerDialogDescription>
         </WorkerDialogHeader>
 
-        <WorkerDialogBody scrollable>
-          <form id="apply-discount-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {errorMsg && <InlineNotice tone="critical">{errorMsg}</InlineNotice>}
+        <WorkerDialogBody>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-            {/* Selector de categoría o producto */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label
-                htmlFor={tipoDescuento === "general" ? "cat-select" : "prod-select"}
-                style={{ fontSize: 13, fontWeight: 600, color: "var(--worker-ink)" }}
-              >
+            {/* Selector de categoría / producto */}
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-bukis-ink">
                 {tipoDescuento === "general" ? "Categoría" : "Producto"}
               </label>
-              <select
-                id={tipoDescuento === "general" ? "cat-select" : "prod-select"}
-                value={selectedTargetId}
-                onChange={(e) => handleTargetChange(e.target.value ? Number(e.target.value) : "")}
-                disabled={isPending}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--worker-border)",
-                  fontSize: 14,
-                  background: "var(--worker-bench)",
-                  color: "var(--worker-ink)",
-                  width: "100%",
-                  boxSizing: "border-box"
-                }}
-              >
-                <option value="">{tipoDescuento === "general" ? "Selecciona una categoría" : "Selecciona un producto base"}</option>
-                {tipoDescuento === "general"
-                  ? categorias.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nombre}</option>
-                    ))
-                  : productosBase.map((p) => (
-                      <option key={p.id} value={p.id}>{p.nombre}</option>
-                    ))
-                }
-              </select>
+              {tipoDescuento === "general" ? (
+                <select
+                  className="w-full rounded-lg border border-bukis-border bg-bukis-surface px-3 py-2 text-sm text-bukis-ink focus:outline-none focus:ring-2 focus:ring-bukis-accent"
+                  value={selectedTargetId}
+                  onChange={(e) => handleTargetChange(e.target.value === "" ? "" : Number(e.target.value))}
+                  disabled={isPending}
+                >
+                  <option value="">Selecciona una categoría</option>
+                  {categorias.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="relative" ref={dropdownRef}>
+                  <input
+                    type="text"
+                    className="w-full rounded-lg border border-bukis-border bg-bukis-surface px-3 py-2 text-sm text-bukis-ink focus:outline-none focus:ring-2 focus:ring-bukis-accent"
+                    placeholder="Buscar producto..."
+                    value={productSearchTerm}
+                    onChange={(e) => {
+                      setProductSearchTerm(e.target.value);
+                      setIsProductDropdownOpen(true);
+                      if (selectedTargetId !== "") {
+                        setSelectedTargetId("");
+                        setConfirmarReemplazo(false);
+                        setErrorMsg(null);
+                      }
+                    }}
+                    onFocus={() => setIsProductDropdownOpen(true)}
+                    disabled={isPending}
+                  />
+                  {isProductDropdownOpen && !isPending && (
+                    <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-bukis-border bg-bukis-surface shadow-lg">
+                      {productosBase.filter(p => p.nombre.toLowerCase().includes(productSearchTerm.toLowerCase())).length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-neutral-500">No se encontraron productos</div>
+                      ) : (
+                        productosBase
+                          .filter(p => p.nombre.toLowerCase().includes(productSearchTerm.toLowerCase()))
+                          .map((prod) => (
+                            <div
+                              key={prod.id}
+                              className="cursor-pointer px-3 py-2 text-sm text-bukis-ink hover:bg-neutral-100"
+                              onClick={() => {
+                                handleTargetChange(prod.id);
+                                setIsProductDropdownOpen(false);
+                              }}
+                            >
+                              {prod.nombre}
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Aviso de descuento vigente */}
             {descuentoVigente && (
-              <div
-                style={{
-                  borderRadius: 10,
-                  border: "1px solid var(--worker-warning-border, #d97706)",
-                  background: "var(--worker-warning-bg, #fffbeb)",
-                  padding: "12px 16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 18 }}>⚠️</span>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--worker-warning-fg, #92400e)" }}>
-                      Este {entityLabel} ya tiene un descuento vigente
-                    </p>
-                    <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--worker-warning-fg, #92400e)" }}>
-                      <strong>{descuentoVigente.nombre}</strong> — {descuentoVigente.porcentaje}% de descuento
-                    </p>
-                  </div>
-                </div>
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    cursor: "pointer",
-                    fontSize: 13,
-                    color: "var(--worker-ink)",
-                    fontWeight: 500,
-                  }}
-                >
+              <div className="flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-800">
+                  ⚠️ Este {entityLabel} ya tiene un descuento vigente
+                </p>
+                <p className="text-sm text-amber-700">
+                  <strong>{descuentoVigente.nombre}</strong> — {descuentoVigente.porcentaje}% de descuento
+                </p>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-amber-800">
                   <input
                     type="checkbox"
                     checked={confirmarReemplazo}
-                    onChange={(e) => {
-                      setConfirmarReemplazo(e.target.checked);
-                      setErrorMsg(null);
-                    }}
+                    onChange={(e) => setConfirmarReemplazo(e.target.checked)}
                     disabled={isPending}
-                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--worker-accent)" }}
+                    className="h-4 w-4 rounded border-amber-400 accent-amber-600"
                   />
                   Sí, quiero reemplazar el descuento actual
                 </label>
@@ -245,55 +259,50 @@ export function WorkerApplyDiscountModal({ open, onOpenChange, tipoDescuento }: 
             )}
 
             {/* Selector de descuento */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label htmlFor="desc-select" style={{ fontSize: 13, fontWeight: 600, color: "var(--worker-ink)" }}>
-                Nuevo Descuento
-              </label>
-              <select
-                id="desc-select"
-                value={selectedDescuento}
-                onChange={(e) => setSelectedDescuento(e.target.value ? Number(e.target.value) : "")}
-                disabled={isPending}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--worker-border)",
-                  fontSize: 14,
-                  background: "var(--worker-bench)",
-                  color: "var(--worker-ink)",
-                  width: "100%",
-                  boxSizing: "border-box"
-                }}
-              >
-                <option value="">Selecciona un descuento</option>
-                {descuentos.map((d) => (
-                  <option key={d.id} value={d.id}>{`[${tipoDescuento.toUpperCase()}] ${d.nombre} (${d.porcentaje} %)`}</option>
-                ))}
-              </select>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-bukis-ink">Descuento a aplicar</label>
+              {descuentos.length === 0 ? (
+                <p className="text-sm text-neutral-500 italic">
+                  No hay descuentos de tipo «{tipoDescuento}» activos disponibles.
+                </p>
+              ) : (
+                <select
+                  className="w-full rounded-lg border border-bukis-border bg-bukis-surface px-3 py-2 text-sm text-bukis-ink focus:outline-none focus:ring-2 focus:ring-bukis-accent"
+                  value={selectedDescuento}
+                  onChange={(e) => setSelectedDescuento(e.target.value === "" ? "" : Number(e.target.value))}
+                  disabled={isPending}
+                >
+                  <option value="">Selecciona un descuento</option>
+                  {descuentos.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.nombre} — {d.porcentaje}%
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
-            {descuentos.length === 0 && !loadingDesc && (
-              <p style={{ fontSize: 13, color: "var(--worker-error-fg)", margin: 0 }}>
-                No hay descuentos activos de tipo {tipoDescuento}. Por favor, crea uno primero.
-              </p>
-            )}
+            {errorMsg && <InlineNotice type="error">{errorMsg}</InlineNotice>}
 
+            <WorkerDialogFooter>
+              <ModalButton
+                type="button"
+                variant="secondary"
+                onClick={() => onOpenChange(false)}
+                disabled={isPending}
+              >
+                Cancelar
+              </ModalButton>
+              <ModalButton
+                type="submit"
+                variant="primary"
+                disabled={isPending || descuentos.length === 0}
+              >
+                {isPending ? "Aplicando…" : "Aplicar descuento"}
+              </ModalButton>
+            </WorkerDialogFooter>
           </form>
         </WorkerDialogBody>
-
-        <WorkerDialogFooter>
-          <ModalButton kind="secondary" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Cancelar
-          </ModalButton>
-          <ModalButton
-            kind="primary"
-            type="submit"
-            form="apply-discount-form"
-            disabled={isPending || descuentos.length === 0 || (!!descuentoVigente && !confirmarReemplazo)}
-          >
-            {applyMutation.isPending ? "Aplicando..." : "Aplicar Descuento"}
-          </ModalButton>
-        </WorkerDialogFooter>
       </WorkerDialogContent>
     </WorkerDialogRoot>
   );

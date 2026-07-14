@@ -105,7 +105,7 @@ export async function editarVariante(
 
 // ─── Categories (public endpoint used by worker utility drawer) ───────────────
 
-export type WorkerCategoria = { id: number; nombre: string; descuento?: number | null };
+export type WorkerCategoria = { id: number; nombre: string; descuento_general?: number | null };
 
 export async function getWorkerCategorias(): Promise<WorkerCategoria[]> {
   const res = await API.get("/api/categorias/");
@@ -120,13 +120,13 @@ export async function crearCategoria(nombre: string): Promise<WorkerCategoria> {
 }
 
 export async function asignarDescuentoCategoria(categoriaId: number, descuentoId: number | null): Promise<WorkerCategoria> {
-  const res = await API.patch(`/api/categorias/${categoriaId}/`, { descuento: descuentoId });
+  const res = await API.patch(`/api/categorias/${categoriaId}/`, { descuento_general: descuentoId });
   const data = res.data;
   return data?.datos || data;
 }
 
 export async function asignarDescuentoProducto(productoId: number, descuentoId: number | null): Promise<WorkerProducto> {
-  const res = await API.patch(`/api/worker/productos/${productoId}/`, { descuento: descuentoId });
+  const res = await API.patch(`/api/worker/productos/${productoId}/`, { descuento_especial: descuentoId });
   const data = res.data;
   return data?.datos || data;
 }

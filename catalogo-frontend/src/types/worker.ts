@@ -95,7 +95,7 @@ export type WorkerProducto = {
   disponible: boolean;
   estado?: "draft" | "active" | "archived" | string;
   categoria: number | null;
-  descuento: number | null;
+  descuento_especial: number | null;
   created_at: string;
   updated_at: string;
   variantes?: WorkerVariant[];
