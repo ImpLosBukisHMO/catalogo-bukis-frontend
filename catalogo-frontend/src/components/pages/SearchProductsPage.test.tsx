@@ -3,10 +3,11 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SearchProductsPage from "./SearchProductsPage";
 import { getCategories } from "../../services/category";
-import { getProducts } from "../../services/product";
+import { getProducts, getProductById } from "../../services/product";
 import type { Product } from "../../types/product";
 import { addFavorito, getFavoritos } from "../../services/favoritos";
 import type { FavoritoVariante } from "../../types/favoritos";
+
 
 vi.mock("../elements/Footer", () => ({
   default: () => <div data-testid="footer" />,
@@ -20,7 +21,7 @@ vi.mock("../elements/ProductCard", () => ({
   default: ({ product, onToggleFavorite }: { product: { nombre: string }; onToggleFavorite: () => void }) => (
     <div>
       {product.nombre}
-      <button data-testid="fav-btn" onClick={() => onToggleFavorite()}>Fav</button>
+      <button type="button" data-testid="fav-btn" onClick={() => onToggleFavorite()}>Fav</button>
     </div>
   ),
 }));
@@ -43,6 +44,24 @@ vi.mock("../../services/product", () => ({
 const mockedGetProducts = vi.mocked(getProducts);
 const mockedGetCategories = vi.mocked(getCategories);
 
+const mockedGetProductById = vi.mocked(getProductById);
+mockedGetProductById.mockResolvedValue({
+  id: 1,
+  variantes: [
+    {
+      id: 1,
+      item: 'test-item',
+      stock: 10,
+      activo: true,
+      producto_id: 1,
+      nombre_producto: 'Audífonos Bluetooth',
+      precio: '10.00',
+      color: { id: 1, nombre: 'Negro', hex: '#000000' },
+      imagen: null,
+    },
+  ],
+});
+
 function buildProduct(id: number, nombre: string): Product {
   return {
     id,
@@ -56,7 +75,7 @@ function buildProduct(id: number, nombre: string): Product {
     categoria: {
       id: 1,
       nombre: 'Electrónicos',
-      descuento_general: null
+      descuento: null
     },
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -132,5 +151,3 @@ describe("SearchProductsPage", () => {
     expect(screen.getByText("Se encontró 1 producto.")).toBeInTheDocument();
   });
 });
-
-
