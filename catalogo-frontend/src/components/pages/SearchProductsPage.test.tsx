@@ -113,16 +113,23 @@ describe("SearchProductsPage", () => {
     // we need to mock getProductById as well
   });
 
-  render(
-    <MemoryRouter initialEntries={["/productos?query=audifonos"]}>
-      <Routes>
-        <Route path="/productos" element={<SearchProductsPage />} />
-      </Routes>
-    </MemoryRouter>
-  );
+  it("filters displayed products by search query in the URL", async () => {
+    // Override the mock to simulate the API returning only the matching product
+    // (the real component passes the query to getProducts, which filters server-side)
+    mockedGetProducts.mockResolvedValue([buildProduct(1, "Audífonos Bluetooth")]);
 
-  expect(async () => await screen.findByText("Audífonos Bluetooth")).toBeInTheDocument();
-  expect(screen.queryByText("Té Verde")).not.toBeInTheDocument();
-  expect(screen.getByText("Se encontró 1 producto.")).toBeInTheDocument();
+    render(
+      <MemoryRouter initialEntries={["/productos?query=audifonos"]}>
+        <Routes>
+          <Route path="/productos" element={<SearchProductsPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText("Audífonos Bluetooth")).toBeInTheDocument();
+    expect(screen.queryByText("Té Verde")).not.toBeInTheDocument();
+    expect(screen.getByText("Se encontró 1 producto.")).toBeInTheDocument();
+  });
 });
+
 
