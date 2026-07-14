@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeResponse } from "./responseNormalizer";
+import { normalizePagedResponse, normalizeResponse } from "./responseNormalizer";
 
 type Item = { id: number };
 
@@ -44,5 +44,32 @@ describe("normalizeResponse", () => {
   it("returns an empty array for invalid payloads", () => {
     expect(normalizeResponse<Item>({ invalid: true })).toEqual([]);
     expect(normalizeResponse<Item>(null)).toEqual([]);
+  });
+});
+
+describe("normalizePagedResponse", () => {
+  it("preserves DRF pagination metadata and results", () => {
+    expect(
+      normalizePagedResponse<Item>({
+        count: 83,
+        next: "http://api/productos/?page=3&query=mate",
+        previous: "http://api/productos/?page=1&query=mate",
+        results: [{ id: 21 }, { id: 22 }],
+      }),
+    ).toEqual({
+      items: [{ id: 21 }, { id: 22 }],
+      count: 83,
+      next: "http://api/productos/?page=3&query=mate",
+      previous: "http://api/productos/?page=1&query=mate",
+    });
+  });
+
+  it("falls back to flat arrays without pagination metadata", () => {
+    expect(normalizePagedResponse<Item>([{ id: 1 }, { id: 2 }, { id: 3 }])).toEqual({
+      items: [{ id: 1 }, { id: 2 }, { id: 3 }],
+      count: 3,
+      next: null,
+      previous: null,
+    });
   });
 });
