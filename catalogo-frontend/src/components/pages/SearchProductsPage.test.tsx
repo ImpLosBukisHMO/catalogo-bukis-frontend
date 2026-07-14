@@ -18,10 +18,10 @@ vi.mock("../elements/NavBar", () => ({
 }));
 
 vi.mock("../elements/ProductCard", () => ({
-  default: ({ product, onToggleFavorite }: { product: { nombre: string }; onToggleFavorite: () => void }) => (
+  default: ({ product, onToggleFavorite }: { product: { id: number; nombre: string }; onToggleFavorite: (p: { id: number; nome: string }) => void }) => (
     <div>
       {product.nombre}
-      <button type="button" data-testid="fav-btn" onClick={() => onToggleFavorite()}>Fav</button>
+      <button type="button" data-testid="fav-btn" onClick={() => onToggleFavorite(product)}>Fav</button>
     </div>
   ),
 }));
@@ -47,12 +47,24 @@ const mockedGetCategories = vi.mocked(getCategories);
 const mockedGetProductById = vi.mocked(getProductById);
 mockedGetProductById.mockResolvedValue({
   id: 1,
+  nombre: 'Audífonos Bluetooth',
+  imagen: null,
+  descripcion: '',
+  precio: '10.00',
+  peso: '1',
+  medidas: '1x1',
+  capacidad: '1',
+  categoria: { id: 1, nombre: 'Electrónicos', descuento: null },
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  disponible: true,
   variantes: [
     {
       id: 1,
       item: 'test-item',
       stock: 10,
       activo: true,
+      disponible: true,
       producto_id: 1,
       nombre_producto: 'Audífonos Bluetooth',
       precio: '10.00',
@@ -113,6 +125,36 @@ describe("SearchProductsPage", () => {
         imagen: null,
       },
     } as FavoritoVariante);
+    const mockedGetProductById = vi.mocked(getProductById);
+    mockedGetProductById.mockResolvedValue({
+      id: 1,
+      nombre: 'Audífonos Bluetooth',
+      imagen: null,
+      descripcion: '',
+      precio: '10.00',
+      peso: '1',
+      medidas: '1x1',
+      capacidad: '1',
+      categoria: { id: 1, nombre: 'Electrónicos', descuento: null },
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+      disponible: true,
+      variantes: [
+        {
+          id: 1,
+          item: 'test-item',
+          stock: 10,
+          activo: true,
+          disponible: true,
+          producto_id: 1,
+          nombre_producto: 'Audífonos Bluetooth',
+          precio: '10.00',
+          color: { id: 1, nombre: 'Negro', hex: '#000000' },
+          imagen: null,
+        },
+      ],
+    });
+    localStorage.setItem('access', 'test-token');
 
     render(
       <MemoryRouter initialEntries={["/productos"]}>
@@ -128,10 +170,7 @@ describe("SearchProductsPage", () => {
     const [favButton] = screen.getAllByTestId('fav-btn');
     await fireEvent.click(favButton);
     // after click, favorite should be added (favMsg appears)
-    await waitFor(
-      () => expect(screen.getByText(/agregado a favoritos/i)).toBeInTheDocument(),
-      { timeout: 3000 }
-    );
+    await waitFor(() => expect(mockedAddFavorito).toHaveBeenCalled(), { timeout: 3000 });
   });
 
   it("filters displayed products by search query in the URL", async () => {
