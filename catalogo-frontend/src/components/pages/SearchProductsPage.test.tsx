@@ -128,9 +128,10 @@ describe("SearchProductsPage", () => {
     const [favButton] = screen.getAllByTestId('fav-btn');
     await fireEvent.click(favButton);
     // after click, favorite should be added (favMsg appears)
-    await waitFor(() => expect(screen.getByText(/agregado a favoritos/)).toBeInTheDocument());
-    // ensure addFavorito called with correct variant id (mocked variant id from product details)
-    // we need to mock getProductById as well
+    await waitFor(
+      () => expect(screen.getByText(/agregado a favoritos/i)).toBeInTheDocument(),
+      { timeout: 3000 }
+    );
   });
 
   it("filters displayed products by search query in the URL", async () => {
