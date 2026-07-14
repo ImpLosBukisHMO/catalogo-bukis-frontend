@@ -1,0 +1,69 @@
+# openspec/config.yaml — catalogo-bukis-frontend
+schema: spec-driven
+
+context: |
+  Project: catalogo-bukis-frontend (frontend subrepo)
+  Tech stack: React 19, TypeScript 5.9 (strict), Vite 7, Tailwind CSS 4
+  State management: TanStack Query v5
+  Routing: React Router v7
+  UI primitives: Radix UI (Dialog, DropdownMenu)
+  Architecture: component-layer pattern (elements/, pages/, ui/, providers/)
+  Test runner: Vitest 3 + jsdom + Testing Library (React 16, jest-dom 6)
+  Node requirement: >=20.0.0
+  Deployment: Railway (serve -s dist)
+
+strict_tdd: true
+
+testing:
+  runner: vitest
+  test_command: "npm test"
+  watch_command: "npx vitest"
+  coverage_available: false
+  coverage_command: "npx vitest run --coverage"
+  layers:
+    unit: true
+    integration: true      # @testing-library/react
+    e2e: false
+  quality:
+    linter: "npm run lint"
+    type_checker: "tsc -b --noEmit"
+    formatter: null
+  setup_file: src/test/setup.ts
+  existing_test_files:
+    - src/main.test.tsx
+    - src/lib/queryClient.test.ts
+    - src/services/product.test.ts
+    - src/components/pages/SearchProductsPage.test.tsx
+    - src/components/pages/responseNormalizer.test.ts
+    - src/components/ui/worker/WorkerCreateProductModal.test.tsx
+    - src/components/ui/worker/workerProductFlow.test.ts
+
+rules:
+  proposal:
+    - Include rollback plan for risky UI changes
+    - Note any API contract dependencies with catalogo-bukis-backend
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Reference component paths from src/components/
+  design:
+    - Include component hierarchy diagrams for complex flows
+    - Document TanStack Query key conventions when relevant
+    - Document Radix UI usage constraints
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Separate backend-dependent tasks clearly
+  apply:
+    - Follow existing code patterns (elements/pages/ui/providers split)
+    - Prefer TanStack Query for all server state
+    tdd: true
+    test_command: "npm test"
+  verify:
+    test_command: "npm test"
+    build_command: "npm run build"
+    lint_command: "npm run lint"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+    - Update meta-repo openspec if the change touches shared domain specs
