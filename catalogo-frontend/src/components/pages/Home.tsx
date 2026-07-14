@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import ProductCard from "../elements/ProductCard";
@@ -51,6 +52,14 @@ function Home() {
         <h1 className="text-center text-3xl font-bold text-bukis-ink">
           Productos destacados
         </h1>
+        <div className="mt-4 flex justify-center">
+          <Link
+            to="/productos"
+            className="inline-flex items-center justify-center rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
+          >
+            Ver todo el catálogo
+          </Link>
+        </div>
 
         {loading && <p className="mt-6 text-center text-neutral-600">Cargando productos...</p>}
         {error && <p className="mt-6 text-center text-bukis-red-700">{error}</p>}
