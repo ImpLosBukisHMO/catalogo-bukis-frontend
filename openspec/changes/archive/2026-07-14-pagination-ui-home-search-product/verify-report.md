@@ -1,16 +1,16 @@
 # Verification Report: pagination-ui-home-search-product
 
-**Change**: `pagination-ui-home-search-product`  
-**Mode**: Strict TDD verification  
-**Verdict**: PASS WITH WARNINGS  
-**Date**: 2026-07-13  
+**Change**: `pagination-ui-home-search-product`
+**Mode**: Strict TDD verification
+**Verdict**: PASS WITH WARNINGS
+**Date**: 2026-07-13, refreshed 2026-07-15 after chained PR retargeting
 **Scope**: `catalogo-bukis-frontend/catalogo-frontend`
 
 ## Completeness
 
 | Dimension | Status | Evidence |
 |---|---:|---|
-| Tasks total | 16 | `openspec/changes/pagination-ui-home-search-product/tasks.md` |
+| Tasks total | 16 | `openspec/changes/archive/2026-07-14-pagination-ui-home-search-product/tasks.md` |
 | Tasks checked | 16 | Every task from 1.1 through 4.3 is marked `[x]` |
 | Tasks incomplete | 0 | None |
 | Proposal read | ✅ | `proposal.md` |
@@ -24,7 +24,7 @@ Commands executed from `catalogo-bukis-frontend/catalogo-frontend`.
 
 | Command | Exit | Result | Notes |
 |---|---:|---|---|
-| `npm test` | 0 | ✅ PASS | 13 test files passed, 46 tests passed |
+| `npm test` | 0 | ✅ PASS | 12 test files passed, 45 tests passed after PR #65-#67 were merged into `staging` |
 | `npm run lint` | 0 | ✅ PASS WITH WARNINGS | 0 errors, 7 pre-existing warnings in unrelated files |
 | `npm run build` | 0 | ✅ PASS WITH WARNING | Vite emitted the existing large-chunk warning for `dist/assets/index-*.js` |
 
@@ -65,7 +65,7 @@ Engram apply-progress evidence: **found** in observation `#2052` titled `Apply p
 | TDD Evidence reported | ⚠️ PARTIAL | Missing OpenSpec apply-progress file; Engram has complete Strict TDD evidence |
 | All tasks have tests/evidence | ✅ | 15 implementation tasks have concrete test files; task 4.3 is command verification |
 | RED confirmed | ✅ | Listed test files exist in codebase |
-| GREEN confirmed | ✅ | Full `npm test` passed: 13 files, 46 tests |
+| GREEN confirmed | ✅ | Full `npm test` passed: 12 files, 45 tests on current `staging` after PR retargeting |
 | Triangulation adequate | ✅ | Scenario coverage spans service, normalizer, page integration, controls, Home, ProductPage, NavBar, and routing root |
 | Safety net for modified files | ✅ | Engram evidence records existing test safety nets before modification; new page/control tests are marked new |
 
@@ -78,8 +78,8 @@ Engram apply-progress evidence: **found** in observation `#2052` titled `Apply p
 | Unit | 22 | 4 | Vitest |
 | Integration | 11 | 5 | Vitest + React Testing Library |
 | E2E | 0 | 0 | Not configured |
-| Other existing tests | 13 | 4 | Vitest |
-| **Total runtime suite** | **46** | **13** | |
+| Other existing tests | 12 | 3 | Vitest |
+| **Total runtime suite** | **45** | **12** | |
 
 ## Changed File Coverage
 
@@ -104,8 +104,8 @@ No tautologies, ghost loops, assertion-without-production-code, smoke-only tests
 
 ## Quality Metrics
 
-**Linter**: ✅ No errors; ⚠️ 7 warnings.  
-**Type checker/build**: ✅ No TypeScript errors.  
+**Linter**: ✅ No errors; ⚠️ 7 warnings.
+**Type checker/build**: ✅ No TypeScript errors.
 **Bundler**: ✅ Build succeeds; ⚠️ existing Vite chunk-size warning.
 
 ### Pre-existing Warnings
@@ -139,7 +139,7 @@ None.
 
 ## Artifacts Written
 
-- `openspec/changes/pagination-ui-home-search-product/verify-report.md`
+- `openspec/changes/archive/2026-07-14-pagination-ui-home-search-product/verify-report.md`
 
 ## Final Verdict
 
@@ -149,4 +149,4 @@ The implementation satisfies all 16 checked tasks, all spec scenarios have passi
 
 ## Next Recommended
 
-Archive the SDD change after reviewing the non-blocking warnings.
+Archive PR is ready after reviewing the non-blocking warnings.
