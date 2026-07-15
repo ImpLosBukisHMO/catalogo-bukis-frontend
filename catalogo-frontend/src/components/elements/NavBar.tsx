@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Briefcase, House, Heart, ShoppingCart, UserRound, Search, Box, Menu, X } from "lucide-react";
 import { DoorOpen } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
 import { logOut } from "../../services/user";
 import { useAuth } from "../../context/useAuth";
+import { buildCatalogLocation, normalizeCatalogQuery } from "../../utils/catalogNavigation";
 
 type NavBarProps = {
     navBarQuery?: string | null;
@@ -14,18 +15,20 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const { isLoggedIn, isStaff, setLoggedOut } = useAuth();
     // TODO: use isLoading to show a skeleton/placeholder while auth state is being validated
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(normalizeCatalogQuery(navBarQuery));
     const { pathname } = useLocation();
+    const navigate = useNavigate();
     const toggleNavMenu = () => setIsOpen(!isOpen);
     const iconSize = 22;
 
+    useEffect(() => {
+        setSearchQuery(normalizeCatalogQuery(navBarQuery));
+    }, [navBarQuery]);
+
     const handleQuery = (e: React.FormEvent) => {
         e.preventDefault();
-        if (searchQuery.length > 0) {
-            window.location.href = `/productos?query=${searchQuery}`;
-        } else {
-            window.location.href = "/productos";
-        }
+        navigate(buildCatalogLocation({ page: 1, query: searchQuery }));
+        setIsOpen(false);
     };
 
     const linkClass = (isActive: boolean) =>
@@ -54,9 +57,9 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                             <Search size={22} />
                         </div>
                         <input className="h-11 min-w-0 flex-1 rounded-r-xl border border-l-0 border-white/25 bg-white px-3 text-sm text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
-                                type="text"
+                                type="search"
                                 placeholder="Busque un producto"
-                                defaultValue={navBarQuery || searchQuery}
+                                value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)} />
                     </form>
 
