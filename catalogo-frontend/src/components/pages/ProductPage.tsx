@@ -16,6 +16,8 @@ import type { ProductDetail, Variant } from "../../types/product";
 import type { Product, ProductCardVM } from "../../types/product";
 import Barcode from "react-barcode";
 
+const RELATED_PRODUCTS_LIMIT = 9;
+
 function pickDefaultVariantId(variantes: Variant[]): number | null {
   if (!variantes?.length) return null;
   const firstDisponible = variantes.find((v) => v.disponible);
@@ -174,7 +176,7 @@ export default function ProductPage() {
             imagenUrl: p.imagen ?? null,
             disponible: true,
           }))
-          .slice(0, 8);
+          .slice(0, RELATED_PRODUCTS_LIMIT);
 
         setMoreProducts(mapped);
       } catch (e) {
