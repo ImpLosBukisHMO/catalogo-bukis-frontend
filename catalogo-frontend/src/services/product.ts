@@ -45,8 +45,8 @@ export async function getProductsPage(
  * `Product[]`. Pagination metadata (`count`, `next`, `previous`) is intentionally
  * dropped here — this helper remains for Home and ProductPage, which stay flat.
  *
- * `SearchProductsPage` now owns pagination UI and must call `getProductsPage()`
- * instead of this helper so it can preserve `/productos?page=N&query=...`.
+ * Search experiences that need pagination metadata should call
+ * `getProductsPage()` instead of this helper.
  */
 export async function getProducts() {
   const pagedResponse = await getProductsPage({ page: 1 });
