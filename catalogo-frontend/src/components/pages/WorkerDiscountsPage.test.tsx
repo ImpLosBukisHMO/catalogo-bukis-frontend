@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkerThemeProvider } from "../providers/WorkerThemeProvider";
 import { WorkerDiscountsPage } from "./WorkerDiscountsPage";
 import { MemoryRouter } from "react-router";
@@ -53,6 +53,18 @@ vi.mock("@tanstack/react-query", () => {
       invalidateQueries: vi.fn()
     })
   };
+});
+
+// Avoid ResizeObserver error in tests if Dialog uses it
+beforeAll(() => {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation(() => ({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  });
 });
 
 beforeEach(() => {
@@ -112,7 +124,7 @@ describe("WorkerDiscountsPage", () => {
       expect(screen.getByText(/Confirmar Cambios/i)).toBeDefined();
     });
 
-    const confirmButton = screen.getByRole("button", { name: "Sí, guardar cambios" });
+    const confirmButton = screen.getByRole("button", { name: "Confirmar" });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
