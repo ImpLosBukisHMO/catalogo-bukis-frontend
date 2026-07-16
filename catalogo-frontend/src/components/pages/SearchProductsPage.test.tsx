@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SearchProductsPage from "./SearchProductsPage";
@@ -7,8 +7,6 @@ import { getCategories } from "../../services/category";
 import { getProductsPage, getProductById } from "../../services/product";
 import type { PagedResponse } from "./responseNormalizer";
 import type { Product } from "../../types/product";
-import { addFavorito, getFavoritos } from "../../services/favoritos";
-import type { FavoritoVariante } from "../../types/favoritos";
 
 
 const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
