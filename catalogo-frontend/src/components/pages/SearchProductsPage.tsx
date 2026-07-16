@@ -1,143 +1,157 @@
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useSearchParams } from "react-router-dom";
 import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
 import ProductCard from "../elements/ProductCard";
 import { Search } from "lucide-react";
-import { getProducts, getProductById } from "../../services/product";
+import PaginationControls from "../elements/PaginationControls";
+import { getProductById, getProductsPage } from "../../services/product";
 import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
 import type { Categoria } from "../../types/categoria";
 import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
-import { formatMoney, stripDiacritics } from "../../utils/normalizers";
+import { productKeys } from "../../queries/productKeys";
+import { formatMoney } from "../../utils/normalizers";
+import {
+    buildCatalogLocation,
+    normalizeCatalogQuery,
+    parseCatalogPageParam,
+} from "../../utils/catalogNavigation";
+import {
+    CATALOG_PAGINATION_ARIA_LABEL,
+    applyLocalCatalogFilters as applyLocalFilters,
+    getCatalogResultsSummary as getResultsSummary,
+} from "./catalogPresentation";
 
-const normalizeSearchText = (value: string) => stripDiacritics(value).toLowerCase();
+function mapProductToCardVM(product: Product): ProductCardVM {
+    return {
+        id: product.id,
+        nombre: product.nombre,
+        precio: Number(product.precio),
+        imagenUrl: product.imagen ?? null,
+        disponible: true,
+        categoria: product.categoria,
+        descuento_especial: product.descuento_especial,
+    };
+}
+
+function isNotFoundError(error: unknown): boolean {
+    return (error as { response?: { status?: number } })?.response?.status === 404;
+}
 
 export default function SearchProductsPage() {
-    const [searchParams] = useSearchParams();
-    const productQuery = searchParams.get("query") || "";
+    const [searchParams, setSearchParams] = useSearchParams();
+    const pageParam = parseCatalogPageParam(searchParams.get("page"));
+    const productQuery = normalizeCatalogQuery(searchParams.get("query"));
 
     const [sideBarSearch, setSideBarSearch] = useState<string>(productQuery);
-    const [products, setProducts] = useState<ProductCardVM[]>([]);
     const [categories, setCategories] = useState<Categoria[]>([]);
     const [filterCategories, setFilterCategories] = useState<number[]>([]);
     const [filterMinPrice, setFilterMinPrice] = useState<number | null>(null);
     const [filterMaxPrice, setFilterMaxPrice] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
+    const [categoriesWarning, setCategoriesWarning] = useState<string | null>(null);
     const [favMsg, setFavMsg] = useState<string | null>(null);
     const [favoritos, setFavoritos] = useState<{ id: number; producto_id: number }[]>([]);
 
-    const fetchProductData = async () => {
-        try {
-            const productsData: Product[] = await getProducts();
-            const mappedProducts: ProductCardVM[] = productsData.map((p: Product) => ({
-                id: p.id,
-                nombre: p.nombre,
-                precio: Number(p.precio),
-                imagenUrl: p.imagen ?? null,
-                disponible: p.disponible,
-                categoria: p.categoria ?? null,
-                descuento_especial: p.descuento_especial ?? null,
-            }));
-            setProducts(mappedProducts);
-        } catch (e) {
-            console.error("Error al obtener los productos:", e);
-            setError(e instanceof Error ? e.message : "Error desconocido al cargar productos.");
-        }
-    }
+    const productsQuery = useQuery({
+        queryKey: productKeys.list({ page: pageParam.page, query: productQuery }),
+        queryFn: () => getProductsPage({ page: pageParam.page, query: productQuery }),
+        enabled: !pageParam.isInvalid,
+    });
 
-    const fetchCategories = async () => {
-        try {
-            const data = await getCategories();
-            setCategories(data);
-        } catch (e) {
-            console.error("Error al obtener las categorías:", e);
-            setError(e instanceof Error ? e.message : "Error desconocido al cargar las categorías.");
-        }
-    }
+    const visibleProducts = useMemo(() => {
+        const items = productsQuery.data?.items ?? [];
 
-    const mainFetch = async () => {
-        if (productQuery) {
-            try {
-                const productsData: Product[] = await getProducts();
-                const normalizedQuery = normalizeSearchText(productQuery);
-                const filteredProducts = productsData.filter((p) =>
-                    normalizeSearchText(p.nombre).includes(normalizedQuery)
-                );
-                const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
-                    id: p.id,
-                    nombre: p.nombre,
-                    precio: Number(p.precio),
-                    imagenUrl: p.imagen ?? null,
-                    disponible: true,
-                    categoria: p.categoria ?? null,
-                    descuento_especial: p.descuento_especial ?? null,
-                }));
-                setProducts(mappedProducts);
-            } catch (e) {
-                console.error("Error al obtener los productos:", e);
-                setError(e instanceof Error ? e.message : "Error desconocido al cargar productos.");
-            }
-        } else {
-            await fetchProductData();
-        }
-    }
+        return applyLocalFilters(items, {
+            categories: filterCategories,
+            minPrice: filterMinPrice,
+            maxPrice: filterMaxPrice,
+            query: productQuery,
+        })
+            .map(mapProductToCardVM);
+    }, [filterCategories, filterMaxPrice, filterMinPrice, productQuery, productsQuery.data?.items]);
 
-    const applyFilters = async () => {
-        setLoading(true);
-        try {
-            const productsData: Product[] = await getProducts();
-            const filteredProducts = productsData.filter((p: Product) => {
-                const normalizedSearch = normalizeSearchText(sideBarSearch);
-                const matchesSearch = normalizedSearch === "" ||normalizeSearchText(p.nombre).includes(normalizedSearch)
-                const productCat: number | null = p.categoria?.id || null;
-                const matchesCategoria = filterCategories.length === 0 || (productCat !== null && filterCategories.includes(productCat));
-                let price = Number(p.precio) || 0;
-                if (p.descuento_especial && p.descuento_especial.es_valido) {
-                    price = price - (price * p.descuento_especial.porcentaje / 100);
-                }
-                else if (p.categoria?.descuento && p.categoria?.descuento.es_valido) {
-                    price = price - (price * p.categoria.descuento.porcentaje / 100);
-                }
-                const matchesPrice = (filterMinPrice === null || price >= filterMinPrice) && (filterMaxPrice === null || price <= filterMaxPrice);
-                return matchesSearch && matchesCategoria && matchesPrice;
-            });
-            const mappedProducts: ProductCardVM[] = filteredProducts.map((p: Product) => ({
-                id: p.id,
-                nombre: p.nombre,
-                precio: Number(p.precio),
-                imagenUrl: p.imagen ?? null,
-                disponible: true,
-                categoria: p.categoria ?? null,
-                descuento_especial: p.descuento_especial ?? null,
-            }));
-            setProducts(mappedProducts);
-            setError("");
-        } catch {
-            setError("Error al filtrar productos");
-        } finally {
-            setLoading(false);
+    const hasOutOfRangePage =
+        pageParam.page > 1 &&
+        Boolean(productsQuery.data) &&
+        (productsQuery.data?.items.length ?? 0) === 0;
+    const hasRecoverablePageError = pageParam.page > 1 && isNotFoundError(productsQuery.error);
+    const showInvalidPageRecovery = pageParam.isInvalid || hasOutOfRangePage || hasRecoverablePageError;
+    const productsErrorMessage =
+        productsQuery.isError && !showInvalidPageRecovery
+            ? productsQuery.error instanceof Error
+                ? productsQuery.error.message
+                : "Error desconocido al cargar productos."
+            : null;
+    const loading = categoriesLoading || productsQuery.isLoading;
+
+    const submitCanonicalSearch = (event?: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
+        event?.preventDefault();
+
+        const nextQuery = normalizeCatalogQuery(sideBarSearch);
+        const nextSearchParams = new URLSearchParams();
+
+        nextSearchParams.set("page", "1");
+        if (nextQuery) {
+            nextSearchParams.set("query", nextQuery);
         }
-    }
+
+        setSearchParams(nextSearchParams);
+    };
 
     useEffect(() => {
         setSideBarSearch(productQuery);
-        (async () => {
-            setLoading(true);
-            await fetchCategories();
-            await mainFetch();
-            if (localStorage.getItem("access")) {
-                try {
-                    const favsData = await getFavoritos();
-                    setFavoritos(favsData.map(f => ({ id: f.id, producto_id: f.variante.producto_id })));
-                } catch (e) {
-                    console.error("Error fetching favorites", e);
+    }, [productQuery]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchCategories = async () => {
+            try {
+                const data = await getCategories();
+                if (isMounted) {
+                    setCategories(data);
+                    setCategoriesWarning(null);
+                }
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+                if (isMounted) {
+                    setCategoriesWarning("No pudimos cargar las categorías. Los filtros por categoría podrían no estar disponibles.");
+                }
+            } finally {
+                if (isMounted) {
+                    setCategoriesLoading(false);
                 }
             }
-            setLoading(false);
-        })();
-    }, [productQuery])
+        };
+
+        fetchCategories();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        const fetchFavoriteProducts = async () => {
+            try {
+                const data = await getFavoritos();
+                const formattedData = data.map(f => ({ 
+                    id: f.id, producto_id: f.variante.producto_id
+                }))
+                setFavoritos(formattedData)
+            } catch (error) {
+                setFavMsg(`Error al obtener productos favoritos: ${error}`)
+            }
+        }
+        fetchFavoriteProducts()
+    }, [])
+
+    const isLikedByUser = (productID: number) => {
+        return Boolean(favoritos.some(f => f.producto_id == productID))
+    }
 
     const handleToggleFavorite = async (product: ProductCardVM) => {
         if (!localStorage.getItem("access")) {
@@ -194,8 +208,9 @@ export default function SearchProductsPage() {
                             Búsqueda
                         </p>
 
-                        <form action={applyFilters}>
+                        <form onSubmit={submitCanonicalSearch}>
                             <input className="mt-2 w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                                type="search"
                                 value={sideBarSearch}
                                 onChange={(e) => setSideBarSearch(e.target.value)}
                                 placeholder="Busque un producto" />
@@ -207,7 +222,12 @@ export default function SearchProductsPage() {
                             Categoría
                         </p>
                         <div>
-                            {categories.length === 0 && !loading && <p className="mt-2 text-sm text-neutral-600">Sin categorías</p>}
+                            {categoriesWarning && (
+                                <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="status">
+                                    {categoriesWarning}
+                                </p>
+                            )}
+                            {categories.length === 0 && !categoriesLoading && <p className="mt-2 text-sm text-neutral-600">Sin categorías</p>}
                             {
                                 categories && categories.map((c) => (
                                     <label key={c.id} className="my-3 flex items-center gap-2 text-sm text-bukis-ink">
@@ -247,7 +267,7 @@ export default function SearchProductsPage() {
                     </div>
                     <div className="mt-4 flex justify-center border-t border-neutral-300 pt-4">
                         <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35 disabled:cursor-not-allowed disabled:opacity-60"
-                            onClick={applyFilters}
+                            onClick={submitCanonicalSearch}
                             disabled={filterMaxPrice !== null && (Number(filterMinPrice) > Number(filterMaxPrice))}>
                             <Search size={20} /><span>Aplicar filtro(s)</span>
                         </button>
@@ -257,16 +277,33 @@ export default function SearchProductsPage() {
                 <section>
 
                     {loading && <p className="text-center text-neutral-600">Cargando productos...</p>}
-                    {error && <p className="text-center text-bukis-red-700">{error}</p>}
+                    {productsErrorMessage && <p className="text-center text-bukis-red-700">{productsErrorMessage}</p>}
 
-                    <div className="mb-4 border-b border-neutral-300 pb-2 text-sm text-neutral-700">
-                        {products.length == 0 && <p>{"No se encontró ningún producto."}</p>}
-                        {products.length == 1 && <p>{`Se encontró ${products.length} producto.`}</p>}
-                        {products.length > 1 && <p>{`Se encontraron ${products.length} productos.`}</p>}
-                    </div>
+                    {!loading && !productsErrorMessage && !showInvalidPageRecovery && (
+                        <div className="mb-4 border-b border-neutral-300 pb-2 text-sm text-neutral-700">
+                            <p>{getResultsSummary(productsQuery.data?.count ?? 0)}</p>
+                        </div>
+                    )}
 
                     {
-                        products.length === 0 && !loading && (
+                        !loading && showInvalidPageRecovery && (
+                            <div className="rounded-2xl border border-bukis-red-200 bg-red-50 px-6 py-8 text-center text-bukis-ink">
+                                <p className="text-2xl font-semibold">No encontramos resultados para esta página.</p>
+                                <p className="mt-3 text-sm text-neutral-700">
+                                    Revise el número de página o vuelva al inicio del catálogo para continuar navegando.
+                                </p>
+                                <Link
+                                    className="mt-6 inline-flex items-center justify-center rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
+                                    to={buildCatalogLocation({ page: 1, query: productQuery })}
+                                >
+                                    Ir a la página 1
+                                </Link>
+                            </div>
+                        )
+                    }
+
+                    {
+                        visibleProducts.length === 0 && !loading && !productsErrorMessage && !showInvalidPageRecovery && (
                             <div className="flex flex-col items-center justify-center text-bukis-ink">
                                 <p className="mb-4 mt-6 text-center text-2xl font-semibold">
                                     Para encontrar productos puede:
@@ -297,20 +334,30 @@ export default function SearchProductsPage() {
                     }
 
                     {
-                        products.length > 0 && !loading && (
+                        visibleProducts.length > 0 && !loading && !productsErrorMessage && !showInvalidPageRecovery && (
                             <div>
-                                <div className="grid max-h-[95vh] grid-cols-1 gap-4 overflow-auto p-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                                <div className="grid grid-cols-1 gap-4 p-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                     {
-                                        products.map((p) => (
+                                        visibleProducts.map((p) => (
                                             <ProductCard 
                                                 key={p.id} 
                                                 product={p} 
                                                 onToggleFavorite={handleToggleFavorite} 
-                                                isLikedByUser={favoritos.some(f => f.producto_id === p.id)}
+                                                isLikedByUser={isLikedByUser(p.id)}
                                             />
                                         ))
                                     }
                                 </div>
+                                {productsQuery.data && (
+                                    <PaginationControls
+                                        ariaLabel={CATALOG_PAGINATION_ARIA_LABEL}
+                                        page={pageParam.page}
+                                        count={productsQuery.data.count}
+                                        hasPrevious={Boolean(productsQuery.data.previous)}
+                                        hasNext={Boolean(productsQuery.data.next)}
+                                        query={productQuery}
+                                    />
+                                )}
                             </div>
                         )
                     }

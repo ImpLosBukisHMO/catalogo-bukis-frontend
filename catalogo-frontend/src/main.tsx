@@ -37,7 +37,7 @@ const router = createBrowserRouter([
   { path: "/registro", element: <SignUpPage /> },
   { path: "/iniciar-sesion", element: <LogInPage /> },
   { path: "/perfil", element: <ProfilePage /> },
-  { path: "/productos/", element: <SearchProductsPage /> },
+  { path: "/productos", element: <SearchProductsPage /> },
   { path: "/producto/:id", element: <ProductPage /> },
   { path: "/pedido", element: <PedidoPage /> },
 

@@ -328,6 +328,18 @@ export default function WorkerProductsPage() {
   const isAuthError = fetchErrorMsg?.includes("autenticado");
   const savingEdit = editarVariante.isPending;
 
+  const getDiscountInfo = (variant: WorkerVariant) => {
+    const specialDiscount = variant.producto.descuento_especial;
+    const generalDiscount = variant.producto.categoria?.descuento;
+
+    if (specialDiscount !== null && specialDiscount.es_valido){
+      return { info: specialDiscount, type: "Especial"};
+    } else if (generalDiscount !== null && generalDiscount?.es_valido) {
+      return { info: generalDiscount, type: "General" };
+    }
+    return { info: null, type: "" };
+  }
+
   return (
     <div
       style={{
@@ -595,7 +607,7 @@ export default function WorkerProductsPage() {
                   color: "#fff",
                 }}
               >
-                {["Imagen", "Nombre", "No. Ítem", "Categoría", "Precio Original", "Precio con Descuento", "Código", "Color", "Stock", "Activo", ""].map((h) => (
+                {["Imagen", "Nombre", "No. Ítem", "Categoría", "Precio Original", "Precio con Descuento", "Descuento Aplicado", "Código", "Color", "Stock", "Activo", ""].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -668,9 +680,9 @@ export default function WorkerProductsPage() {
                       }}
                     >
                       <div 
-                        className="flex justify-center-safe content-center"
+                        className="w-full justify-items-center"
                         style={{ alignItems: "center", }}>
-                        <p style={{ whiteSpace: "wrap", }}>
+                        <p className="text-center" style={{ whiteSpace: "wrap", }}>
                           {variantName(v)}
                         </p>
                         <button
@@ -732,13 +744,38 @@ export default function WorkerProductsPage() {
                       }}
                     >
                       {(() => {
-                          const precioFinal = Number(v.producto.precio);
-                          const descuento = v.producto.descuento_especial || v.producto.categoria?.descuento;
+                        const discount = getDiscountInfo(v);
+                        const finalPrice = (discount?.info !== null && discount.info.es_valido) ? Number(v.producto.precio) : Number(v.producto.precio_original);
+                        const percentage = (discount?.info !== null && discount.info.es_valido) ? Number(discount.info.porcentaje) : 0
+                        return (
+                          <p>
+                            {`${formatMoney(finalPrice)}`} <br/> {`(-${percentage.toFixed(2)} %)`}
+                          </p>
+                        )
+                      })()}
+                    </td>
 
-                          if (descuento && descuento.es_valido) {
-                            return `${formatMoney(precioFinal)} (-${descuento.porcentaje.toFixed(2)} %)`
-                          }
-                          return `${formatMoney(precioFinal)} (-0.00 %)`
+                    {/* Descuento Aplicado */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {(() => {
+                        const discount = getDiscountInfo(v);
+                        if (discount.info !== null) {
+                          const validity = discount.info.es_valido ? "Activo" : "Inactivo"
+                          return (
+                            <p>
+                              <span className="font-semibold">{`${discount.info.nombre}`}</span> <br /> {`(${discount.type} - ${validity})`}
+                            </p>
+                          )
+                        } else {
+                          return <p>Ninguno</p>
+                        }
                         })()}
                     </td>
 

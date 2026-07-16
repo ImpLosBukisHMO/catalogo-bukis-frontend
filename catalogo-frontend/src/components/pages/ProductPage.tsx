@@ -17,6 +17,8 @@ import Barcode from "react-barcode";
 import { addFavorito, removeFavorito, getFavoritos } from "../../services/favoritos";
 
 
+const RELATED_PRODUCTS_LIMIT = 9;
+
 function pickDefaultVariantId(variantes: Variant[]): number | null {
   if (!variantes?.length) return null;
   const firstDisponible = variantes.find((v) => v.disponible);
@@ -194,7 +196,7 @@ export default function ProductPage() {
             categoria: p.categoria ?? null,
             descuento_especial: p.descuento_especial ?? null
           }))
-          .slice(0, 8);
+          .slice(0, RELATED_PRODUCTS_LIMIT);
 
         setMoreProducts(mapped);
       } catch (e) {
