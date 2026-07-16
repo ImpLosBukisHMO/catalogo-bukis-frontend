@@ -7,7 +7,23 @@ export type WorkerVariant = {
     id: number;
     nombre: string;
     precio: string;
-    categorias: number[];
+    precio_original: string;
+    categoria: {
+      id: number;
+      nombre: string;
+      descuento: {
+        id: number;
+        nombre: string;
+        porcentaje: number;
+        es_valido: boolean;
+      } | null;
+    } | null;
+    descuento_especial: {
+      id: number;
+      nombre: string;
+      porcentaje: number;
+      es_valido: boolean;
+    } | null;
   };
   color: {
     id: number;
@@ -42,6 +58,7 @@ export type WorkerPedidoItem = {
   color: string;
   color_hex: string;
   precio_unitario: string;
+  descuento_porcentaje: string;
   subtotal: string;
   imagen: string;
 };
@@ -77,7 +94,8 @@ export type WorkerProducto = {
   capacidad: string | null;
   disponible: boolean;
   estado?: "draft" | "active" | "archived" | string;
-  categorias: number[];
+  categoria: number | null;
+  descuento_especial: number | null;
   created_at: string;
   updated_at: string;
   variantes?: WorkerVariant[];

@@ -9,9 +9,10 @@ import PaginationControls from "../elements/PaginationControls";
 import { getProductById, getProductsPage } from "../../services/product";
 import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
-import type { Category } from "../../services/category";
-import { addFavorito } from "../../services/favoritos";
+import type { Categoria } from "../../types/categoria";
+import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
 import { productKeys } from "../../queries/productKeys";
+import { formatMoney } from "../../utils/normalizers";
 import {
     buildCatalogLocation,
     normalizeCatalogQuery,
@@ -30,6 +31,8 @@ function mapProductToCardVM(product: Product): ProductCardVM {
         precio: Number(product.precio),
         imagenUrl: product.imagen ?? null,
         disponible: true,
+        categoria: product.categoria,
+        descuento_especial: product.descuento_especial,
     };
 }
 
@@ -43,13 +46,14 @@ export default function SearchProductsPage() {
     const productQuery = normalizeCatalogQuery(searchParams.get("query"));
 
     const [sideBarSearch, setSideBarSearch] = useState<string>(productQuery);
-    const [categories, setCategories] = useState<Category[]>([]);
+    const [categories, setCategories] = useState<Categoria[]>([]);
     const [filterCategories, setFilterCategories] = useState<number[]>([]);
     const [filterMinPrice, setFilterMinPrice] = useState<number | null>(null);
     const [filterMaxPrice, setFilterMaxPrice] = useState<number | null>(null);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [categoriesWarning, setCategoriesWarning] = useState<string | null>(null);
     const [favMsg, setFavMsg] = useState<string | null>(null);
+    const [favoritos, setFavoritos] = useState<{ id: number; producto_id: number }[]>([]);
 
     const productsQuery = useQuery({
         queryKey: productKeys.list({ page: pageParam.page, query: productQuery }),
@@ -64,9 +68,10 @@ export default function SearchProductsPage() {
             categories: filterCategories,
             minPrice: filterMinPrice,
             maxPrice: filterMaxPrice,
+            query: productQuery,
         })
             .map(mapProductToCardVM);
-    }, [filterCategories, filterMaxPrice, filterMinPrice, productsQuery.data?.items]);
+    }, [filterCategories, filterMaxPrice, filterMinPrice, productQuery, productsQuery.data?.items]);
 
     const hasOutOfRangePage =
         pageParam.page > 1 &&
@@ -129,12 +134,41 @@ export default function SearchProductsPage() {
         };
     }, []);
 
+    useEffect(() => {
+        const fetchFavoriteProducts = async () => {
+            try {
+                const data = await getFavoritos();
+                const formattedData = data.map(f => ({ 
+                    id: f.id, producto_id: f.variante.producto_id
+                }))
+                setFavoritos(formattedData)
+            } catch (error) {
+                setFavMsg(`Error al obtener productos favoritos: ${error}`)
+            }
+        }
+        fetchFavoriteProducts()
+    }, [])
+
+    const isLikedByUser = (productID: number) => {
+        return Boolean(favoritos.some(f => f.producto_id == productID))
+    }
+
     const handleToggleFavorite = async (product: ProductCardVM) => {
         if (!localStorage.getItem("access")) {
             window.location.href = "/iniciar-sesion";
             return;
         }
+
         try {
+            const existingFav = favoritos.find(f => f.producto_id === product.id);
+            if (existingFav) {
+                await removeFavorito(existingFav.id);
+                setFavoritos(prev => prev.filter(f => f.id !== existingFav.id));
+                setFavMsg(`"${product.nombre}" eliminado de favoritos.`);
+                setTimeout(() => setFavMsg(null), 3000);
+                return;
+            }
+
             const detail = await getProductById(product.id);
             const variantes = detail.variantes ?? [];
             const varianteId = (variantes.find((v: unknown) => (v as { disponible: boolean }).disponible) ?? variantes[0])?.id;
@@ -143,10 +177,12 @@ export default function SearchProductsPage() {
                 setTimeout(() => setFavMsg(null), 3000);
                 return;
             }
-            await addFavorito(varianteId);
+            const newFav = await addFavorito(varianteId);
+            setFavoritos(prev => [...prev, { id: newFav.id, producto_id: newFav.variante.producto_id }]);
             setFavMsg(`"${product.nombre}" agregado a favoritos.`);
+            setTimeout(() => setFavMsg(null), 3000);
         } catch {
-            setFavMsg("Error al agregar a favoritos.");
+            setFavMsg("Error al actualizar favoritos.");
         }
         setTimeout(() => setFavMsg(null), 3000);
     };
@@ -217,14 +253,14 @@ export default function SearchProductsPage() {
                             Rango de precios (MXN)
                         </p>
                         <div className="my-3">
-                            <p className="mb-2 text-sm text-neutral-600">Mínimo</p>
-                            <input type="number" min={0} placeholder="Ejemplo: 1.50" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                            <p className="mb-2 text-sm text-neutral-600"><span className="font-semibold">Mínimo</span> ({formatMoney(1)} en adelante)</p>
+                            <input type="number" min={1} placeholder="Ejemplo: 1.00" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={(Number(filterMinPrice) > 0) ? String(filterMinPrice) : ""}
                                 onChange={(e) => { setFilterMinPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null))}} />
                         </div>
                         <div>
-                            <p className="mb-2 text-sm text-neutral-600">Máximo</p>
-                            <input type="number" min={0} placeholder="Ejemplo: 100.00" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
+                            <p className="mb-2 text-sm text-neutral-600"><span className="font-semibold">Máximo</span> (mayor que el precio mínimo)</p>
+                            <input type="number" min={1} placeholder="Ejemplo: 100.00" className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
                                 value={(Number(filterMaxPrice) > 0) ? String(filterMaxPrice) : ""}
                                 onChange={(e) => { setFilterMaxPrice((Number(e.target.value) > 0 ? Number(e.target.value) : null)) }} />
                         </div>
@@ -232,7 +268,7 @@ export default function SearchProductsPage() {
                     <div className="mt-4 flex justify-center border-t border-neutral-300 pt-4">
                         <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35 disabled:cursor-not-allowed disabled:opacity-60"
                             onClick={submitCanonicalSearch}
-                            disabled={(Number(filterMinPrice) > Number(filterMaxPrice))}>
+                            disabled={filterMaxPrice !== null && (Number(filterMinPrice) > Number(filterMaxPrice))}>
                             <Search size={20} /><span>Aplicar filtro(s)</span>
                         </button>
                     </div>
@@ -303,7 +339,12 @@ export default function SearchProductsPage() {
                                 <div className="grid grid-cols-1 gap-4 p-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                     {
                                         visibleProducts.map((p) => (
-                                            <ProductCard key={p.id} product={p} onToggleFavorite={handleToggleFavorite} />
+                                            <ProductCard 
+                                                key={p.id} 
+                                                product={p} 
+                                                onToggleFavorite={handleToggleFavorite} 
+                                                isLikedByUser={isLikedByUser(p.id)}
+                                            />
                                         ))
                                     }
                                 </div>

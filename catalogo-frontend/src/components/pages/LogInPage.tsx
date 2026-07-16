@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
 import HideShowPassword from "../elements/HideShowPassword";
-import { logIn, getLoggedUserData } from "../../services/user";
+import { logIn } from "../../services/user";
 import { login, getMe, isWorker } from "../../services/auth";
+import { useAuth } from "../../context/useAuth";
 
 const LogInPage = () => {
     const navigate = useNavigate();
@@ -14,15 +15,14 @@ const LogInPage = () => {
     const [loading, setLoading] = useState(false);
     const [passwordVisible, setPasswordVisibility] = useState<string>("password");
 
+    const { isLoggedIn, isLoading } = useAuth();
+
     // Si ya tiene sesión activa, redirigir
-    const checkSession = async () => {
-        try {
-            await getLoggedUserData();
+    useEffect(() => {
+        if (!isLoading && isLoggedIn) {
             navigate(-1);
-        } catch {
-            // No hay sesión, mostrar formulario
         }
-    };
+    }, [isLoading, isLoggedIn, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,9 +52,6 @@ const LogInPage = () => {
         setPasswordVisibility(prev => prev === "password" ? "text" : "password");
     };
 
-    useEffect(() => {
-        checkSession();
-    }, []);
 
     return (
         <>

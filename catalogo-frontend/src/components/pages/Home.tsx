@@ -1,16 +1,77 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import ProductCard from "../elements/ProductCard";
 import OfferSlider from "../elements/OfferSlider";
-import { getProducts } from "../../services/product";
-import type { Product, ProductCardVM } from "../../types/product";
+import { getProductById, getProducts } from "../../services/product";
+import type { Product, ProductCardVM, ProductDetail } from "../../types/product";
+import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
+import { AuthContext } from "../../context/AuthContext";
+
 
 function Home() {
   const [products, setProducts] = useState<ProductCardVM[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [favMsg, setFavMsg] = useState<string | null>(null);
+  const [favoritos, setFavoritos] = useState<{ id: number; producto_id: number }[]>([]);
+
+  const isLoggedIn = useContext(AuthContext)?.isLoggedIn ?? false;
+
+  useEffect(() => {
+    const fetchFavoritos = async () => {
+      if (isLoggedIn) {
+        try {
+          const data = await getFavoritos();
+          const formattedData = data.map((f) => ({ id: f.id, producto_id: f.variante?.producto_id }))
+          setFavoritos(formattedData);
+        } catch (error) {
+          console.error("Error al cargar errores favoritos.", error)
+        }
+      }
+    }
+
+    fetchFavoritos();
+  }, [isLoggedIn])
+
+  const isLikedByUser = (productID: number) => {
+    return favoritos.some(f => f.producto_id === productID)
+  }
+  
+  const handleToggleFavorite = async (product: ProductCardVM | ProductDetail) => {
+    if (!localStorage.getItem("access")) {
+        window.location.href = "/iniciar-sesion";
+        return;
+    }
+
+    try {
+        const existingFav = favoritos.find(f => f.producto_id === product.id);
+        if (existingFav) {
+            await removeFavorito(existingFav.id);
+            setFavoritos(prev => prev.filter(f => f.id !== existingFav.id));
+            setFavMsg(`"${product.nombre}" eliminado de favoritos.`);
+            setTimeout(() => setFavMsg(null), 3000);
+            return;
+        }
+
+        const detail = await getProductById(product.id);
+        const variantes = detail.variantes ?? [];
+        const varianteId = (variantes.find((v: unknown) => (v as { disponible: boolean }).disponible) ?? variantes[0])?.id;
+        if (!varianteId) {
+            setFavMsg("Este producto no tiene variantes disponibles.");
+            setTimeout(() => setFavMsg(null), 3000);
+            return;
+        }
+        const newFav = await addFavorito(varianteId);
+        setFavoritos(prev => [...prev, { id: newFav.id, producto_id: newFav.variante.producto_id }]);
+        setFavMsg(`"${product.nombre}" agregado a favoritos.`);
+        setTimeout(() => setFavMsg(null), 3000);
+    } catch {
+        setFavMsg("Error al actualizar favoritos.");
+    }
+    setTimeout(() => setFavMsg(null), 3000);
+  };
 
   useEffect(() => {
     (async () => {
@@ -24,6 +85,8 @@ function Home() {
           precio: Number(p.precio),
           imagenUrl: p.imagen ?? null,
           disponible: true,
+          categoria: p.categoria ?? null,
+          descuento_especial: p.descuento_especial ?? null,
         }));
 
 
@@ -64,10 +127,20 @@ function Home() {
         {loading && <p className="mt-6 text-center text-neutral-600">Cargando productos...</p>}
         {error && <p className="mt-6 text-center text-bukis-red-700">{error}</p>}
 
+        {favMsg && (
+          <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-bukis-ink px-4 py-3 text-white shadow-bukis-soft">
+            {favMsg}
+          </div>
+        )}
+
         <div className="mt-6 flex w-full gap-4 overflow-x-auto px-1 pb-4 snap-x snap-mandatory">
           {products.map((p) => (
             <div key={p.id} className="w-72 shrink-0 snap-start">
-              <ProductCard product={p} />
+              <ProductCard 
+                product={p}
+                onToggleFavorite={handleToggleFavorite}
+                isLikedByUser={isLikedByUser(p.id)}
+              />
             </div>
           ))}
         </div>

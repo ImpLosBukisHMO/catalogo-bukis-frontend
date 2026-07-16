@@ -2,7 +2,7 @@ export type ProductPublicationState = "draft" | "active" | "archived";
 
 export type CreateFlowProductInput = {
   precio: string;
-  categorias_ids: string[];
+  categoria_id: string;
 };
 
 export type CreateFlowVariantInput = {
@@ -12,6 +12,7 @@ export type CreateFlowVariantInput = {
   activo: boolean;
   imagesCount: number;
   precio?: string;
+  codigo_barras?: string;
 };
 
 export type PublishReadinessIssue = {
@@ -24,7 +25,8 @@ export type PublishReadinessIssue = {
     | "missing-price"
     | "missing-stock"
     | "invalid-stock"
-    | "missing-image";
+    | "missing-image"
+    | "missing-barcode";
   message: string;
 };
 
@@ -34,6 +36,7 @@ export function hasVariantDraftData(variant: CreateFlowVariantInput): boolean {
   return Boolean(
     variant.colorId.trim()
     || variant.item.trim()
+    || variant.codigo_barras?.trim()
     || (normalizedStock !== "" && normalizedStock !== "0")
     || variant.imagesCount > 0
   );
@@ -48,7 +51,7 @@ export function buildPublishReadinessIssues({
 }): PublishReadinessIssue[] {
   const issues: PublishReadinessIssue[] = [];
 
-  if (product.categorias_ids.length === 0) {
+  if (!product.categoria_id) {
     issues.push({
       code: "missing-category",
       message: "Agrega al menos una categoría antes de publicar.",
@@ -81,6 +84,13 @@ export function buildPublishReadinessIssues({
     issues.push({
       code: "missing-sku",
       message: "Ingresa el SKU de la primera variante.",
+    });
+  }
+
+  if (!variant.codigo_barras?.trim()) {
+    issues.push({
+      code: "missing-barcode",
+      message: "Ingresa el código de barras de la primera variante.",
     });
   }
 

@@ -71,6 +71,10 @@ export const workerKeys = {
   /** Category list for product assignment. */
   categories: () => [...workerKeys.all, "categories"] as const,
 
+  // ─── Discounts ────────────────────────────────────────────────────────────
+  /** Discount list for product assignment. */
+  discounts: () => [...workerKeys.all, "discounts"] as const,
+
   // ─── Uploads ───────────────────────────────────────────────────────────────
   /**
    * Image upload result key scoped to a product.

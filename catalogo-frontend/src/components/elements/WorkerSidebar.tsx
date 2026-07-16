@@ -1,6 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
-import { ClipboardList, LayoutDashboard, Moon, Package, Store, Sun, UserCircle } from "lucide-react";
+import { ClipboardList, LayoutDashboard, Moon, Package, Store, Sun, UserCircle, Percent } from "lucide-react";
 import { logOut } from "../../services/user";
 import { useWorkerTheme } from "../providers/useWorkerTheme";
 import {
@@ -26,6 +26,12 @@ const NAV_ROUTES = [
     to: "/worker/products",
     end: false,
     icon: Package,
+  },
+  {
+    label: "Descuentos",
+    to: "/worker/discounts",
+    end: false,
+    icon: Percent,
   },
   {
     label: "Pedidos",

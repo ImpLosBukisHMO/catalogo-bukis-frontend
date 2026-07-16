@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkerThemeProvider } from "../../providers/WorkerThemeProvider";
@@ -118,48 +118,26 @@ function fillGeneralStep() {
 }
 
 function selectCategory(name: string) {
-  const categoryField = screen.getByText(/^Categorías/).parentElement;
+  const categoryField = screen.getByText(/^Categoría/).parentElement;
+  if (!categoryField) throw new Error("Category field not found");
 
-  if (!(categoryField instanceof HTMLElement)) {
-    throw new Error("Category field not found");
-  }
+  const select = categoryField.querySelector("select");
+  if (!select) throw new Error("Select not found");
 
-  const categoryOption = within(categoryField).getByText(name).closest("label");
-
-  if (!(categoryOption instanceof HTMLLabelElement)) {
-    throw new Error(`Category label not found for ${name}`);
-  }
-
-  const categoryCheckbox = categoryOption.querySelector('input[type="checkbox"]');
-
-  if (!(categoryCheckbox instanceof HTMLInputElement)) {
-    throw new Error(`Category checkbox not found for ${name}`);
-  }
-
-  fireEvent.click(categoryOption);
-  fireEvent.change(categoryCheckbox, { target: { checked: true } });
+  const options = Array.from(select.querySelectorAll("option"));
+  const option = options.find((opt) => opt.textContent === name);
+  if (!option) throw new Error("Category option not found");
+  fireEvent.change(select, { target: { value: option.value } });
 }
 
-function getCategoryCheckbox(name: string) {
-  const categoryField = screen.getByText(/^Categorías/).parentElement;
-
-  if (!(categoryField instanceof HTMLElement)) {
-    throw new Error("Category field not found");
-  }
-
-  const categoryLabel = within(categoryField).getByText(name).closest("label");
-
-  if (!(categoryLabel instanceof HTMLLabelElement)) {
-    throw new Error(`Category label not found for ${name}`);
-  }
-
-  const categoryCheckbox = categoryLabel.querySelector('input[type="checkbox"]');
-
-  if (!(categoryCheckbox instanceof HTMLInputElement)) {
-    throw new Error(`Category checkbox not found for ${name}`);
-  }
-
-  return categoryCheckbox;
+function getCategorySelectValue() {
+  const categoryField = screen.getByText(/^Categoría/).parentElement;
+  if (!categoryField) throw new Error("Category field not found");
+  const select = categoryField.querySelector("select");
+  if (!select) throw new Error("Select not found");
+  const options = Array.from(select.querySelectorAll("option"));
+  const selectedOption = options.find((opt) => opt.value === select.value);
+  return selectedOption ? selectedOption.textContent : null;
 }
 
 function formDataToObject(formData: FormData) {
@@ -207,7 +185,7 @@ describe("WorkerCreateProductModal", () => {
     fillGeneralStep();
     selectCategory("Vasos");
     await waitFor(() => {
-      expect(getCategoryCheckbox("Vasos")).toBeChecked();
+      expect(getCategorySelectValue()).toBe("Vasos");
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Continuar a la variante" }));

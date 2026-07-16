@@ -4,9 +4,10 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SearchProductsPage from "./SearchProductsPage";
 import { getCategories } from "../../services/category";
-import { getProductsPage } from "../../services/product";
+import { getProductsPage, getProductById } from "../../services/product";
 import type { PagedResponse } from "./responseNormalizer";
 import type { Product } from "../../types/product";
+
 
 const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -19,11 +20,18 @@ vi.mock("../elements/NavBar", () => ({
 }));
 
 vi.mock("../elements/ProductCard", () => ({
-  default: ({ product }: { product: { nombre: string } }) => <div>{product.nombre}</div>,
+  default: ({ product, onToggleFavorite }: { product: { id: number; nombre: string }; onToggleFavorite: (p: { id: number; nombre: string }) => void }) => (
+    <div>
+      {product.nombre}
+      <button type="button" data-testid="fav-btn" onClick={() => onToggleFavorite(product)}>Fav</button>
+    </div>
+  ),
 }));
 
 vi.mock("../../services/favoritos", () => ({
   addFavorito: vi.fn(),
+  removeFavorito: vi.fn(),
+  getFavoritos: vi.fn(),
 }));
 
 vi.mock("../../services/category", () => ({
@@ -38,6 +46,36 @@ vi.mock("../../services/product", () => ({
 const mockedGetProductsPage = vi.mocked(getProductsPage);
 const mockedGetCategories = vi.mocked(getCategories);
 
+const mockedGetProductById = vi.mocked(getProductById);
+mockedGetProductById.mockResolvedValue({
+  id: 1,
+  nombre: 'Audífonos Bluetooth',
+  imagen: null,
+  descripcion: '',
+  precio: '10.00',
+  peso: '1',
+  medidas: '1x1',
+  capacidad: '1',
+  categoria: { id: 1, nombre: 'Electrónicos', descuento: null },
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  disponible: true,
+  variantes: [
+    {
+      id: 1,
+      item: 'test-item',
+      stock: 10,
+      activo: true,
+      disponible: true,
+      producto_id: 1,
+      nombre_producto: 'Audífonos Bluetooth',
+      precio: '10.00',
+      color: { id: 1, nombre: 'Negro', hex: '#000000' },
+      imagen: null,
+    },
+  ],
+});
+
 function buildProduct(id: number, nombre: string): Product {
   return {
     id,
@@ -48,7 +86,11 @@ function buildProduct(id: number, nombre: string): Product {
     peso: "1",
     medidas: "1x1",
     capacidad: "1",
-    categorias: [1],
+    categoria: {
+      id: 1,
+      nombre: 'Electrónicos',
+      descuento: null
+    },
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     disponible: true,

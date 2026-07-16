@@ -1,8 +1,6 @@
-//import { useMemo, useState } from "react";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import API from "../../api";
-
 import { useEffect, useMemo, useState } from "react";
 import type { CartItemVM } from "../../types/cart";
 import {
@@ -12,11 +10,7 @@ import {
 } from "../../services/carrito";
 
 
-
 export default function PedidoPage() {
-
-
-  
   const [items, setItems] = useState<CartItemVM[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,10 +63,6 @@ export default function PedidoPage() {
       })
       .finally(() => setLoading(false));
   }, []);
-
-  
-
-  
 
   if (loading) {
     return (
@@ -156,11 +146,10 @@ export default function PedidoPage() {
 
                       <div className="shrink-0 text-right">
                         <p className="font-semibold text-bukis-ink">
-                          $
-                          {(item.precio * item.cantidad).toFixed(2)} MXN
+                          $ {(item.precio * item.cantidad).toFixed(2)} MXN
                         </p>
                         <p className="text-xs text-neutral-500">
-                          ${item.precio.toFixed(2)} c/u
+                          $ {item.precio.toFixed(2)} MXN c/u
                         </p>
                       </div>
                     </div>
@@ -182,7 +171,7 @@ export default function PedidoPage() {
               <div className="mb-2 flex justify-between">
                 <span>Subtotal:</span>
                 <span className="font-semibold">
-                  ${subtotal.toFixed(2)} MXN
+                  $ {subtotal.toFixed(2)} MXN
                 </span>
               </div>
 

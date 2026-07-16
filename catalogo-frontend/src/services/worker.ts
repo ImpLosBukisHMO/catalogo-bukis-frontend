@@ -1,6 +1,7 @@
 import type { WorkerVariant, WorkerPedido, WorkerPedidoDetalle, WorkerProducto } from "../types/worker";
 import API from "../api";
 import { normalizeResponse } from "../components/pages/responseNormalizer";
+import type { Discount } from "../types/descuento";
 
 export async function getWorkerVariants(): Promise<WorkerVariant[]> {
   const res = await API.get("/api/worker/variants/");
@@ -104,7 +105,7 @@ export async function editarVariante(
 
 // ─── Categories (public endpoint used by worker utility drawer) ───────────────
 
-export type WorkerCategoria = { id: number; nombre: string };
+export type WorkerCategoria = { id: number; nombre: string; descuento_general?: number | null };
 
 export async function getWorkerCategorias(): Promise<WorkerCategoria[]> {
   const res = await API.get("/api/categorias/");
@@ -114,6 +115,18 @@ export async function getWorkerCategorias(): Promise<WorkerCategoria[]> {
 
 export async function crearCategoria(nombre: string): Promise<WorkerCategoria> {
   const res = await API.post("/api/categorias/", { nombre });
+  const data = res.data;
+  return data?.datos || data;
+}
+
+export async function asignarDescuentoCategoria(categoriaId: number, descuentoId: number | null): Promise<WorkerCategoria> {
+  const res = await API.patch(`/api/categorias/${categoriaId}/`, { descuento_general: descuentoId });
+  const data = res.data;
+  return data?.datos || data;
+}
+
+export async function asignarDescuentoProducto(productoId: number, descuentoId: number | null): Promise<WorkerProducto> {
+  const res = await API.patch(`/api/worker/productos/${productoId}/`, { descuento_especial: descuentoId });
   const data = res.data;
   return data?.datos || data;
 }
@@ -146,4 +159,35 @@ export async function getWorkerProductosSlim(): Promise<WorkerProductoSlim[]> {
   // Cambiamos al endpoint de worker para que el creador vea todos los productos base
   const res = await API.get("/api/worker/productos/");
   return normalizeResponse<WorkerProductoSlim>(res.data);
+}
+
+// ─── Descuentos list (worker endpoint for private use) ────────────────────────────────────
+export async function getWorkerDescuentos(): Promise<Discount[]> {
+  const res = await API.get("/api/worker/descuentos/");
+  return normalizeResponse<Discount>(res.data);
+}
+
+export async function getWorkerDescuentoById(id: number): Promise<Discount> {
+  const res = await API.get(`/api/worker/descuentos/${id}/`)
+  return res.data
+}
+
+export async function getWorkerTiposDescuento(): Promise<string[]> {
+  const res = await API.get("/api/worker/descuentos/tipos/");
+  return res.data?.datos || res.data;
+}
+
+export async function editarDescuento(
+  id: number, 
+  data: { nombre?: string; tipo?: string; porcentaje?: number; activo?: boolean; fecha_inicio?: Date; fecha_fin?: Date; }
+): Promise<unknown> {
+  const res = await API.patch(`/api/worker/descuentos/${id}/`, data);
+  return res.data?.datos || res.data;
+}
+
+export async function crearDescuento(
+  data: { nombre: string; tipo: string; porcentaje: number; activo: boolean; fecha_inicio: string | Date; fecha_fin: string | Date; }
+): Promise<Discount> {
+  const res = await API.post(`/api/worker/descuentos/`, data);
+  return res.data?.datos || res.data;
 }

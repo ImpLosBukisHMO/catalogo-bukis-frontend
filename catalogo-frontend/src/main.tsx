@@ -29,6 +29,7 @@ import MisPedidosPage from "./components/pages/MisPedidosPage.tsx";
 import PedidoDetallePage from "./components/pages/PedidoDetallePage.tsx";
 
 import { AuthProvider } from "./context/AuthProvider";
+import { WorkerDiscountsPage } from "./components/pages/WorkerDiscountsPage.tsx";
 
 const router = createBrowserRouter([
   // Public / user routes
@@ -58,6 +59,7 @@ const router = createBrowserRouter([
       { index: true, element: <WorkerDashboardPage /> },
       { path: "orders", element: <WorkerOrdersPage /> },
       { path: "products", element: <WorkerProductsPage /> },
+      { path: "discounts", element: <WorkerDiscountsPage /> },
     ],
   },
 

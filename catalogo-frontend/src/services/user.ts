@@ -1,4 +1,5 @@
 import API from "../api";
+import { login } from "./auth";
 
 /*
 Use if needed:
@@ -29,7 +30,9 @@ export async function signUp(data: Usuario) {
     throw new Error(`Error al registrar un nuevo usuario (${res.status}).`);
   }
 
-  await logIn(data.correo || "", data.password || "")
+  // Use JWT login to avoid infinite redirect bugs
+  await login(data.correo || "", data.password || "");
+  try { await logIn(data.correo || "", data.password || ""); } catch { /* ignore */ }
 }
 
 
@@ -81,8 +84,12 @@ export async function logOut(onClearAuth?: () => void) {
 }
 
 export async function getLoggedUserData() {
+  const token = localStorage.getItem("access") ?? localStorage.getItem("token");
   const res = await API.get("/api/mi_usuario/", {
-    headers: { Accept: "application/json" },
+    headers: { 
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
   });
 
   if (res.status !== 200) {

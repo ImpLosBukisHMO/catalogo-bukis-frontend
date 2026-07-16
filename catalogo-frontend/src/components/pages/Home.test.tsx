@@ -37,7 +37,11 @@ function buildProduct(id: number, nombre: string): Product {
     peso: "1",
     medidas: "1x1",
     capacidad: "1",
-    categorias: [1],
+    categoria: {
+      id: 1,
+      nombre: "Categoría 1",
+      descuento: null
+    },
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     disponible: true,

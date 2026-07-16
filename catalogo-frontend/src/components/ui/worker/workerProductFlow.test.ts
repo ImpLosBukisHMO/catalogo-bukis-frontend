@@ -7,18 +7,20 @@ import {
 
 describe("workerProductFlow", () => {
   it("detects when the worker has not started the first variant", () => {
-    expect(hasVariantDraftData({ colorId: "", item: "", stock: "", activo: true, imagesCount: 0 })).toBe(false);
-    expect(hasVariantDraftData({ colorId: "", item: "", stock: "0", activo: true, imagesCount: 0 })).toBe(false);
-    expect(hasVariantDraftData({ colorId: "2", item: "", stock: "", activo: true, imagesCount: 0 })).toBe(true);
-    expect(hasVariantDraftData({ colorId: "", item: "", stock: "3", activo: true, imagesCount: 0 })).toBe(true);
+    expect(hasVariantDraftData({ colorId: "", item: "", stock: "", activo: true, imagesCount: 0, codigo_barras: "" })).toBe(false);
+    expect(hasVariantDraftData({ colorId: "", item: "", stock: "0", activo: true, imagesCount: 0, codigo_barras: "" })).toBe(false);
+    expect(hasVariantDraftData({ colorId: "2", item: "", stock: "", activo: true, imagesCount: 0, codigo_barras: "" })).toBe(true);
+    expect(hasVariantDraftData({ colorId: "", item: "", stock: "3", activo: true, imagesCount: 0, codigo_barras: "" })).toBe(true);
+    expect(hasVariantDraftData({ colorId: "", item: "", stock: "", activo: true, imagesCount: 0, codigo_barras: "123" })).toBe(true);
   });
 
   it("lists publish blockers for incomplete draft data", () => {
     const issues = buildPublishReadinessIssues({
-      product: { precio: "", categorias_ids: [] },
+      product: { precio: "", categoria_id: "" },
       variant: {
         colorId: "",
         item: "",
+        codigo_barras: "",
         stock: "",
         activo: false,
         imagesCount: 0,
@@ -33,10 +35,11 @@ describe("workerProductFlow", () => {
 
   it("reports field-level blockers when a variant exists but is not publishable", () => {
     const issues = buildPublishReadinessIssues({
-      product: { precio: "", categorias_ids: ["1"] },
+      product: { precio: "", categoria_id: "1" },
       variant: {
         colorId: "",
         item: "",
+        codigo_barras: "",
         stock: "-2",
         activo: false,
         imagesCount: 0,
@@ -47,6 +50,7 @@ describe("workerProductFlow", () => {
       "missing-active-variant",
       "missing-color",
       "missing-sku",
+      "missing-barcode",
       "missing-price",
       "invalid-stock",
       "missing-image",
@@ -55,10 +59,11 @@ describe("workerProductFlow", () => {
 
   it("uses the product price as publish fallback and maps labels", () => {
     const issues = buildPublishReadinessIssues({
-      product: { precio: "249.00", categorias_ids: ["1"] },
+      product: { precio: "249.00", categoria_id: "1" },
       variant: {
         colorId: "7",
         item: "SKU-1",
+        codigo_barras: "123456",
         stock: "0",
         activo: true,
         imagesCount: 1,

@@ -24,6 +24,7 @@ import {
   editarVariante,
   getWorkerCategorias,
   getWorkerColores,
+  getWorkerProducto,
   getWorkerProductos,
   getWorkerProductosSlim,
   getWorkerVariants,
@@ -70,6 +71,21 @@ export function useWorkerProductos(enabled: boolean) {
     enabled,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
+  });
+}
+
+// ─── useWorkerProducto ────────────────────────────────────────────────────────
+
+/**
+ * Fetches a single worker product by id (full WorkerProducto object).
+ * Used by WorkerAddVariantModal to show base product details.
+ */
+export function useWorkerProducto(id: number | undefined) {
+  return useQuery({
+    queryKey: [...workerKeys.productos(), "detail", id] as const,
+    queryFn: () => getWorkerProducto(id!),
+    enabled: !!id,
+    staleTime: 60_000,
   });
 }
 
