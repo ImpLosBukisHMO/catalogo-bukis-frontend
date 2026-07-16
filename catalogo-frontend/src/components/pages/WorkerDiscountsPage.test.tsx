@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkerThemeProvider } from "../providers/WorkerThemeProvider";
 import { WorkerDiscountsPage } from "./WorkerDiscountsPage";
 import { MemoryRouter } from "react-router";
@@ -55,18 +55,6 @@ vi.mock("@tanstack/react-query", () => {
   };
 });
 
-// Avoid ResizeObserver error in tests if Dialog uses it
-beforeAll(() => {
-  Object.defineProperty(window, "matchMedia", {
-    writable: true,
-    value: vi.fn().mockImplementation(() => ({
-      matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })),
-  });
-});
-
 beforeEach(() => {
   mockEditarDescuento.mockClear();
   mockCrearDescuento.mockClear();
@@ -104,33 +92,27 @@ describe("WorkerDiscountsPage", () => {
   it("allows inline editing of a discount", async () => {
     renderPage();
 
-    // Click the edit pencil for the first discount
     const editButtons = screen.getAllByTitle("Editar");
     fireEvent.click(editButtons[0]);
 
-    // Name input should appear
     const nameInput = screen.getByDisplayValue("Descuento Verano");
     expect(nameInput).toBeDefined();
 
-    // Change the name
     fireEvent.change(nameInput, { target: { value: "Descuento Invierno" } });
 
-    // Change the percentage
     const percentInput = screen.getByDisplayValue("15");
     fireEvent.change(percentInput, { target: { value: "20" } });
 
-    // Click Guardar
     const saveButton = screen.getByText("Guardar");
     fireEvent.click(saveButton);
 
-    // Mock resolve
     mockEditarDescuento.mockResolvedValueOnce({});
 
     await waitFor(() => {
       expect(screen.getByText(/Confirmar Cambios/i)).toBeDefined();
     });
 
-    const confirmButton = screen.getByRole("button", { name: "Confirmar" });
+    const confirmButton = screen.getByRole("button", { name: "Sí, guardar cambios" });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
