@@ -536,6 +536,7 @@ function UnifiedCreateProductSection({
     stock,
     activo,
     imagesCount: imagenes.length,
+    codigo_barras: codigoBarras,
   });
 
   const publishIssues = useMemo(() => buildPublishReadinessIssues({
@@ -549,8 +550,9 @@ function UnifiedCreateProductSection({
       stock,
       activo,
       imagesCount: imagenes.length,
+      codigo_barras: codigoBarras,
     },
-  }), [activo, colorId, form.categoria_id, form.precio, imagenes.length, item, stock]);
+  }), [activo, colorId, form.categoria_id, form.precio, imagenes.length, item, stock, codigoBarras]);
 
   const setField = (key: keyof ProductFormState) => (value: string | string[]) => {
     setForm((current) => ({ ...current, [key]: value }));
