@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductPage from "./ProductPage";
+import { AuthContext } from "../../context/AuthContext";
 import {
   getProductById,
   getProductImages,
@@ -178,5 +179,74 @@ describe("ProductPage", () => {
     expect(screen.getByText("Producto relacionado B")).toBeInTheDocument();
     expect(screen.getAllByTestId("product-card")).toHaveLength(2);
     expect(screen.queryByRole("navigation", { name: "Catalog pagination" })).not.toBeInTheDocument();
+  });
+
+  it("shows the selected variant's own price (not the product base price) when computing discount for logged-in users", async () => {
+    // Regression guard: previously ProductPage displayed `product.precio` regardless of the
+    // selected variant, while the cart submits the variant id and the backend charges the
+    // variant's real price. If a variant has its own price and a discount applies, the UI must
+    // show base = variant price and final = variant price * (1 - percentage/100).
+    mockedGetProductById.mockResolvedValueOnce({
+      id: 42,
+      nombre: "Producto con variante cara",
+      imagen: null,
+      descripcion: "",
+      precio: "100.00",
+      peso: "1",
+      medidas: "1x1",
+      capacidad: "1",
+      categorias: [1],
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      disponible: true,
+      descuento_especial: {
+        id: 7,
+        nombre: "Promo",
+        tipo: "porcentaje",
+        porcentaje: 10,
+        activo: true,
+        fecha_inicio: new Date("2026-01-01"),
+        fecha_fin: new Date("2027-01-01"),
+        es_valido: true,
+      },
+      variantes: [
+        {
+          id: 900,
+          item: "ITEM-900",
+          codigo_barras: "9999",
+          color: { id: 1, nombre: "Verde", hex: "#00ff00" },
+          precio: "150.00",
+          stock: 5,
+          activo: true,
+          disponible: true,
+        },
+      ],
+    });
+
+    const router = createMemoryRouter(
+      [{ path: "/producto/:id", element: <ProductPage /> }],
+      { initialEntries: ["/producto/42"] },
+    );
+
+    render(
+      <AuthContext.Provider
+        value={{
+          isLoggedIn: true,
+          isStaff: false,
+          isLoading: false,
+          refresh: async () => {},
+          setLoggedOut: () => {},
+        }}
+      >
+        <RouterProvider router={router} />
+      </AuthContext.Provider>,
+    );
+
+    // Base price must reflect the variant (150.00), NOT the product base (100.00).
+    expect(await screen.findByText("$ 150.00 MXN")).toBeInTheDocument();
+    expect(screen.queryByText("$ 100.00 MXN")).not.toBeInTheDocument();
+
+    // Discounted price: 150 * 0.90 = 135.
+    expect(screen.getByText(/\$ 135\.00 MXN \(-10\.00 %\)/)).toBeInTheDocument();
   });
 });
