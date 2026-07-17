@@ -47,15 +47,6 @@ function getProductName(item: CartItem): string {
   );
 }
 
-/*function getProductDesc(item: CartItem): string {
-  return String(
-    nested(item, "producto", "descripcion") ??
-    item.descripcion_producto ??
-    item.descripcion ??
-    ""
-  );
-}*/
-
 function getColorName(item: CartItem): string {
   return String(
     nested(item, "color", "nombre") ??
@@ -136,8 +127,6 @@ export default function CarritoPage() {
         if (it?.id != null) next[Number(it.id)] = String(getQty(it as CartItem));
       });
       setQtyDraft(next);
-
-      console.log("carrito item example", data?.items?.[0]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error cargando carrito");
       setCarrito(null);
@@ -191,11 +180,9 @@ export default function CarritoPage() {
       setBusy("checkout");
       setError(null);
 
-      const data = await checkoutCart();
+      await checkoutCart();
 
       await load();
-
-      console.log("checkout ok", data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error en checkout");
     } finally {
