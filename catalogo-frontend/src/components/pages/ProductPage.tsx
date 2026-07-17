@@ -71,7 +71,7 @@ export default function ProductPage() {
   const stock = selectedVariant?.stock ?? 0;
   const isDisponible = Boolean(selectedVariant?.disponible);
   const qty = useMemo(() => parseQty(qtyRaw), [qtyRaw]);
-  const displayedPrice = product?.precio ?? "0";
+  const displayedPrice = selectedVariant?.precio ?? product?.precio ?? "0";
   const isLoggedIn = useContext(AuthContext)?.isLoggedIn ?? false;
 
   const validation = useMemo(() => {
@@ -207,33 +207,34 @@ export default function ProductPage() {
     })();
   }, [id]);
 
-  const productBasePrice = Number(displayedPrice) 
+  const productBasePrice = Number(displayedPrice);
 
   const { finalProductPrice, hasDiscount, percentage } = useMemo(() => {
+    const basePrice = Number(displayedPrice);
     const specialDiscount = product?.descuento_especial;
     const generalDiscount = product?.categoria?.descuento;
 
     if (!product) {
-      return { finalProductPrice: productBasePrice, hasDiscount: false, percentage: 0 };
+      return { finalProductPrice: basePrice, hasDiscount: false, percentage: 0 };
     }
 
-    let finalPrice = productBasePrice;
+    let finalPrice = basePrice;
     let discounted = false;
     let porcentaje = 0;
 
     if (specialDiscount && specialDiscount.es_valido === true) {
       porcentaje = Number(specialDiscount.porcentaje) || 0;
-      finalPrice = productBasePrice - (productBasePrice * porcentaje / 100);
+      finalPrice = basePrice - (basePrice * porcentaje / 100);
       discounted = true;
-    } 
+    }
     else if (generalDiscount && generalDiscount.es_valido === true) {
       porcentaje = Number(generalDiscount.porcentaje) || 0;
-      finalPrice = productBasePrice - (productBasePrice * porcentaje / 100);
+      finalPrice = basePrice - (basePrice * porcentaje / 100);
       discounted = true;
     }
 
     return { finalProductPrice: finalPrice, hasDiscount: discounted, percentage: porcentaje };
-  }, [selectedVariant, displayedPrice, product]);
+  }, [displayedPrice, product]);
 
   const isLikedByUser = (productID: number) => {
     return favoritos.some(f => f.producto_id === productID)

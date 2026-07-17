@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import SearchProductsPage from "./SearchProductsPage";
 import { getCategories } from "../../services/category";
 import { getProductsPage, getProductById } from "../../services/product";
+import { getFavoritos } from "../../services/favoritos";
 import type { PagedResponse } from "./responseNormalizer";
 import type { Product } from "../../types/product";
 
@@ -45,6 +46,7 @@ vi.mock("../../services/product", () => ({
 
 const mockedGetProductsPage = vi.mocked(getProductsPage);
 const mockedGetCategories = vi.mocked(getCategories);
+const mockedGetFavoritos = vi.mocked(getFavoritos);
 
 const mockedGetProductById = vi.mocked(getProductById);
 mockedGetProductById.mockResolvedValue({
@@ -147,6 +149,9 @@ describe("SearchProductsPage", () => {
   beforeEach(() => {
     mockedGetCategories.mockResolvedValue([]);
     mockedGetProductsPage.mockReset();
+    mockedGetFavoritos.mockReset();
+    mockedGetFavoritos.mockResolvedValue([]);
+    localStorage.clear();
     consoleErrorSpy.mockClear();
   });
 
@@ -258,6 +263,39 @@ describe("SearchProductsPage", () => {
       "href",
       "/productos?page=1&query=mate",
     );
+  });
+
+  it("does not fetch favoritos for anonymous visitors without an access token", async () => {
+    // Regression guard: previously SearchProductsPage always called getFavoritos() on mount,
+    // hitting a protected endpoint that returned 401 for anonymous visitors and showing a
+    // spurious "Error al obtener productos favoritos" toast on the public catalog.
+    mockedGetProductsPage.mockResolvedValue(
+      buildPagedResponse([buildProduct(1, "Mate Imperial")], 1, {
+        previous: null,
+        next: null,
+      }),
+    );
+
+    renderSearchProductsPage("/productos?page=1");
+
+    expect(await screen.findByText("Mate Imperial")).toBeInTheDocument();
+    expect(mockedGetFavoritos).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Error al obtener productos favoritos/)).not.toBeInTheDocument();
+  });
+
+  it("fetches favoritos when the visitor has an access token", async () => {
+    localStorage.setItem("access", "fake-jwt");
+    mockedGetProductsPage.mockResolvedValue(
+      buildPagedResponse([buildProduct(1, "Mate Imperial")], 1, {
+        previous: null,
+        next: null,
+      }),
+    );
+
+    renderSearchProductsPage("/productos?page=1");
+
+    expect(await screen.findByText("Mate Imperial")).toBeInTheDocument();
+    expect(mockedGetFavoritos).toHaveBeenCalledTimes(1);
   });
 
   it("shows a non-blocking warning when categories fail to load", async () => {

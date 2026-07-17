@@ -135,10 +135,15 @@ export default function SearchProductsPage() {
     }, []);
 
     useEffect(() => {
+        if (!localStorage.getItem("access")) {
+            setFavoritos([]);
+            return;
+        }
+
         const fetchFavoriteProducts = async () => {
             try {
                 const data = await getFavoritos();
-                const formattedData = data.map(f => ({ 
+                const formattedData = data.map(f => ({
                     id: f.id, producto_id: f.variante.producto_id
                 }))
                 setFavoritos(formattedData)
