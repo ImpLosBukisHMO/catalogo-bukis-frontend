@@ -1,4 +1,4 @@
-import { StrictMode, type ComponentProps } from "react";
+import { lazy, StrictMode, Suspense, type ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -30,6 +30,24 @@ import PedidoDetallePage from "./components/pages/PedidoDetallePage.tsx";
 
 import { AuthProvider } from "./context/AuthProvider";
 import { WorkerDiscountsPage } from "./components/pages/WorkerDiscountsPage.tsx";
+import { isBannerOfertasEnabled } from "./utils/featureFlags";
+
+const WorkerBannerOfertasPage = lazy(() => import("./components/pages/WorkerBannerOfertasPage.tsx"));
+
+const workerChildren = [
+  { index: true, element: <WorkerDashboardPage /> },
+  { path: "orders", element: <WorkerOrdersPage /> },
+  { path: "products", element: <WorkerProductsPage /> },
+  { path: "discounts", element: <WorkerDiscountsPage /> },
+  ...(isBannerOfertasEnabled ? [{
+    path: "banner-ofertas",
+    element: (
+      <Suspense fallback={null}>
+        <WorkerBannerOfertasPage />
+      </Suspense>
+    ),
+  }] : []),
+];
 
 const router = createBrowserRouter([
   // Public / user routes
@@ -55,12 +73,7 @@ const router = createBrowserRouter([
         <WorkerLayout />
       </WorkerProviders>
     ),
-    children: [
-      { index: true, element: <WorkerDashboardPage /> },
-      { path: "orders", element: <WorkerOrdersPage /> },
-      { path: "products", element: <WorkerProductsPage /> },
-      { path: "discounts", element: <WorkerDiscountsPage /> },
-    ],
+    children: workerChildren,
   },
 
   { path: "*", element: <NotFoundPage /> },
