@@ -6,6 +6,8 @@ import Footer from "../elements/Footer";
 
 import type { PedidoDetalle, PedidoItem } from "../../types/pedido";
 import { getMiPedidoDetalle } from "../../services/pedidos";
+import { IMAGE_PLACEHOLDER_URL } from "../../utils/images";
+import { BACKEND_BASE_URL } from "../../utils/backend";
 
 
 const ESTADO_COLOR: Record<string, string> = {
@@ -47,7 +49,7 @@ function formatDate(iso: string) {
 }
 
 function ItemRow({ item }: { item: PedidoItem }) {
-  const imgSrc = item.imagen_principal_snapshot || "https://placehold.net/600x600.png";
+  const imgSrc = item.imagen_principal_snapshot ? `${BACKEND_BASE_URL}${item.imagen_principal_snapshot}` : IMAGE_PLACEHOLDER_URL;
 
   return (
     <div
@@ -181,7 +183,7 @@ export default function PedidoDetallePage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-2xl font-bold text-white">
-                      Pedido #{pedido.id}
+                      Pedido #{pedido.folio}
                     </p>
                     <p className="mt-1 text-xs text-white/55">
                       {formatDate(pedido.created_at)}

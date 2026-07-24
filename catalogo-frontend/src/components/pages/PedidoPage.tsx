@@ -79,7 +79,7 @@ export default function PedidoPage() {
       <title>Pedido | Importaciones Los Bukis</title>
       <NavBar />
 
-      <div className="px-4 py-8 sm:px-6 lg:px-12">
+      <div className="w-full flex-1 px-4 py-8 sm:px-6 lg:px-12">
         <div className="mx-auto max-w-[1400px]">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
             {/* Columna principal */}

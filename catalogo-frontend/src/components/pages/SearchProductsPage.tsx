@@ -143,7 +143,8 @@ export default function SearchProductsPage() {
                 }))
                 setFavoritos(formattedData)
             } catch (error) {
-                setFavMsg(`Error al obtener productos favoritos: ${error}`)
+                setFavMsg(`Inicia sesión para poder ver tus productos favoritos.`)
+                console.error(error)
             }
         }
         fetchFavoriteProducts()

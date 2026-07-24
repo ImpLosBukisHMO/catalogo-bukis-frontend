@@ -44,6 +44,7 @@ export type WorkerPedidoCliente = {
 export type WorkerPedido = {
   id: number;
   public_id: string;
+  folio: string;
   cliente: WorkerPedidoCliente;
   estado: string;
   precio_total: string;
@@ -66,6 +67,7 @@ export type WorkerPedidoItem = {
 export type WorkerPedidoDetalle = {
   id: number;
   public_id: string;
+  folio: string;
   cliente: {
     id: number;
     nombre: string;
@@ -125,10 +127,10 @@ export const ESTADO_LABEL: Record<string, string> = {
 
 export const TRANSICIONES_VALIDAS: Record<string, string[]> = {
   PENDING: ["APPROVED", "DENIED"],
-  APPROVED: ["READY"],
-  READY: ["SHIPPED"],
-  SHIPPED: ["COMPLETED"],
+  APPROVED: ["READY", "CANCELED"],
+  READY: ["SHIPPED", "CANCELED"],
+  SHIPPED: ["COMPLETED", "CANCELED"],
   DENIED: [],
   COMPLETED: [],
-  CANCELED: [],
+  CANCELED: ["PENDING"],
 };

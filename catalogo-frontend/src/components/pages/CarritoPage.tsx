@@ -8,6 +8,7 @@ import type { CarritoResponse } from "../../types/carrito";
 import { getCarritoActual, updateItemCantidad, deleteItem, checkoutCart } from "../../services/carrito";
 import { IMAGE_PLACEHOLDER_URL, resolveImageUrlOrPlaceholder } from "../../utils/images";
 import { formatMoney } from "../../utils/normalizers";
+import { ClipboardList } from "lucide-react";
 
 
 type CartItem = Record<string, unknown>;
@@ -46,15 +47,6 @@ function getProductName(item: CartItem): string {
     "Producto"
   );
 }
-
-/*function getProductDesc(item: CartItem): string {
-  return String(
-    nested(item, "producto", "descripcion") ??
-    item.descripcion_producto ??
-    item.descripcion ??
-    ""
-  );
-}*/
 
 function getColorName(item: CartItem): string {
   return String(
@@ -207,12 +199,20 @@ export default function CarritoPage() {
     <div className="flex min-h-screen flex-col">
       <title>Carrito | Importaciones Los Bukis</title>
       <NavBar />
-
       <div className="flex-1 px-4 py-8 sm:px-6 lg:px-12">
         <div className="mx-auto max-w-[1400px]">
-          <h1 className="mb-6 text-4xl font-bold text-bukis-ink">
-            Carrito
-          </h1>
+          <div className="mb-6 w-full inline-flex">
+            <h1 className="text-4xl font-bold text-bukis-ink">
+              Carrito
+            </h1>
+            <button
+              className="inline-flex ms-auto items-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
+              onClick={() => navigate("/pedidos")}
+            >
+              <ClipboardList size={22} />
+              <span>Mis Pedidos</span>
+            </button>
+          </div>
 
           {loading && <p className="text-neutral-600">Cargando carrito...</p>}
           {error && (
