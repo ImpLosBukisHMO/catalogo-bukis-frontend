@@ -1,3 +1,5 @@
+import type { Usuario } from "../services/user";
+
 export type PedidoItem = {
   id: number;
   cantidad: number;
@@ -6,6 +8,7 @@ export type PedidoItem = {
   color_nombre_snapshot: string;
   color_hex_snapshot: string;
   precio_unitario_snapshot: string;
+  descuento_porcentaje_snapshot: string; // viene como "15.00" o "0.00"
   subtotal_linea_snapshot: string;
   imagen_principal_snapshot: string;
 };
@@ -13,6 +16,7 @@ export type PedidoItem = {
 export type PedidoDetalle = {
   id: number;
   public_id: string;
+  folio: string;
   estado: string;
   precio_total: string;
   subtotal_snapshot: string;
@@ -22,11 +26,13 @@ export type PedidoDetalle = {
   aprobado_eta: string | null;
   created_at: string;
   items: PedidoItem[];
+  cliente: Usuario
 };
 
 export type PedidoResumen = {
   id: number;
   public_id: string;
+  folio: string;
   estado: string;
   precio_total: string;
   created_at: string;

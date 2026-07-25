@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import HideShowPassword from "../elements/HideShowPassword";
@@ -46,6 +46,10 @@ const EditingButtons = (props: { isEditing: boolean, handleEditing: () => void, 
 
 const ProfilePage = () => {
     const navigate = useNavigate();
+
+    // Loading
+    const [isLoading, setLoading] = useState<boolean>(false);
+
     // Editing and address states
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [hasAddress, setHasAddress] = useState<boolean>(false);
@@ -143,11 +147,10 @@ const ProfilePage = () => {
     const inputClass = "w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25 disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-600";
     const labelClass = "mb-2 block text-sm font-semibold text-bukis-ink";
 
-    const fetchUserData = async () => {
+    const fetchUserData = useCallback(async () => {
         try {
             const userData: Usuario = await getLoggedUserData();
-
-            setID(userData.id);
+            setID(userData.id || null);
             setNombre(userData.nombre);
             setApellidos(userData.apellido);
             setCorreo(userData.correo);
@@ -156,16 +159,16 @@ const ProfilePage = () => {
             setPrevApellidos(userData.apellido);
             setPrevCorreo(userData.correo);
             setPrevTelefono(userData.telefono);
-            setPrevPassword(null)
+            setPrevPassword(null);
         } catch (e: unknown) {
             console.log(e);
             if ((e as { response?: { status?: number } }).response?.status === 401) {
                 window.location.href = "/iniciar-sesion";
             }
         }
-    };
+    }, []);
 
-    const fetchAddress = async () => {
+    const fetchAddress = useCallback(async () => {
         try {
             const addressData = await getUserAddress(Number(id));
 
@@ -187,108 +190,133 @@ const ProfilePage = () => {
         } catch (e: unknown) {
             console.log(e);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         const load = async () => {
-            await fetchUserData();
-            if (id) await fetchAddress();
-            if (!isEditing) {
-                // Reset password inputs.
-                setPassword(null);
-                setPrevPassword(null);
+            setLoading(true)
+            try {
+                await fetchUserData();
+                if (id) await fetchAddress();
+            } catch (error) {
+                console.error("Error: ", error)
+            } finally {
+                setLoading(false)
             }
         };
         load();
-    }, [id]);
+    }, [id, fetchUserData, fetchAddress]);
+
+    useEffect(() => {
+        if (!isEditing) {
+            // Reset password inputs.
+            setPassword(null);
+            setPrevPassword(null);
+        }
+    }, [isEditing]);
 
 
     return (
-        <div>
+        <div className="flex min-h-screen flex-col">
             <title>Mi Perfil | Importaciones Los Bukis</title>
             <NavBar />
-            <h1 className='mb-5 text-center text-4xl font-bold text-bukis-ink'>
-                Mi Perfil
-            </h1>
-            <div className="mx-auto my-6 w-[80%] rounded-2xl border border-bukis-border bg-bukis-surface p-5 shadow-bukis-soft">
-                <p className="mb-5 text-center text-2xl font-bold text-bukis-ink">Datos generales</p>
-                <div className="grid gap-5 md:grid-cols-2">
-                    <div className="space-y-4">
-                        <div>
-                            <label className={labelClass}>Nombre</label>
-                            <input className={inputClass} type="text" placeholder="Nombre completo." value={nombre ?? ''} onChange={(e) => setNombre(e.target.value)} disabled={!isEditing} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Apellidos</label>
-                            <input className={inputClass} type="text" placeholder="Apellidos completos." value={apellidos ?? ''} onChange={(e) => setApellidos(e.target.value)} disabled={!isEditing} />
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <div>
-                            <label className={labelClass}>Correo electrónico</label>
-                            <input className={inputClass} type="text" placeholder="Ej.: usuario@correo.com" value={correo ?? ''} disabled={true} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Teléfono</label>
-                            <input className={inputClass} type="text" placeholder="Ej: (+00) 000-000-0000" value={telefono ?? ''} onChange={(e) => setTelefono(e.target.value)} disabled={!isEditing} />
-                        </div>
-                    </div>
-                </div>
+            <div className="flex-1">
+                <h1 className='mb-5 text-center text-4xl font-bold text-bukis-ink'>
+                    Mi Perfil
+                </h1>
+                {
+                    (() => {
+                        if (isLoading || id == null) {
+                            return (
+                                <div className="mx-auto my-6 w-[80%] rounded-2xl border border-bukis-border bg-bukis-surface p-5 shadow-bukis-soft">                
+                                    <p className="mb-5 text-center text-2xl font-bold text-bukis-ink">Cargando...</p>
+                                </div>
+                            )
+                        } else {
+                            return (
+                                <div>
+                                    <div className="mx-auto my-6 w-[80%] rounded-2xl border border-bukis-border bg-bukis-surface p-5 shadow-bukis-soft">                
+                                            <p className="mb-5 text-center text-2xl font-bold text-bukis-ink">Datos generales</p>
+                                            <div className="grid gap-5 md:grid-cols-2">
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className={labelClass}>Nombre</label>
+                                                        <input className={inputClass} type="text" placeholder="Nombre completo." value={nombre ?? ''} onChange={(e) => setNombre(e.target.value)} disabled={!isEditing} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelClass}>Apellidos</label>
+                                                        <input className={inputClass} type="text" placeholder="Apellidos completos." value={apellidos ?? ''} onChange={(e) => setApellidos(e.target.value)} disabled={!isEditing} />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className={labelClass}>Correo electrónico</label>
+                                                        <input className={inputClass} type="text" placeholder="Ej.: usuario@correo.com" value={correo ?? ''} disabled={true} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelClass}>Teléfono</label>
+                                                        <input className={inputClass} type="text" placeholder="Ej: (+00) 000-000-0000" value={telefono ?? ''} onChange={(e) => setTelefono(e.target.value)} disabled={!isEditing} />
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                <div className="mt-4">
-                    <label className={labelClass}>Contraseña</label>
-                    <div className="flex gap-2">
-                        <HideShowPassword passwordVisibilityAction={togglePasswordVisibility}
-                            passwordState={passwordVisible} disabled={!isEditing} />
-                        <input className={inputClass} type={passwordVisible} placeholder="Nueva contraseña." value={password || ""} onChange={(e) => setPassword(e.target.value)} disabled={!isEditing} />
-                    </div>
-                </div>
+                                            <div className="mt-4">
+                                                <label className={labelClass}>Contraseña</label>
+                                                <div className="flex gap-2">
+                                                    <HideShowPassword passwordVisibilityAction={togglePasswordVisibility}
+                                                        passwordState={passwordVisible} disabled={!isEditing} />
+                                                    <input className={inputClass} type={passwordVisible} placeholder="Nueva contraseña." value={password || ""} onChange={(e) => setPassword(e.target.value)} disabled={!isEditing} />
+                                                </div>
+                                            </div>
 
-                <p className="mb-5 mt-8 text-center text-2xl font-bold text-bukis-ink">Dirección</p>
-                <div className="grid gap-5 md:grid-cols-2">
-                    <div className="space-y-4">
-                        <div>
-                            <label className={labelClass}>Calle</label>
-                            <input className={inputClass} type="text" placeholder="Ej.: Nombre de la calle, número exterior." value={calle ?? ''} onChange={(e) => setCalle(e.target.value)} disabled={!hasAddress || !isEditing} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Colonia / Fraccionamiento / Residencial</label>
-                            <input className={inputClass} type="text" placeholder="Nombre de colonia, fraccionamiento o residencial." value={colonia ?? ''} onChange={(e) => setColonia(e.target.value)} disabled={!hasAddress || !isEditing} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Código Postal (C.P.)</label>
-                            <input className={inputClass} type="number" placeholder="Ej.: 0000" value={codigoPostal ?? ''} onChange={(e) => setCodigoPostal(e.target.value === '' ? null : Number(e.target.value))} disabled={!hasAddress || !isEditing} />
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <div>
-                            <label className={labelClass}>Estado</label>
-                            <input className={inputClass} type="text" placeholder="Nombre del estado." value={estado ?? ''} onChange={(e) => setEstado(e.target.value)} disabled={!hasAddress || !isEditing} />
-                        </div>
-        
-                        <div>
-                            <label className={labelClass}>Ciudad / Municipio</label>
-                            <input className={inputClass} type="text" placeholder="Nombre de la ciudad o municipio." value={ciudad ?? ''} onChange={(e) => setCiudad(e.target.value)} disabled={!hasAddress || !isEditing} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>País</label>
-                            <input className={inputClass} type="text" placeholder="Nombre del país." value={pais ?? ''} onChange={(e) => setPais(e.target.value)} disabled={!hasAddress || !isEditing} />
-                        </div>
-                    </div>
-                </div>
-                <EditingButtons isEditing={isEditing} handleEditing={handleEditing} handleCancel={handleCancel} handleSave={handleSave} />
+                                            <p className="mb-5 mt-8 text-center text-2xl font-bold text-bukis-ink">Dirección</p>
+                                            <div className="grid gap-5 md:grid-cols-2">
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className={labelClass}>Calle</label>
+                                                        <input className={inputClass} type="text" placeholder="Ej.: Nombre de la calle, número exterior." value={calle ?? ''} onChange={(e) => setCalle(e.target.value)} disabled={!hasAddress || !isEditing} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelClass}>Colonia / Fraccionamiento / Residencial</label>
+                                                        <input className={inputClass} type="text" placeholder="Nombre de colonia, fraccionamiento o residencial." value={colonia ?? ''} onChange={(e) => setColonia(e.target.value)} disabled={!hasAddress || !isEditing} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelClass}>Código Postal (C.P.)</label>
+                                                        <input className={inputClass} type="number" placeholder="Ej.: 0000" value={codigoPostal ?? ''} onChange={(e) => setCodigoPostal(e.target.value === '' ? null : Number(e.target.value))} disabled={!hasAddress || !isEditing} />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className={labelClass}>Estado</label>
+                                                        <input className={inputClass} type="text" placeholder="Nombre del estado." value={estado ?? ''} onChange={(e) => setEstado(e.target.value)} disabled={!hasAddress || !isEditing} />
+                                                    </div>
+                                    
+                                                    <div>
+                                                        <label className={labelClass}>Ciudad / Municipio</label>
+                                                        <input className={inputClass} type="text" placeholder="Nombre de la ciudad o municipio." value={ciudad ?? ''} onChange={(e) => setCiudad(e.target.value)} disabled={!hasAddress || !isEditing} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelClass}>País</label>
+                                                        <input className={inputClass} type="text" placeholder="Nombre del país." value={pais ?? ''} onChange={(e) => setPais(e.target.value)} disabled={!hasAddress || !isEditing} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <EditingButtons isEditing={isEditing} handleEditing={handleEditing} handleCancel={handleCancel} handleSave={handleSave} />                                                 </div>
+                                    <div className="mx-auto mb-6 mt-4 flex w-[80%]">
+                                        <button
+                                            className="inline-flex items-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
+                                            onClick={() => navigate("/pedidos")}
+                                        >
+                                            <ClipboardList size={22} />
+                                            <span>Mis Pedidos</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )
+                        }
+                    })()
+                }
             </div>
-
-            <div className="mx-auto mb-6 mt-4 flex w-[80%]">
-                <button
-                    className="inline-flex items-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
-                    onClick={() => navigate("/pedidos")}
-                >
-                    <ClipboardList size={22} />
-                    <span>Mis Pedidos</span>
-                </button>
-            </div>
-
             <Footer />
         </div>
     );

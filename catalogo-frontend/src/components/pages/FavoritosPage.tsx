@@ -1,24 +1,18 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
-
 import type { FavoritoVariante } from "../../types/favoritos";
 import { getFavoritos, removeFavorito } from "../../services/favoritos";
 import { addItem } from "../../services/carrito";
+import { formatMoney } from "../../utils/normalizers";
+import { resolveImageUrlOrPlaceholder } from "../../utils/images";
 
-
-function money(n: number) {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  }).format(n);
-}
+import { useAuth } from "../../context/useAuth";
 
 export default function FavoritosPage() {
   const navigate = useNavigate();
+  const { isLoggedIn, isLoading } = useAuth();
 
   const [favoritos, setFavoritos] = useState<FavoritoVariante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,12 +21,14 @@ export default function FavoritosPage() {
   const [msg, setMsg] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    if (!localStorage.getItem("access")) {
-      navigate("/iniciar-sesion");
-      return;
+    if (!isLoading) {
+      if (!isLoggedIn) {
+        navigate("/iniciar-sesion");
+      } else {
+        load();
+      }
     }
-    load();
-  }, []);
+  }, [isLoading, isLoggedIn, navigate]);
 
   async function load() {
     try {
@@ -82,12 +78,12 @@ export default function FavoritosPage() {
   }
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <title>Favoritos | Importaciones Los Bukis</title>
       <NavBar />
 
       <div
-        className="w-full"
+        className="w-full flex-1"
         style={{
           paddingLeft: "clamp(1rem, 3vw, 3rem)",
           paddingRight: "clamp(1rem, 3vw, 3rem)",
@@ -97,7 +93,7 @@ export default function FavoritosPage() {
       >
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <h1 className="mb-6 text-3xl font-bold text-bukis-ink">
-            Mis favoritos
+            Mis Favoritos
           </h1>
 
           {loading && <p className="text-neutral-600">Cargando favoritos...</p>}
@@ -130,8 +126,7 @@ export default function FavoritosPage() {
             <div className="flex flex-col gap-6">
               {favoritos.map((fav) => {
                 const v = fav.variante;
-                const imgSrc =
-                  v.imagen ?? "https://placehold.net/600x600.png";
+                const imgSrc = resolveImageUrlOrPlaceholder(v.imagen);
                 const isBusy = busy === fav.id;
                 const itemMsg = msg[fav.id];
 
@@ -143,27 +138,27 @@ export default function FavoritosPage() {
                     <div className="flex flex-wrap items-center gap-5">
                       {/* Thumbnail */}
                       <figure
-                        className="h-20 w-20 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl bg-white"
-                        onClick={() => navigate(`/producto/${v.id}`)}
+                        className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white"
                       >
                         <img
                           src={imgSrc}
-                          alt={v.nombre_producto}
+                          alt={v.nombre_producto ?? "Producto"}
                           className="block h-full w-full object-contain"
                           onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src =
-                              "https://placehold.net/600x600.png";
+                            (e.currentTarget as HTMLImageElement).src = "https://placehold.net/600x600.png";
                           }}
                         />
                       </figure>
 
                       {/* Info */}
                       <div className="min-w-0 flex-1">
-                        <p className="text-lg font-bold text-white">
-                          {v.nombre_producto}
+                        <p className="text-lg font-bold text-white hover:underline">
+                          <Link to={`/producto/${v.producto_id}`}>
+                            {v.nombre_producto}
+                          </Link>
                         </p>
 
-                        <div className="mt-1 flex items-center gap-2">
+                        <div className="my-2 flex items-center gap-2">
                           <span
                             className="inline-block h-4 w-4 rounded-full"
                             style={{
@@ -175,9 +170,14 @@ export default function FavoritosPage() {
                             {v.color.nombre}
                           </span>
                         </div>
-
+                        
                         <p className="mt-1 text-sm text-white/80">
-                          {money(Number(v.precio))}
+                          <span className="underline">No. Ítem:</span> <span className="font-semibold">{v.item}</span>
+                        </p>
+                        
+                        <p className="mt-1 text-sm text-white/80">
+                          <span className="underline">Precio:</span>
+                          <span className="font-semibold">&nbsp;{formatMoney(Number(v.precio))}</span>
                         </p>
 
                         {itemMsg && (
@@ -194,7 +194,7 @@ export default function FavoritosPage() {
                       </div>
 
                       {/* Botones */}
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="grid items-end gap-2">
                         <button
                           className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={isBusy}
@@ -221,6 +221,6 @@ export default function FavoritosPage() {
       </div>
 
       <Footer />
-    </>
+    </div>
   );
 }

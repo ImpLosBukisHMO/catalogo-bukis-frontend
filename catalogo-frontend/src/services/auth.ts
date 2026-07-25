@@ -68,6 +68,7 @@ export function logout(): void {
   localStorage.removeItem("access");
   localStorage.removeItem("refresh");
   localStorage.removeItem("me"); // opcional
+  localStorage.removeItem("token");
 }
 
 async function doFetch(url: string, accessToken: string | null) {

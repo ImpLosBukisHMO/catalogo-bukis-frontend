@@ -33,6 +33,9 @@ import {
   WorkerDialogCancel,
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
+import { formatMoney } from "../../utils/normalizers";
+import { BACKEND_BASE_URL } from "../../utils/backend";
+import { IMAGE_PLACEHOLDER_URL } from "../../utils/images";
 
 // ─── Status change confirmation dialog ────────────────────────────────────────
 
@@ -130,19 +133,19 @@ function StatusChangeDialog({
             </div>
 
             {/* Denial reason (required for DENIED) */}
-            {nuevoEstado === "DENIED" && (
+            {(nuevoEstado === "DENIED" || nuevoEstado === "CANCELED") && (
               <div className="wk:flex wk:flex-col wk:gap-1">
                 <label
                   htmlFor="dialog-razon"
                   style={{ fontSize: 12, fontWeight: 600, color: "var(--worker-error-fg)" }}
                 >
-                  Razón del rechazo <span aria-hidden="true">*</span>
+                  Razón {nuevoEstado === "DENIED" ? " del rechazo" : " de la cancelación"} <span aria-hidden="true">*</span>
                 </label>
                 <textarea
                   id="dialog-razon"
                   value={razon}
                   onChange={(e) => onRazonChange(e.target.value)}
-                  placeholder="Describe la razón del rechazo (obligatorio)"
+                  placeholder={`Describe la razón ${nuevoEstado === "DENIED" ? "del rechazo" : "de la cancelación"} (obligatorio).`}
                   rows={3}
                   style={{
                     width: "100%",
@@ -219,11 +222,39 @@ function StatusChangeDialog({
 export default function WorkerOrdersPage() {
   // ── Local UI state ──
   const [filtroEstado, setFiltroEstado]   = useState("");
+  const [filtroDia, setFiltroDia]         = useState("");
+  const [filtroMesAnio, setFiltroMesAnio] = useState(""); 
   const [selectedId, setSelectedId]       = useState<number | null>(null);
   const [dialogOpen, setDialogOpen]       = useState(false);
   const [nuevoEstado, setNuevoEstado]     = useState("");
   const [razon, setRazon]                 = useState("");
   const [nota, setNota]                   = useState("");
+
+  const getDateMonthYear = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`; // Ej: "2026-07"
+  };
+
+  const getDateDay = (date: Date) => {
+    return String(date.getDate()); // Ej: "22"
+  };
+
+  const totalDaysInMonth = filtroMesAnio
+    ? new Date(
+        Number(filtroMesAnio.split("-")[0]),
+        Number(filtroMesAnio.split("-")[1]),
+        0
+      ).getDate()
+    : 31;
+  
+  const daysList = Array.from({ length: totalDaysInMonth }, (_, i) => String(i + 1));
+
+  const handleFiltrarHoy = () => {
+    const hoy = new Date();
+    setFiltroDia(getDateDay(hoy));
+    setFiltroMesAnio(getDateMonthYear(hoy));
+  };
 
   // ── Server state ──
   const {
@@ -241,9 +272,7 @@ export default function WorkerOrdersPage() {
 
   const cambiarEstado = useCambiarEstadoPedido();
 
-  const transicionesDisponibles = selected
-    ? (TRANSICIONES_VALIDAS[selected.estado] ?? [])
-    : [];
+  const transicionesDisponibles = selected ? (TRANSICIONES_VALIDAS[selected.estado] ?? []) : [];
 
   // ── Handlers ──
 
@@ -303,6 +332,25 @@ export default function WorkerOrdersPage() {
         ? cambiarEstado.error.message
         : "Error al cambiar estado")
     : null;
+  
+  const pedidosFiltrados = pedidos.filter((p) => {
+    if (filtroEstado && p.estado !== filtroEstado) {
+      return false;
+    }
+    const orderDate = new Date(p.created_at);
+    if (filtroMesAnio) {
+      const [year, month] = filtroMesAnio.split("-").map(Number);
+      if (orderDate.getFullYear() !== year || orderDate.getMonth() + 1 !== month) {
+        return false;
+      }
+    }
+    if (filtroDia) {
+      if (orderDate.getDate() !== Number(filtroDia)) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   // ── Render ──
 
@@ -315,12 +363,11 @@ export default function WorkerOrdersPage() {
       {/* ── Left panel: order list ─────────────────────────────────────────── */}
       <div
         style={{
-          width: 280,
+          width: 320,
           flexShrink: 0,
           borderRight: "1px solid var(--worker-border-soft)",
           display: "flex",
           flexDirection: "column",
-          overflowY: "auto",
           padding: "1rem 0.75rem",
           gap: 8,
         }}
@@ -344,6 +391,7 @@ export default function WorkerOrdersPage() {
         </div>
 
         {/* Status filter */}
+        <p className="font-semibold" style={{fontSize: 13}}>Por estado</p>
         <select
           value={filtroEstado}
           onChange={handleFiltroChange}
@@ -365,6 +413,75 @@ export default function WorkerOrdersPage() {
             <option key={k} value={k}>{v}</option>
           ))}
         </select>
+
+        {/* Date filter */}
+        <p className="mt-1.5 font-semibold" style={{ fontSize: 13 }}>Por fecha</p>
+        <div className="mb-1.5 flex items-end gap-2">
+          <div className="flex-1">
+            <p className="mb-1" style={{ fontSize: 12, color: "var(--worker-ink-secondary)" }}>Día</p>
+            <select
+              value={filtroDia}
+              onChange={(e) => setFiltroDia(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "7px 8px",
+                fontSize: 13,
+                borderRadius: 6,
+                border: "1px solid var(--worker-control-border)",
+                background: "var(--worker-control-bg)",
+                color: "var(--worker-ink)",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="">Todos</option>
+              {daysList.map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1">
+            <p className="mb-1" style={{ fontSize: 12, color: "var(--worker-ink-secondary)" }}>Mes y Año</p>
+            <input
+              type="month"
+              value={filtroMesAnio}
+              onChange={(e) => setFiltroMesAnio(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "7px 8px",
+                fontSize: 13,
+                borderRadius: 6,
+                border: "1px solid var(--worker-control-border)",
+                background: "var(--worker-control-bg)",
+                color: "var(--worker-ink)",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            />
+          </div>
+          <div>
+            <button
+              onClick={handleFiltrarHoy}
+              title="Filtrar por fecha de hoy"
+              style={{
+                padding: "7px 12px",
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 6,
+                border: "1px solid var(--worker-control-border)",
+                background: "var(--worker-control-bg)",
+                color: "var(--worker-ink)",
+                cursor: "pointer",
+                outline: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Hoy
+            </button>
+          </div>
+        </div>
 
         {/* List loading */}
         {isLoading && (
@@ -390,15 +507,20 @@ export default function WorkerOrdersPage() {
         )}
 
         {/* Empty */}
-        {!isLoading && !isError && pedidos.length === 0 && (
+        {!isLoading && !isError && pedidosFiltrados.length === 0 && (
           <p style={{ fontSize: 12, color: "var(--worker-ink-tertiary)", padding: "8px 0" }}>
             Sin pedidos
           </p>
         )}
 
         {/* Order list */}
-        <div className="wk:flex wk:flex-col wk:gap-1.5">
-          {pedidos.map((p) => {
+        <div
+          className="wk:flex wk:flex-col wk:gap-1.5"
+          style={{
+            overflowY: "auto"
+          }}
+        >
+          {pedidosFiltrados.map((p) => {
             const isSelected = selectedId === p.id;
             const statusColor = getPedidoStatusColor(p.estado);
             const statusBg    = getPedidoStatusBg(p.estado);
@@ -419,7 +541,7 @@ export default function WorkerOrdersPage() {
                 }}
               >
                 <span style={{ fontWeight: 600, fontSize: 13, color: "var(--worker-ink)" }}>
-                  {p.cliente.nombre}
+                  {p.folio}
                 </span>
                 {/* Status badge */}
                 <span
@@ -504,7 +626,7 @@ export default function WorkerOrdersPage() {
             >
               <div>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--worker-ink)", margin: 0 }}>
-                  {selected.cliente.nombre}
+                  Pedido {selected.folio}
                 </h2>
                 <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--worker-ink-secondary)" }}>
                   {selected.cliente.correo}
@@ -526,7 +648,7 @@ export default function WorkerOrdersPage() {
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  ${Number(selected.precio_total).toFixed(2)}
+                  {formatMoney(Number(selected.precio_total))}
                 </p>
               </div>
             </div>
@@ -650,29 +772,11 @@ export default function WorkerOrdersPage() {
                           flexShrink: 0,
                         }}
                       >
-                        {item.imagen ? (
-                          <img
-                            src={item.imagen}
-                            alt={item.nombre}
-                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 18,
-                            }}
-                          >
-                            📦
-                          </div>
-                        )}
+                        <img
+                          src={item.imagen ? `${BACKEND_BASE_URL}${item.imagen}` : IMAGE_PLACEHOLDER_URL}
+                          alt={item.nombre}
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        />
                       </div>
 
                       {/* Info */}
@@ -698,7 +802,7 @@ export default function WorkerOrdersPage() {
                           </span>
                         </div>
                         <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--worker-ink-tertiary)" }}>
-                          ${Number(item.precio_unitario).toFixed(2)} c/u
+                          {formatMoney(Number(item.precio_unitario))} c/u
                         </p>
                       </div>
 
@@ -716,7 +820,7 @@ export default function WorkerOrdersPage() {
                             fontVariantNumeric: "tabular-nums",
                           }}
                         >
-                          ${Number(item.subtotal).toFixed(2)}
+                          {formatMoney(Number(item.subtotal))}
                         </p>
                       </div>
                     </div>
@@ -740,7 +844,7 @@ export default function WorkerOrdersPage() {
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  ${Number(selected.precio_total).toFixed(2)}
+                  {formatMoney(Number(selected.precio_total))}
                 </span>
               </div>
 

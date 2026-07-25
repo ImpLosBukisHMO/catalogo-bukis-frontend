@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Clock, Pencil, Settings } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import type { WorkerVariant } from "../../types/worker";
+import type { WorkerVariant, WorkerProducto } from "../../types/worker";
 import {
   useWorkerVariants,
   useWorkerCategorias,
   useWorkerColores,
-  useWorkerProductosSlim,
   useEditarVariante,
   useCrearColor,
   useCrearCategoria,
+  useWorkerProductosSlim,
 } from "../../queries/workerProducts";
+import { normalizeResponse } from "./responseNormalizer";
 import { getStockColor } from "../elements/workerTheme";
 import {
   WorkerDialogRoot,
@@ -23,6 +26,16 @@ import {
   WorkerDialogAction,
 } from "../ui/worker/WorkerDialog";
 import { WorkerCreateProductModal } from "../ui/worker/WorkerCreateProductModal";
+import { WorkerAddVariantModal } from "../ui/worker/WorkerAddVariantModal";
+import type { CSSProperties } from "react";
+import {
+  getWorkerProducto,
+  type WorkerCategoria,
+  type WorkerColor,
+  type WorkerProductoSlim,
+} from "../../services/worker";
+import { IMAGE_PLACEHOLDER_URL, resolveImageUrl } from "../../utils/images";
+import { formatMoney, stripDiacritics } from "../../utils/normalizers";
 
 // ─── local types ─────────────────────────────────────────────────
 type PendingEdit = { variantId: number; stock: string; activo: boolean };
@@ -105,7 +118,7 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
         marginTop: 4,
         padding: "8px 18px",
         fontSize: 13,
-        fontWeight: 600,
+        fontWeight: 600, 
         color: "#fff",
         background: loading ? "var(--worker-ink-muted)" : "var(--worker-rail)",
         border: "none",
@@ -119,9 +132,23 @@ function SaveBtn({ loading, label = "Guardar" }: { loading: boolean; label?: str
   );
 }
 
+function iconButtonStyle(disabled: boolean): CSSProperties {
+  return {
+    background: "none",
+    border: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: 16,
+    color: "var(--worker-ink-tertiary)",
+    opacity: disabled ? 0.5 : 1,
+    padding: "2px 6px",
+    borderRadius: 4,
+  };
+}
+
 // ─── main component ──────────────────────────────────────────────
 export default function WorkerProductsPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // ── Search / filter ──
   const [search, setSearch]       = useState("");
@@ -130,6 +157,10 @@ export default function WorkerProductsPage() {
   // ── Utility drawer / create modal ──
   const [panelOpen, setPanelOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [addVariantOpen, setAddVariantOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<WorkerProducto | null>(null);
+  const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
+  const [editingVariant, setEditingVariant] = useState<WorkerVariant | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const createTriggerRef = useRef<HTMLButtonElement>(null);
   const prevCreateOpenRef = useRef(false);
@@ -144,6 +175,9 @@ export default function WorkerProductsPage() {
   const [confirmOpen, setConfirmOpen]         = useState(false);
   const [pendingEdit, setPendingEdit]         = useState<PendingEdit | null>(null);
 
+  // ── Loading state para fetches individuales (on-demand) ──
+  const [loadingProductId, setLoadingProductId] = useState<number | null>(null);
+
   // ── React Query hooks ──
   const {
     data: variants = [],
@@ -153,10 +187,28 @@ export default function WorkerProductsPage() {
     isFetching,
   } = useWorkerVariants();
 
-  const { data: categorias = [] } = useWorkerCategorias();
-  const utilitiesOpen = panelOpen || createOpen;
-  const { data: colores = [] }    = useWorkerColores(utilitiesOpen);
-  const { data: productos = [] }  = useWorkerProductosSlim(utilitiesOpen);
+  const { data: categoriasRaw = [], refetch: refetchCategorias } = useWorkerCategorias();
+  const categorias = useMemo(() => normalizeResponse(categoriasRaw) as WorkerCategoria[], [categoriasRaw]);
+
+  const utilitiesOpen = panelOpen || createOpen || addVariantOpen;
+  const { data: coloresRaw = [], refetch: refetchColores } = useWorkerColores(utilitiesOpen);
+  const colores = useMemo(() => normalizeResponse(coloresRaw) as WorkerColor[], [coloresRaw]);
+
+  const {
+    data: productosSlimRaw = [],
+    isLoading: loadingProducts,
+    error: errorProds,
+    refetch: refetchProductosSlim,
+  } = useWorkerProductosSlim(utilitiesOpen);
+  const productos = useMemo(() => normalizeResponse(productosSlimRaw) as WorkerProductoSlim[], [productosSlimRaw]);
+
+  // Forzar actualización de categorías al abrir paneles de creación o utilidades
+  useEffect(() => {
+    if (utilitiesOpen) {
+      refetchCategorias();
+      refetchColores();
+    }
+  }, [utilitiesOpen, refetchCategorias, refetchColores]);
 
   const editarVariante  = useEditarVariante();
   const crearColorM     = useCrearColor();
@@ -171,31 +223,23 @@ export default function WorkerProductsPage() {
 
   // ── Derived data ──
   const categories = useMemo(() => {
-    const catMap = new Map(categorias.map((c) => [c.id, c.nombre]));
-    const set = new Set<string>();
-    variants.forEach((v) => {
-      v.producto.categorias?.forEach((id) => {
-        const name = catMap.get(id);
-        if (name) set.add(name);
-      });
-    });
-    return Array.from(set).sort();
-  }, [variants, categorias]);
+    return (categorias as WorkerCategoria[]).map((c: WorkerCategoria) => c.nombre).sort();
+  }, [categorias]);
 
   const filtered = useMemo(() => {
     const catId = catFilter !== "ALL"
       ? categorias.find((c) => c.nombre === catFilter)?.id
       : undefined;
     return variants.filter((v) => {
-      const matchName = v.producto.nombre.toLowerCase().includes(search.toLowerCase());
+      const matchName = stripDiacritics(v.producto.nombre).toLowerCase()
+      .includes(stripDiacritics(search).toLowerCase());
       const matchCat =
-        catFilter === "ALL" ||
-        (catId !== undefined && v.producto.categorias?.includes(catId));
+        catId === undefined ||
+        (catId !== undefined && v.producto.categoria?.id === catId);
       return matchName && matchCat;
     });
   }, [variants, search, catFilter, categorias]);
 
-  // normalize variant name for rendering
   const variantName = (v: WorkerVariant) => v.producto.nombre;
 
   const startEdit = (v: WorkerVariant) => {
@@ -203,6 +247,47 @@ export default function WorkerProductsPage() {
     setEditStock(String(v.stock));
     setEditActivo(v.activo);
     setEditError(null);
+  };
+
+  // ── Fetch On-Demand Handler por ID ──
+  const fetchFullProduct = async (productId: number): Promise<WorkerProducto | null> => {
+    setLoadingProductId(productId);
+    try {
+      const fullProduct = await queryClient.fetchQuery<WorkerProducto>({
+        queryKey: ["worker", "producto", productId],
+        queryFn: () => getWorkerProducto(productId),
+        staleTime: 5 * 60 * 1000,
+      });
+      return fullProduct;
+    } catch (err) {
+      console.error("Error cargando detalles del producto:", err);
+      return null;
+    } finally {
+      setLoadingProductId(null);
+    }
+  };
+
+  const handleEditVariantModal = async (v: WorkerVariant) => {
+    setLoadingProductId(v.producto.id)
+    setEditError(null)
+    refetchProductosSlim();
+
+    try {
+      const fullProduct = await fetchFullProduct(v.producto.id);
+
+      if (fullProduct) {
+        setEditingProduct(fullProduct);
+        setEditingVariant(v);
+        setEditingVariantId(v.variant_id);
+        setCreateOpen(true);
+      } else {
+        throw new Error("No se logró obtener toda la información del producto.")
+      }
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : "Error al cargar el producto.")
+    } finally {
+      setLoadingProductId(null)
+    }
   };
 
   const cancelEdit = () => { setEditId(null); setEditError(null); };
@@ -241,8 +326,19 @@ export default function WorkerProductsPage() {
   })();
 
   const isAuthError = fetchErrorMsg?.includes("autenticado");
-
   const savingEdit = editarVariante.isPending;
+
+  const getDiscountInfo = (variant: WorkerVariant) => {
+    const specialDiscount = variant.producto.descuento_especial;
+    const generalDiscount = variant.producto.categoria?.descuento;
+
+    if (specialDiscount !== null && specialDiscount.es_valido){
+      return { info: specialDiscount, type: "Especial"};
+    } else if (generalDiscount !== null && generalDiscount?.es_valido) {
+      return { info: generalDiscount, type: "General" };
+    }
+    return { info: null, type: "" };
+  }
 
   return (
     <div
@@ -287,7 +383,7 @@ export default function WorkerProductsPage() {
                   fontWeight: 500,
                 }}
               >
-                ↻ actualizando…
+                ↻ Actualizando…
               </span>
             )}
           </p>
@@ -310,6 +406,22 @@ export default function WorkerProductsPage() {
             }}
           >
             Nuevo Producto
+          </button>
+
+          <button
+            onClick={() => setAddVariantOpen(true)}
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#ffffff",
+              background: "var(--worker-inventory-fg)",
+              border: "1px solid var(--worker-border)",
+              borderRadius: 7,
+              cursor: "pointer",
+            }}
+          >
+            Agregar Variante
           </button>
 
           <button
@@ -337,6 +449,30 @@ export default function WorkerProductsPage() {
           categorias={categorias}
           colores={colores}
           productos={productos}
+          isLoadingProductos={loadingProducts}
+          errorProductos={errorProds ? errorProds.message : null}
+          onRetryProductos={() => refetchProductosSlim()}
+          editingProduct={editingProduct}
+          initialVariantId={editingVariantId}
+          initialVariant={editingVariant}
+          onEditingFinished={() => {
+            setEditingProduct(null);
+            setEditingVariantId(null);
+            setEditingVariant(null);
+          }}
+        />
+      )}
+
+      {addVariantOpen && (
+        <WorkerAddVariantModal
+          open={addVariantOpen}
+          onOpenChange={setAddVariantOpen}
+          categorias={categorias}
+          colores={colores}
+          productos={productos}
+          isLoadingProductos={loadingProducts}
+          errorProductos={errorProds ? errorProds.message : null}
+          onRetryProductos={() => refetchProductosSlim()}
         />
       )}
 
@@ -455,7 +591,7 @@ export default function WorkerProductsPage() {
         </div>
       ) : (
         /* ── Table ── */
-        <div style={{ overflowX: "auto" }}>
+        <div className="max-h-[calc(100vh-180px)]" style={{ overflowX: "auto", overflowY: "auto" }}>
           <table
             style={{
               width: "100%",
@@ -465,20 +601,21 @@ export default function WorkerProductsPage() {
           >
             <thead>
               <tr
+                className="sticky top-0 z-10"
                 style={{
                   background: "#1e293b",
                   color: "#fff",
                 }}
               >
-                {["Imagen", "Nombre", "No.Item", "Color", "Stock", "Activo", ""].map((h) => (
+                {["Imagen", "Nombre", "No. Ítem", "Categoría", "Precio Original", "Precio con Descuento", "Descuento Aplicado", "Código", "Color", "Stock", "Activo", ""].map((h) => (
                   <th
                     key={h}
                     style={{
-                      padding: "10px 14px",
-                      whiteSpace: "nowrap",
+                      padding: "4px 10px",
+                      whiteSpace: "wrap",
                       fontWeight: 600,
                       fontSize: 13,
-                      textAlign: "left",
+                      textAlign: "center",
                     }}
                   >
                     {h}
@@ -490,6 +627,10 @@ export default function WorkerProductsPage() {
               {filtered.map((v) => {
                 const isEditing = editId === v.variant_id;
                 const stockColor = getStockColor(v.stock);
+                const imageSrc = resolveImageUrl(v.imagen_principal);
+                
+                // Evalúa si esta fila específica está cargando su producto detallado
+                const isThisProductLoading = loadingProductId === v.producto.id;
 
                 return (
                   <tr
@@ -502,15 +643,22 @@ export default function WorkerProductsPage() {
                     }}
                   >
                     {/* Image */}
-                    <td style={{ padding: "8px 16px" }}>
-                      {v.imagen_principal ? (
-                        <img
-                          src={v.imagen_principal}
-                          alt=""
-                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }}
-                        />
+                    <td style={{ padding: "8px" }}>
+                      {imageSrc ? (
+                        <div className="w-full justify-items-center">
+                          <img
+                            src={imageSrc}
+                            alt=""
+                            style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = IMAGE_PLACEHOLDER_URL;
+                            }}
+                          />
+                        </div>
                       ) : (
                         <div
+                          className="w-full justify-items-center"
                           style={{
                             width: 40,
                             height: 40,
@@ -525,28 +673,127 @@ export default function WorkerProductsPage() {
                     {/* Name */}
                     <td
                       style={{
-                        padding: "8px 16px",
+                        padding: "8px 0px",
                         fontWeight: 500,
                         color: "var(--worker-ink)",
+                        textAlign: "center",
                       }}
                     >
-                      {variantName(v)}
+                      <div 
+                        className="w-full justify-items-center"
+                        style={{ alignItems: "center", }}>
+                        <p className="text-center" style={{ whiteSpace: "wrap", }}>
+                          {variantName(v)}
+                        </p>
+                        <button
+                          disabled={isThisProductLoading}
+                          onClick={() => { handleEditVariantModal(v); console.log("Variante seleccionada para editar: ", v) }}
+                          title="Editar producto base y variante"
+                          aria-label="Editar producto base y variante"
+                          style={iconButtonStyle(isThisProductLoading)}
+                        >
+                          {isThisProductLoading ? <Clock size={18}/> : <Settings size={18}/>}
+                        </button>
+                      </div>
                     </td>
 
-                    {/* Item # */}
+                    {/* Ítem # */}
                     <td
                       style={{
-                        padding: "8px 16px",
+                        padding: "8px",
                         fontSize: 13,
                         color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
                       }}
                     >
                       {v.item}
                     </td>
 
+                    {/* Categoría */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {v.producto.categoria?.nombre}
+                    </td>
+
+                    {/* Precio Original */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {formatMoney(Number(v.producto.precio_original))}
+                    </td>
+                    
+                    {/* Precio con Descuento */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink)",
+                        fontWeight: 500,
+                        textAlign: "center",
+                      }}
+                    >
+                      {(() => {
+                        const discount = getDiscountInfo(v);
+                        const finalPrice = (discount?.info !== null && discount.info.es_valido) ? Number(v.producto.precio) : Number(v.producto.precio_original);
+                        const percentage = (discount?.info !== null && discount.info.es_valido) ? Number(discount.info.porcentaje) : 0
+                        return (
+                          <p>
+                            {`${formatMoney(finalPrice)}`} <br/> {`(-${percentage.toFixed(2)} %)`}
+                          </p>
+                        )
+                      })()}
+                    </td>
+
+                    {/* Descuento Aplicado */}
+                    <td
+                      style={{
+                        padding: "8px",
+                        fontSize: 13,
+                        color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {(() => {
+                        const discount = getDiscountInfo(v);
+                        if (discount.info !== null) {
+                          const validity = discount.info.es_valido ? "Activo" : "Inactivo"
+                          return (
+                            <p>
+                              <span className="font-semibold">{`${discount.info.nombre}`}</span> <br /> {`(${discount.type} - ${validity})`}
+                            </p>
+                          )
+                        } else {
+                          return <p>Ninguno</p>
+                        }
+                        })()}
+                    </td>
+
+                    {/* Código de Barras */}
+                    <td
+                      style={{
+                        padding: "4px 0px",
+                        color: "var(--worker-ink-secondary)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {v.codigo_barras}
+                    </td>
+
                     {/* Color */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td style={{ padding: "8px", }}>
                       <span
+                        className="flex justify-center-safe content-center"
                         style={{
                           display: "flex",
                           gap: 8,
@@ -571,7 +818,7 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Stock */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td style={{ padding: "8px", textAlign: "center", }}>
                       {isEditing ? (
                         <input
                           type="number"
@@ -594,6 +841,7 @@ export default function WorkerProductsPage() {
                             fontWeight: 600,
                             color: stockColor,
                             fontSize: 14,
+                            textAlign: "center",
                           }}
                         >
                           {v.stock}
@@ -602,7 +850,13 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Active */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td
+                      style={{
+                        padding: "8px",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                    >
                       {isEditing ? (
                         <input
                           type="checkbox"
@@ -635,7 +889,7 @@ export default function WorkerProductsPage() {
                     </td>
 
                     {/* Actions */}
-                    <td style={{ padding: "8px 16px" }}>
+                    <td style={{ padding: "8px" }}>
                       {isEditing ? (
                         <div style={{ display: "flex", gap: 8 }}>
                           <button
@@ -674,6 +928,7 @@ export default function WorkerProductsPage() {
                         </div>
                       ) : (
                         <button
+                          disabled={savingEdit}
                           onClick={() => startEdit(v)}
                           title="Editar"
                           style={{
@@ -686,7 +941,7 @@ export default function WorkerProductsPage() {
                             borderRadius: 4,
                           }}
                         >
-                          ✏️
+                          <Pencil size={18}/>
                         </button>
                       )}
                     </td>
@@ -821,6 +1076,7 @@ export default function WorkerProductsPage() {
           <Seccion title="Colores">
             <CrearColorForm
               onCreated={() => {
+                queryClient.invalidateQueries({ queryKey: ["worker", "colores"] });
                 crearColorM.reset();
               }}
               mutation={crearColorM}
@@ -828,7 +1084,13 @@ export default function WorkerProductsPage() {
           </Seccion>
 
           <Seccion title="Categorías">
-            <CrearCategoriaForm mutation={crearCategoriaM} />
+            <CrearCategoriaForm 
+              mutation={crearCategoriaM} 
+              onCreated={async () => {
+                await queryClient.invalidateQueries({ queryKey: ["worker", "categorias"] });
+                refetchCategorias();
+              }}
+            />
           </Seccion>
 
         </div>
@@ -838,7 +1100,6 @@ export default function WorkerProductsPage() {
 }
 
 // ─── sub-forms ───────────────────────────────────────────────────
-
 function CrearColorForm({
   onCreated,
   mutation,
@@ -846,49 +1107,40 @@ function CrearColorForm({
   onCreated?: () => void;
   mutation: ReturnType<typeof useCrearColor>;
 }) {
-  const [nombre, setNombre]         = useState("");
-  const [hex, setHex]               = useState("#000000");
-  const [disponible, setDisponible] = useState(true);
-  const [error, setError]           = useState("");
+  const [nombre, setNombre] = useState("");
+  const [hex, setHex] = useState("#000000");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     try {
-      await mutation.mutateAsync({ nombre, hex, disponible });
-      setNombre(""); setHex("#000000"); setDisponible(true);
+      await mutation.mutateAsync({nombre, hex, disponible: false});
+      setNombre("");
+      setHex("#000000");
       onCreated?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+    } catch {
+      // Manejado por el estado del hook de mutación
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <Field label="Nombre" value={nombre} onChange={setNombre} required />
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Field label="Nombre del color" value={nombre} onChange={setNombre} required />
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <label style={{ fontSize: 12, color: "var(--worker-ink-secondary)", fontWeight: 500 }}>
-          HEX *
+          Color Hex
         </label>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             type="color"
             value={hex}
             onChange={(e) => setHex(e.target.value)}
-            style={{
-              width: 40,
-              height: 34,
-              border: "1px solid var(--worker-border)",
-              borderRadius: 6,
-              cursor: "pointer",
-              padding: 2,
-              background: "var(--worker-control-bg)",
-            }}
+            style={{ width: 40, height: 34, padding: 0, border: "none", background: "none", cursor: "pointer" }}
           />
           <input
             type="text"
             value={hex}
             onChange={(e) => setHex(e.target.value)}
+            placeholder="#000000"
             style={{
               flex: 1,
               padding: "7px 10px",
@@ -901,43 +1153,34 @@ function CrearColorForm({
           />
         </div>
       </div>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--worker-ink-secondary)" }}>
-        <input
-          type="checkbox"
-          checked={disponible}
-          onChange={(e) => setDisponible(e.target.checked)}
-        />
-        Disponible
-      </label>
-      {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
       <SaveBtn loading={mutation.isPending} />
     </form>
   );
 }
 
 function CrearCategoriaForm({
+  onCreated,
   mutation,
 }: {
+  onCreated?: () => void;
   mutation: ReturnType<typeof useCrearCategoria>;
 }) {
   const [nombre, setNombre] = useState("");
-  const [error, setError]   = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     try {
       await mutation.mutateAsync(nombre);
       setNombre("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      onCreated?.();
+    } catch {
+      // Manejado por la mutación
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <Field label="Nombre" value={nombre} onChange={setNombre} required />
-      {error && <p style={{ color: "var(--worker-error-fg)", fontSize: 12, margin: 0 }}>{error}</p>}
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Field label="Nombre de la categoría" value={nombre} onChange={setNombre} required />
       <SaveBtn loading={mutation.isPending} />
     </form>
   );

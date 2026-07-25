@@ -1,8 +1,9 @@
 import { NavLink, Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
-import { ClipboardList, LayoutDashboard, Moon, Package, Store, Sun, UserCircle } from "lucide-react";
+import { ClipboardList, Image, LayoutDashboard, Moon, Package, Percent, Store, Sun, UserCircle } from "lucide-react";
 import { logOut } from "../../services/user";
 import { useWorkerTheme } from "../providers/useWorkerTheme";
+import { isBannerOfertasEnabled } from "../../utils/featureFlags";
 import {
   WorkerDropdownRoot,
   WorkerDropdownTrigger,
@@ -28,6 +29,12 @@ const NAV_ROUTES = [
     icon: Package,
   },
   {
+    label: "Descuentos",
+    to: "/worker/discounts",
+    end: false,
+    icon: Percent,
+  },
+  {
     label: "Pedidos",
     to: "/worker/orders",
     end: false,
@@ -44,6 +51,14 @@ const NAV_ROUTES = [
 
 const WorkerSidebar = () => {
   const { theme, toggleTheme } = useWorkerTheme();
+  const routes = isBannerOfertasEnabled
+    ? [...NAV_ROUTES, {
+      label: "Banner ofertas",
+      to: "/worker/banner-ofertas",
+      end: false,
+      icon: Image,
+    }]
+    : NAV_ROUTES;
 
   const handleLogOut = () => {
     logOut().catch((err: unknown) =>
@@ -88,7 +103,7 @@ const WorkerSidebar = () => {
       {/* ── Navigation ────────────────────────────────────────────────────── */}
       <nav className="wk:flex-1 wk:px-3 wk:py-4" aria-label="Worker navigation">
         <ul className="wk:flex wk:list-none wk:flex-col wk:gap-2 wk:p-0 wk:m-0">
-          {NAV_ROUTES.map(({ label, to, end, icon: Icon }) => (
+          {routes.map(({ label, to, end, icon: Icon }) => (
             <li key={to} className="wk:m-0 wk:p-0">
               <NavLink
                 to={to}

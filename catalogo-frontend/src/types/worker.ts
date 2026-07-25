@@ -1,11 +1,29 @@
 export type WorkerVariant = {
   variant_id: number;
   item: string;
+  codigo_barras: string;
+  precio: number;
   producto: {
     id: number;
     nombre: string;
     precio: string;
-    categorias: number[];
+    precio_original: string;
+    categoria: {
+      id: number;
+      nombre: string;
+      descuento: {
+        id: number;
+        nombre: string;
+        porcentaje: number;
+        es_valido: boolean;
+      } | null;
+    } | null;
+    descuento_especial: {
+      id: number;
+      nombre: string;
+      porcentaje: number;
+      es_valido: boolean;
+    } | null;
   };
   color: {
     id: number;
@@ -26,6 +44,7 @@ export type WorkerPedidoCliente = {
 export type WorkerPedido = {
   id: number;
   public_id: string;
+  folio: string;
   cliente: WorkerPedidoCliente;
   estado: string;
   precio_total: string;
@@ -40,6 +59,7 @@ export type WorkerPedidoItem = {
   color: string;
   color_hex: string;
   precio_unitario: string;
+  descuento_porcentaje: string;
   subtotal: string;
   imagen: string;
 };
@@ -47,6 +67,7 @@ export type WorkerPedidoItem = {
 export type WorkerPedidoDetalle = {
   id: number;
   public_id: string;
+  folio: string;
   cliente: {
     id: number;
     nombre: string;
@@ -74,9 +95,12 @@ export type WorkerProducto = {
   medidas: string;
   capacidad: string | null;
   disponible: boolean;
-  categorias: number[];
+  estado?: "draft" | "active" | "archived" | string;
+  categoria: number | null;
+  descuento_especial: number | null;
   created_at: string;
   updated_at: string;
+  variantes?: WorkerVariant[];
 };
 
 export const ESTADOS_PEDIDO = [
@@ -103,10 +127,10 @@ export const ESTADO_LABEL: Record<string, string> = {
 
 export const TRANSICIONES_VALIDAS: Record<string, string[]> = {
   PENDING: ["APPROVED", "DENIED"],
-  APPROVED: ["READY"],
-  READY: ["SHIPPED"],
-  SHIPPED: ["COMPLETED"],
+  APPROVED: ["READY", "CANCELED"],
+  READY: ["SHIPPED", "CANCELED"],
+  SHIPPED: ["COMPLETED", "CANCELED"],
   DENIED: [],
   COMPLETED: [],
-  CANCELED: [],
+  CANCELED: ["PENDING"],
 };

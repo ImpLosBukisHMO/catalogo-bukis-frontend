@@ -6,14 +6,10 @@ import Footer from "../elements/Footer";
 
 import type { CarritoResponse } from "../../types/carrito";
 import { getCarritoActual, updateItemCantidad, deleteItem, checkoutCart } from "../../services/carrito";
+import { IMAGE_PLACEHOLDER_URL, resolveImageUrlOrPlaceholder } from "../../utils/images";
+import { formatMoney } from "../../utils/normalizers";
+import { ClipboardList } from "lucide-react";
 
-function money(n: number) {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  }).format(n);
-}
 
 type CartItem = Record<string, unknown>;
 
@@ -49,15 +45,6 @@ function getProductName(item: CartItem): string {
     item.nombre_producto ??
     item.nombre ??
     "Producto"
-  );
-}
-
-function getProductDesc(item: CartItem): string {
-  return String(
-    nested(item, "producto", "descripcion") ??
-    item.descripcion_producto ??
-    item.descripcion ??
-    ""
   );
 }
 
@@ -103,9 +90,8 @@ function getImageSrc(item: CartItem): string {
     item.producto_imagen ??
     nested(item, "variante", "imagen") ??
     nested(item, "variante", "producto", "imagen") ??
-    nested(item, "variante", "producto_imagen") ??
-    "https://placehold.net/600x600.png";
-  return String(src);
+    nested(item, "variante", "producto_imagen");
+  return resolveImageUrlOrPlaceholder(src != null ? String(src) : null);
 }
 
 export default function CarritoPage() {
@@ -142,8 +128,6 @@ export default function CarritoPage() {
         if (it?.id != null) next[Number(it.id)] = String(getQty(it as CartItem));
       });
       setQtyDraft(next);
-
-      console.log("carrito item example", data?.items?.[0]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error cargando carrito");
       setCarrito(null);
@@ -197,11 +181,9 @@ export default function CarritoPage() {
       setBusy("checkout");
       setError(null);
 
-      const data = await checkoutCart();
+      await checkoutCart();
 
       await load();
-
-      console.log("checkout ok", data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error en checkout");
     } finally {
@@ -210,15 +192,23 @@ export default function CarritoPage() {
   }
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <title>Carrito | Importaciones Los Bukis</title>
       <NavBar />
-
-      <div className="px-4 py-8 sm:px-6 lg:px-12">
+      <div className="flex-1 px-4 py-8 sm:px-6 lg:px-12">
         <div className="mx-auto max-w-[1400px]">
-          <h1 className="mb-6 text-4xl font-bold text-bukis-ink">
-            Carrito
-          </h1>
+          <div className="mb-6 w-full inline-flex">
+            <h1 className="text-4xl font-bold text-bukis-ink">
+              Carrito
+            </h1>
+            <button
+              className="inline-flex ms-auto items-center gap-2 rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
+              onClick={() => navigate("/pedidos")}
+            >
+              <ClipboardList size={22} />
+              <span>Mis Pedidos</span>
+            </button>
+          </div>
 
           {loading && <p className="text-neutral-600">Cargando carrito...</p>}
           {error && (
@@ -256,9 +246,9 @@ export default function CarritoPage() {
                   const productId = getProductId(item);
 
                   const nombre = getProductName(item);
-                  const descripcion = getProductDesc(item);
                   const colorName = getColorName(item);
                   const colorHex = getColorHex(item);
+                  const sku = String(item?.item);
 
                   const unit = getUnitPrice(item);
                   const qty = getQty(item);
@@ -288,48 +278,46 @@ export default function CarritoPage() {
                             alt={nombre}
                             className="block h-full w-full object-contain"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src =
-                                "https://placehold.net/600x600.png";
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = IMAGE_PLACEHOLDER_URL;
                             }}
                           />
                         </figure>
 
                         <div className="min-w-0 flex-1">
-                          <h2 className="mb-1 text-3xl font-bold leading-tight text-white">
+                          <p className="text-lg font-bold text-white">
                             {nombre}
-                          </h2>
-                          <div className="text-sm text-white/75">
-                            {descripcion ? (
-                              <p className="mb-2 max-w-[720px]">{descripcion}</p>
-                            ) : null}
+                          </p>
 
-                            {(colorName || colorHex) && (
-                              <div className="flex items-center gap-2.5">
-                                <span>{colorName}</span>
-                                {colorHex && (
-                                  <span
-                                    className="inline-block h-3.5 w-3.5 rounded-full"
-                                    style={{
-                                      background: colorHex,
-                                      border: "1px solid rgba(255,255,255,0.25)",
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            )}
-
-                            <p className="mt-2">
-                              Precio unitario: {money(unit)}
-                            </p>
+                          <div className="my-2 flex items-center gap-2">
+                            <span
+                              className="inline-block h-4 w-4 rounded-full"
+                              style={{
+                                background: colorHex || "transparent",
+                                border: "1px solid rgba(255,255,255,0.3)",
+                              }}
+                            />
+                            <span className="inline-flex items-center rounded-full bg-white/12 px-2.5 py-0.5 text-xs font-medium text-white">
+                              {colorName}
+                            </span>
                           </div>
+
+                          <p className="mt-1 text-sm text-white/80">
+                            <span className="underline">No. Ítem:</span> <span className="font-semibold">{sku}</span>
+                          </p>
+                          
+                          <p className="mt-1 text-sm text-white/80">
+                            <span className="underline">Precio:</span>
+                            <span className="font-semibold">&nbsp;{formatMoney(unit)}</span>
+                          </p>
                         </div>
 
                         <div className="min-w-[190px] text-right">
-                          <p className="mb-1.5 text-white/55">
+                          <p className="mb-1.5 text-white/60">
                             Subtotal
                           </p>
                           <p className="m-0 text-2xl font-bold text-white">
-                            {money(subtotal)}
+                            {formatMoney(subtotal)}
                           </p>
                         </div>
 
@@ -372,7 +360,7 @@ export default function CarritoPage() {
                               </button>
                             </div>
 
-                            <p className="mt-1.5 text-right text-xs text-white/45">
+                            <p className="mt-1.5 text-right text-xs text-white/60">
                               Cambia y aplica.
                             </p>
                           </div>
@@ -389,7 +377,7 @@ export default function CarritoPage() {
                     Total del pedido
                   </p>
                   <p className="m-0 text-3xl font-bold text-white">
-                    {money(total)}
+                    {formatMoney(total)}
                   </p>
                 </div>
 
@@ -398,7 +386,7 @@ export default function CarritoPage() {
                   onClick={onCheckout}
                   disabled={busy === "checkout" || items.length === 0}
                 >
-                  {busy === "checkout" ? "Procesando..." : "Checkout"}
+                  {busy === "checkout" ? "Procesando..." : "Realizar pedido"}
                 </button>
               </div>
             </>
@@ -407,6 +395,6 @@ export default function CarritoPage() {
       </div>
 
       <Footer />
-    </>
+    </div>
   );
 }

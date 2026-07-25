@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Briefcase, House, Heart, ShoppingCart, UserRound, Search, Box, Menu, X } from "lucide-react";
 import { DoorOpen } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
-import { getLoggedUserData, logOut } from "../../services/user";
+import { logOut } from "../../services/user";
+import { useAuth } from "../../context/useAuth";
+import { buildCatalogLocation, normalizeCatalogQuery } from "../../utils/catalogNavigation";
 
 type NavBarProps = {
     navBarQuery?: string | null;
@@ -11,35 +13,23 @@ type NavBarProps = {
 
 const NavBar = ({navBarQuery}: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isStaff, setIsStaff] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const { isLoggedIn, isStaff, setLoggedOut } = useAuth();
+    // TODO: use isLoading to show a skeleton/placeholder while auth state is being validated
+    const [searchQuery, setSearchQuery] = useState(normalizeCatalogQuery(navBarQuery));
     const { pathname } = useLocation();
+    const navigate = useNavigate();
     const toggleNavMenu = () => setIsOpen(!isOpen);
     const iconSize = 22;
 
+    useEffect(() => {
+        setSearchQuery(normalizeCatalogQuery(navBarQuery));
+    }, [navBarQuery]);
+
     const handleQuery = (e: React.FormEvent) => {
         e.preventDefault();
-        if (searchQuery.length > 0) {
-            window.location.href = `/productos?query=${searchQuery}`;
-        } else {
-            window.location.href = "/productos";
-        }
+        navigate(buildCatalogLocation({ page: 1, query: searchQuery }));
+        setIsOpen(false);
     };
-
-    const fetchUserData = async () => {
-        try {
-            const userData = await getLoggedUserData();
-            setIsLoggedIn(true);
-            setIsStaff(Boolean(userData.is_staff));
-        } catch (e: unknown) {
-            if ((e as { response?: { status?: number } }).response?.status === 401) {
-                console.log("Es necesario registrarse o iniciar sesión.");
-            }
-        }
-    };
-
-    useEffect(() => { (async () => await fetchUserData())(); }, []);
 
     const linkClass = (isActive: boolean) =>
         `inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45 ${isActive ? "bg-white/15 underline underline-offset-4" : ""}`;
@@ -67,9 +57,9 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                             <Search size={22} />
                         </div>
                         <input className="h-11 min-w-0 flex-1 rounded-r-xl border border-l-0 border-white/25 bg-white px-3 text-sm text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
-                                type="text"
+                                type="search"
                                 placeholder="Busque un producto"
-                                defaultValue={navBarQuery || searchQuery}
+                                value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)} />
                     </form>
 
@@ -103,7 +93,10 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                         </Link>
                     )}
                     {isLoggedIn && (
-                        <button className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" onClick={async () => await logOut()} type="button">
+                        <button 
+                        className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" 
+                        onClick={async () => await logOut(setLoggedOut)}
+                        type="button">
                             <DoorOpen size={iconSize} />
                             <span>Cerrar Sesión</span>
                         </button>

@@ -6,6 +6,7 @@ import Footer from "../elements/Footer";
 
 import type { PedidoResumen } from "../../types/pedido";
 import { getMisPedidos } from "../../services/pedidos";
+import { formatMoney } from "../../utils/normalizers";
 
 
 const ESTADO_COLOR: Record<string, string> = {
@@ -28,14 +29,6 @@ const ESTADO_LABEL: Record<string, string> = {
   CANCELED: "Cancelado",
 };
 
-function money(v: string | number) {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  }).format(Number(v));
-}
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-MX", {
     year: "numeric",
@@ -52,7 +45,7 @@ export default function MisPedidosPage() {
 
   useEffect(() => {
     if (!localStorage.getItem("access")) {
-      navigate("/login");
+      navigate("/iniciar-sesion");
       return;
     }
     (async () => {
@@ -68,12 +61,12 @@ export default function MisPedidosPage() {
   }, []);
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <title>Mis Pedidos | Importaciones Los Bukis</title>
       <NavBar />
 
       <div
-        className="w-full"
+        className="w-full flex-1"
         style={{
           paddingLeft: "clamp(1rem, 3vw, 3rem)",
           paddingRight: "clamp(1rem, 3vw, 3rem)",
@@ -127,7 +120,7 @@ export default function MisPedidosPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-lg font-bold text-white">
-                          Pedido #{p.id}
+                          Pedido #{p.folio}
                         </p>
                         <p className="text-xs text-white/60">
                           {formatDate(p.created_at)} · {p.items_count}{" "}
@@ -143,7 +136,7 @@ export default function MisPedidosPage() {
                           {estadoLabel}
                         </span>
                         <span className="text-lg font-bold text-white">
-                          {money(p.precio_total)}
+                          {formatMoney(Number(p.precio_total))}
                         </span>
                         <span className="text-lg text-white/40">›</span>
                       </div>
@@ -157,6 +150,6 @@ export default function MisPedidosPage() {
       </div>
 
       <Footer />
-    </>
+    </div>
   );
 }

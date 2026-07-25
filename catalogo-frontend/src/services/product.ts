@@ -1,13 +1,62 @@
 import API from "../api";
+import {
+  normalizePagedResponse,
+  type PagedResponse,
+} from "../components/pages/responseNormalizer";
+import type { Product } from "../types/product";
 
+export type GetProductsPageParams = {
+  page?: number;
+  query?: string;
+};
+
+function normalizeRequestedPage(page?: number): number {
+  if (!Number.isFinite(page) || !page || page < 1) return 1;
+  return Math.floor(page);
+}
+
+function buildProductsUrl(params?: GetProductsPageParams): string {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(normalizeRequestedPage(params?.page)));
+
+  const query = params?.query?.trim();
+  if (query) {
+    searchParams.set("query", query);
+  }
+
+  return `/api/productos/?${searchParams.toString()}`;
+}
+
+export async function getProductsPage(
+  params?: GetProductsPageParams,
+): Promise<PagedResponse<Product>> {
+  const res = await API.get(buildProductsUrl(params));
+  return normalizePagedResponse<Product>(res.data);
+}
+
+/**
+ * Fetches a flat public product list for discovery surfaces.
+ *
+ * The backend endpoint `/api/productos/` returns a DRF PageNumberPagination
+ * response: `{ count, next, previous, results }` (backend issue #37,
+ * PR catalogo-bukis-backend#39). Older versions returned a bare array.
+ *
+ * `normalizeResponse` handles both shapes, so this function always returns
+ * `Product[]`. Pagination metadata (`count`, `next`, `previous`) is intentionally
+ * dropped here — this helper remains for Home and ProductPage, which stay flat.
+ *
+ * Search experiences that need pagination metadata should call
+ * `getProductsPage()` instead of this helper.
+ */
 export async function getProducts() {
-  const res = await API.get("/api/productos/");
-  return res.data;
+  const pagedResponse = await getProductsPage({ page: 1 });
+  return pagedResponse.items;
 }
 
 export async function getProductById(id: string | number) {
   const res = await API.get(`/api/productos/${id}/`);
-  return res.data;
+  const data = res.data;
+  return data?.datos || data;
 }
 
 export type ProductImage = {

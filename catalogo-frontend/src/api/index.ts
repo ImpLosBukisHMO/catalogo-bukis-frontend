@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { refreshAccessToken, logout } from '../services/auth';
+import { BACKEND_BASE_URL } from '../utils/backend';
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000",
+  baseURL: BACKEND_BASE_URL,
   withCredentials: true,
 });
 

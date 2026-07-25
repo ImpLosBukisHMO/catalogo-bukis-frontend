@@ -3,10 +3,10 @@ import Footer from '../elements/Footer';
 
 const NotFoundPage = () => {
     return (
-        <>
+        <div className='flex min-h-screen flex-col'>
             <title>Página no encontrada | Importaciones Los Bukis</title>
             <NavBar />
-            <div className='mx-auto max-w-3xl px-4 py-20 text-center'>
+            <div className='flex-1 mx-auto max-w-3xl px-4 py-20 text-center'>
                 <h1 className='mb-5 text-4xl font-semibold text-bukis-ink'>
                     Ups... La página no se encuentra disponible.
                 </h1>
@@ -15,7 +15,7 @@ const NotFoundPage = () => {
                 </h2>
             </div>
             <Footer style={{bottom: 0}}/>
-        </>
+        </div>
     );
 }
 

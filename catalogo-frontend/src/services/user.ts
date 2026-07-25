@@ -1,4 +1,5 @@
 import API from "../api";
+import { login } from "./auth";
 
 /*
 Use if needed:
@@ -29,7 +30,9 @@ export async function signUp(data: Usuario) {
     throw new Error(`Error al registrar un nuevo usuario (${res.status}).`);
   }
 
-  await logIn(data.correo || "", data.password || "")
+  // Use JWT login to avoid infinite redirect bugs
+  await login(data.correo || "", data.password || "");
+  try { await logIn(data.correo || "", data.password || ""); } catch { /* ignore */ }
 }
 
 
@@ -57,7 +60,7 @@ export async function logIn(correo: string, password: string) {
   }
 }
 
-export async function logOut() {
+export async function logOut(onClearAuth?: () => void) {
   const token = localStorage.getItem("token");
   try {
     // El segundo argumento es el body (vacío), el tercero es la configuración (headers)
@@ -71,6 +74,7 @@ export async function logOut() {
     console.error("Error al cerrar sesión en el servidor:", error);
   } finally {
     // Aseguramos borrar el token localmente pase lo que pase en el servidor
+    onClearAuth?.();
     localStorage.removeItem("token");
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
@@ -80,8 +84,12 @@ export async function logOut() {
 }
 
 export async function getLoggedUserData() {
+  const token = localStorage.getItem("access") ?? localStorage.getItem("token");
   const res = await API.get("/api/mi_usuario/", {
-    headers: { Accept: "application/json" },
+    headers: { 
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
   });
 
   if (res.status !== 200) {

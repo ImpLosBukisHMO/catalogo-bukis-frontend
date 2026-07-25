@@ -20,9 +20,11 @@ import {
   crearColor,
   crearProducto,
   crearVariante,
+  editarProducto,
   editarVariante,
   getWorkerCategorias,
   getWorkerColores,
+  getWorkerProducto,
   getWorkerProductos,
   getWorkerProductosSlim,
   getWorkerVariants,
@@ -30,6 +32,7 @@ import {
 } from "../services/worker";
 import type { WorkerCreatedVariant, WorkerUploadedImage } from "../services/worker";
 import { workerKeys } from "./workerKeys";
+import type { WorkerProducto } from "../types/worker";
 
 // ─── useWorkerVariants ────────────────────────────────────────────────────────
 
@@ -61,12 +64,28 @@ export function useWorkerVariants(filters?: { productoId?: number }) {
  * Fetches the worker product list (full WorkerProducto objects).
  * Used by WorkerProductsPage for the utility drawer "Crear Variante" selector.
  */
-export function useWorkerProductos() {
+export function useWorkerProductos(enabled: boolean) {
   return useQuery({
     queryKey: workerKeys.productosList(),
     queryFn: getWorkerProductos,
+    enabled,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
+  });
+}
+
+// ─── useWorkerProducto ────────────────────────────────────────────────────────
+
+/**
+ * Fetches a single worker product by id (full WorkerProducto object).
+ * Used by WorkerAddVariantModal to show base product details.
+ */
+export function useWorkerProducto(id: number | undefined) {
+  return useQuery({
+    queryKey: [...workerKeys.productos(), "detail", id] as const,
+    queryFn: () => getWorkerProducto(id!),
+    enabled: !!id,
+    staleTime: 60_000,
   });
 }
 
@@ -134,7 +153,7 @@ export function useEditarVariante() {
       data,
     }: {
       variantId: number;
-      data: { stock?: number; activo?: boolean };
+      data: { stock?: number; activo?: boolean; item?: string, precio?: number | null, codigo_barras?: string };
     }) => editarVariante(variantId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.variants() });
@@ -162,6 +181,28 @@ export function useCrearProducto() {
   });
 }
 
+// ─── useEditarProducto ───────────────────────────────────────────────────────
+
+/**
+ * Updates a product base via multipart form data.
+ * On success: invalidates productosList(), variantsList(), and dashboard().
+ */
+export function useEditarProducto() {
+  const qc = useQueryClient();
+  return useMutation<
+    WorkerProducto,
+    Error,
+    { productId: number; data: FormData }
+  >({
+    mutationFn: ({ productId, data }) => editarProducto(productId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: workerKeys.productos() });
+      qc.invalidateQueries({ queryKey: workerKeys.variants() });
+      qc.invalidateQueries({ queryKey: workerKeys.dashboard() });
+    },
+  });
+}
+
 // ─── useCrearVariante ─────────────────────────────────────────────────────────
 
 /**
@@ -173,17 +214,17 @@ export function useCrearVariante() {
   return useMutation<
     WorkerCreatedVariant,
     Error,
-    {
-      productoId: number;
-      data: { color: number; stock: number; activo: boolean; item?: string };
-    }
+      {
+        productoId: number;
+        data: { color: number; stock: number; activo: boolean; item?: string; codigo_barras?: string; };
+      }
   >({
     mutationFn: ({
       productoId,
       data,
     }: {
       productoId: number;
-      data: { color: number; stock: number; activo: boolean; item?: string };
+      data: { color: number; stock: number; activo: boolean; item?: string; codigo_barras?: string; };
     }) => crearVariante(productoId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.variants() });
