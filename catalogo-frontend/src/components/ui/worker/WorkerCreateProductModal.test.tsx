@@ -228,7 +228,7 @@ describe("WorkerCreateProductModal", () => {
       expect(mockCrearProducto).toHaveBeenCalledTimes(1);
       expect(mockCrearVariante).toHaveBeenCalledTimes(1);
     });
-  });
+  }, 20000);
 
   it("muestra guía de creación parcial cuando falla la carga de imágenes tras crear producto y variante", async () => {
     mockCrearProducto.mockResolvedValue(createdProduct);

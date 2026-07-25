@@ -2,6 +2,7 @@ import type { WorkerVariant, WorkerPedido, WorkerPedidoDetalle, WorkerProducto }
 import API from "../api";
 import { normalizeResponse } from "../components/pages/responseNormalizer";
 import type { Discount } from "../types/descuento";
+import type { BannerOfertaPublic, BannerOfertaWorker, UpdateBannerOfertaMeta } from "../types/bannerOferta";
 
 export async function getWorkerVariants(): Promise<WorkerVariant[]> {
   const res = await API.get("/api/worker/variants/");
@@ -190,4 +191,50 @@ export async function crearDescuento(
 ): Promise<Discount> {
   const res = await API.post(`/api/worker/descuentos/`, data);
   return res.data?.datos || res.data;
+}
+
+export async function getWorkerBannerOfertas(): Promise<BannerOfertaWorker[]> {
+  const res = await API.get("/api/worker/banner-ofertas/");
+  return normalizeResponse<BannerOfertaWorker>(res.data);
+}
+
+export async function crearBannerOferta(data: FormData): Promise<BannerOfertaWorker> {
+  const res = await API.post("/api/worker/banner-ofertas/", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return (res.data?.datos || res.data) as BannerOfertaWorker;
+}
+
+export async function editarBannerOferta(
+  id: number,
+  data: FormData | UpdateBannerOfertaMeta,
+): Promise<BannerOfertaWorker> {
+  const isMultipart = data instanceof FormData;
+
+  const res = await API.patch(`/api/worker/banner-ofertas/${id}/`, data, isMultipart
+    ? { headers: { "Content-Type": "multipart/form-data" } }
+    : undefined);
+
+  return (res.data?.datos || res.data) as BannerOfertaWorker;
+}
+
+export async function borrarBannerOferta(id: number): Promise<void> {
+  await API.delete(`/api/worker/banner-ofertas/${id}/`);
+}
+
+export async function toggleActivoBannerOferta(
+  id: number,
+  activo: boolean,
+): Promise<BannerOfertaPublic> {
+  const res = await API.patch(`/api/worker/banner-ofertas/${id}/`, { activo });
+  return (res.data?.datos || res.data) as BannerOfertaPublic;
+}
+
+export async function reordenarBannerOferta(
+  id: number,
+  orden: number,
+): Promise<BannerOfertaWorker> {
+  const res = await API.patch(`/api/worker/banner-ofertas/${id}/`, { orden });
+  return (res.data?.datos || res.data) as BannerOfertaWorker;
 }
