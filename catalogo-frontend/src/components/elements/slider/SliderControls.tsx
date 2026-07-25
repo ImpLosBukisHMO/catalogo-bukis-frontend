@@ -9,7 +9,7 @@ const buttonClassName = "flex h-11 w-11 items-center justify-center rounded-full
 
 export function SliderControls({ onPrev, onNext }: SliderControlsProps) {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-4">
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-between px-4">
       <button
         type="button"
         onClick={onPrev}

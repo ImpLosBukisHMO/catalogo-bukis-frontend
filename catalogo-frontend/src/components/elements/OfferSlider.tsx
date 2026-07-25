@@ -44,11 +44,11 @@ const OfferSlider = () => {
           <p className="text-xl font-semibold text-white">¡Aprovecha nuestras ofertas!</p>
         </div>
 
-        <div className="relative">
+        <div className="relative h-[360px] w-full overflow-hidden bg-neutral-900">
           {showPlaceholder || !currentSlide ? (
             <PlaceholderSlide />
           ) : (
-            <>
+            <div className="relative z-0 flex h-full w-full items-center justify-center bg-neutral-900">
               <SlideMedia
                 slide={currentSlide}
                 active
@@ -60,7 +60,7 @@ const OfferSlider = () => {
               {state.kind === "autoplay-blocked" && (
                 <PlayFallbackOverlay onPlay={handleRetryPlayback} />
               )}
-            </>
+            </div>
           )}
 
           {showControls && (

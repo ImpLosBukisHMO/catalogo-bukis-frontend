@@ -4,7 +4,7 @@ type PlayFallbackOverlayProps = {
 
 export function PlayFallbackOverlay({ onPlay }: PlayFallbackOverlayProps) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
       <button
         type="button"
         onClick={onPlay}

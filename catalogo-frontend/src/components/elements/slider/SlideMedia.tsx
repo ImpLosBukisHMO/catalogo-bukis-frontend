@@ -51,7 +51,7 @@ export function SlideMedia({
         playsInline
         preload="metadata"
         onEnded={onVideoEnded}
-        className="h-[360px] w-full bg-black object-cover"
+        className="h-full w-auto max-w-full bg-black object-cover shadow-2xl"
       />
     );
   }
@@ -60,7 +60,7 @@ export function SlideMedia({
     <img
       src={source}
       alt="Oferta destacada"
-      className="h-[360px] w-full bg-neutral-100 object-cover"
+      className="h-full w-auto max-w-full bg-neutral-100 object-cover shadow-2xl"
     />
   );
 }
