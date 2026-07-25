@@ -47,6 +47,8 @@ export function SlideMedia({
         key={slide.id}
         src={source}
         muted
+        controls={true}
+        controlsList="nodownload"
         autoPlay={active}
         playsInline
         preload="metadata"
