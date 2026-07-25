@@ -16,6 +16,7 @@ export type PedidoItem = {
 export type PedidoDetalle = {
   id: number;
   public_id: string;
+  folio: string;
   estado: string;
   precio_total: string;
   subtotal_snapshot: string;
@@ -31,6 +32,7 @@ export type PedidoDetalle = {
 export type PedidoResumen = {
   id: number;
   public_id: string;
+  folio: string;
   estado: string;
   precio_total: string;
   created_at: string;
