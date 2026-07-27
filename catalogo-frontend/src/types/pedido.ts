@@ -24,6 +24,9 @@ export type PedidoDetalle = {
   nota_worker: string | null;
   denegado_razon: string | null;
   aprobado_eta: string | null;
+  comprobante_pago_subido: boolean;
+  comprobante_pago_nombre: string | null;
+  comprobante_pago_url: string | null;
   created_at: string;
   items: PedidoItem[];
   cliente: Usuario
