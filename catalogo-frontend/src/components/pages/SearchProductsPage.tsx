@@ -135,7 +135,7 @@ export default function SearchProductsPage() {
     }, []);
 
     useEffect(() => {
-        if (!localStorage.getItem("access")) {
+        if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
             setFavoritos([]);
             return;
         }
@@ -160,7 +160,7 @@ export default function SearchProductsPage() {
     }
 
     const handleToggleFavorite = async (product: ProductCardVM) => {
-        if (!localStorage.getItem("access")) {
+        if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
             window.location.href = "/iniciar-sesion";
             return;
         }

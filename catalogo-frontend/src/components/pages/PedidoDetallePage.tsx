@@ -129,8 +129,8 @@ export default function PedidoDetallePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("access")) {
-      navigate("/login");
+    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+      navigate("/iniciar-sesion");
       return;
     }
     if (!id) return;
