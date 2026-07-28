@@ -44,7 +44,7 @@ export default function MisPedidosPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("access")) {
+    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
       navigate("/iniciar-sesion");
       return;
     }
