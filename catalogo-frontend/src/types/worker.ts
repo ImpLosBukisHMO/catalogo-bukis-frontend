@@ -81,6 +81,9 @@ export type WorkerPedidoDetalle = {
   nota_worker: string | null;
   denegado_razon: string | null;
   aprobado_eta: string | null;
+  comprobante_pago_subido: boolean;
+  comprobante_pago_nombre: string | null;
+  comprobante_pago_url: string | null;
   items: WorkerPedidoItem[];
   created_at: string;
 };

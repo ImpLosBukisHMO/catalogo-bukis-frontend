@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 
 import type { PedidoDetalle, PedidoItem } from "../../types/pedido";
-import { getMiPedidoDetalle } from "../../services/pedidos";
+import { getMiPedidoDetalle, uploadComprobante } from "../../services/pedidos";
+import { openProtectedComprobante } from "../../services/comprobante";
 import { IMAGE_PLACEHOLDER_URL } from "../../utils/images";
 import { BACKEND_BASE_URL } from "../../utils/backend";
 
@@ -46,6 +48,35 @@ function formatDate(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function getUploadErrorMessage(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof error.response === "object" &&
+    error.response !== null &&
+    "data" in error.response
+  ) {
+    const data = error.response.data as
+      | { comprobante_pago?: string[]; error?: string }
+      | undefined;
+
+    if (data?.comprobante_pago?.[0]) {
+      return data.comprobante_pago[0];
+    }
+
+    if (data?.error) {
+      return data.error;
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "No fue posible subir el comprobante.";
 }
 
 function ItemRow({ item }: { item: PedidoItem }) {
@@ -127,6 +158,30 @@ export default function PedidoDetallePage() {
   const [pedido, setPedido] = useState<PedidoDetalle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [proofActionError, setProofActionError] = useState<string | null>(null);
+  const [selectedProofName, setSelectedProofName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const uploadMutation = useMutation({
+    mutationFn: ({ pedidoId, file }: { pedidoId: number; file: File }) =>
+      uploadComprobante(pedidoId, file),
+    onSuccess: (updatedPedido) => {
+      setPedido(updatedPedido);
+      setUploadMessage("Comprobante subido correctamente.");
+      setSelectedProofName(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    onError: (mutationError) => {
+      setUploadMessage(getUploadErrorMessage(mutationError));
+      setSelectedProofName(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+  });
 
   useEffect(() => {
     if (!localStorage.getItem("access")) {
@@ -138,6 +193,7 @@ export default function PedidoDetallePage() {
       try {
         const data = await getMiPedidoDetalle(Number(id));
         setPedido(data);
+        setUploadMessage(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error cargando pedido");
       } finally {
@@ -145,6 +201,36 @@ export default function PedidoDetallePage() {
       }
     })();
   }, [id]);
+
+  const handleUploadChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !pedido) {
+      return;
+    }
+
+    setUploadMessage(null);
+    setSelectedProofName(file.name);
+
+    try {
+      await uploadMutation.mutateAsync({ pedidoId: pedido.id, file });
+    } catch {
+      // Error UI is handled by the mutation onError callback.
+    }
+  };
+
+  const handleOpenProof = async () => {
+    if (!pedido?.comprobante_pago_url) {
+      return;
+    }
+
+    setProofActionError(null);
+
+    try {
+      await openProtectedComprobante(pedido.comprobante_pago_url, pedido.comprobante_pago_nombre);
+    } catch {
+      setProofActionError("No fue posible abrir el comprobante actual.");
+    }
+  };
 
   return (
     <>
@@ -222,6 +308,89 @@ export default function PedidoDetallePage() {
                     Fecha estimada de entrega:{" "}
                     {new Date(pedido.aprobado_eta).toLocaleDateString("es-MX")}
                   </p>
+                )}
+
+                {pedido.estado === "APPROVED" && (
+                  <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950">
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <p className="m-0 text-sm font-semibold">
+                          Comprobante de pago
+                        </p>
+                        <p className="m-0 mt-1 text-sm text-emerald-900/80">
+                          Sube una imagen o PDF del pago realizado.
+                        </p>
+                      </div>
+
+                      {pedido.comprobante_pago_subido && pedido.comprobante_pago_url && (
+                        <div className="rounded-lg border border-emerald-200 bg-white/95 p-3">
+                          <p className="m-0 text-sm font-semibold text-neutral-900">
+                            Comprobante actual
+                          </p>
+                          <p className="m-0 mt-2 text-sm text-neutral-700">
+                            Archivo actual: <strong>{pedido.comprobante_pago_nombre ?? "Comprobante disponible"}</strong>
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleOpenProof}
+                            className="mt-3 inline-flex text-sm font-semibold text-sky-700 underline"
+                          >
+                            Ver comprobante
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          aria-label="Seleccionar comprobante de pago"
+                          accept="image/*,application/pdf"
+                          capture="environment"
+                          onChange={handleUploadChange}
+                          disabled={uploadMutation.isPending}
+                          className="sr-only"
+                        />
+                        <div className="min-w-0 text-sm text-emerald-900/80">
+                          {selectedProofName ? (
+                            <span>
+                              Archivo seleccionado: <strong>{selectedProofName}</strong>
+                            </span>
+                          ) : (
+                            <span>
+                              Formatos permitidos: imagen JPG, PNG, WebP o PDF. Máximo 10 MB.
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadMutation.isPending}
+                          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-neutral-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {pedido.comprobante_pago_subido ? "Reemplazar comprobante" : "Seleccionar comprobante"}
+                        </button>
+                      </div>
+
+                      {uploadMutation.isPending && (
+                        <p className="m-0 text-sm text-neutral-700">
+                          Subiendo comprobante...
+                        </p>
+                      )}
+
+                      {uploadMessage && (
+                        <p
+                          className={`m-0 text-sm ${uploadMutation.isError ? "text-red-700" : "text-emerald-800"}`}
+                        >
+                          {uploadMessage}
+                        </p>
+                      )}
+
+                      {proofActionError && (
+                        <p className="m-0 text-sm text-red-700">{proofActionError}</p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 

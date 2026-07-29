@@ -20,6 +20,7 @@
 
 import { useState } from "react";
 import { useWorkerPedidos, useWorkerPedidoDetalle, useCambiarEstadoPedido } from "../../queries/workerOrders";
+import { openProtectedComprobante } from "../../services/comprobante";
 import { ESTADO_LABEL, TRANSICIONES_VALIDAS } from "../../types/worker";
 import { getPedidoStatusColor, getPedidoStatusBg } from "../elements/workerTheme";
 import {
@@ -719,6 +720,19 @@ export default function WorkerOrdersPage() {
                 {selected.denegado_razon && (
                   <p style={{ marginTop: 4, fontSize: 12, color: "var(--worker-error-fg)" }}>
                     <strong>Razón:</strong> {selected.denegado_razon}
+                  </p>
+                )}
+
+                {selected.comprobante_pago_subido && selected.comprobante_pago_url && (
+                  <p style={{ marginTop: 12, fontSize: 12, color: "var(--worker-ink-secondary)" }}>
+                    <strong>Comprobante:</strong>{" "}
+                    <button
+                      type="button"
+                      onClick={() => void openProtectedComprobante(selected.comprobante_pago_url!, selected.comprobante_pago_nombre)}
+                      style={{ color: "var(--worker-rail)", textDecoration: "underline" }}
+                    >
+                      Ver comprobante
+                    </button>
                   </p>
                 )}
               </div>

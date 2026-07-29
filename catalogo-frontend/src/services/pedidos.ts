@@ -11,3 +11,12 @@ export async function getMiPedidoDetalle(id: number): Promise<PedidoDetalle> {
   const res = await API.get(`/api/mis-pedidos/${id}/`);
   return res.data;
 }
+
+export async function uploadComprobante(id: number, file: File): Promise<PedidoDetalle> {
+  const formData = new FormData();
+  formData.append("comprobante_pago", file);
+
+  const res = await API.patch(`/api/mis-pedidos/${id}/comprobante/`, formData);
+
+  return res.data;
+}
