@@ -8,6 +8,7 @@ vi.mock("../api", () => ({
 }));
 
 import API from "../api";
+import { BACKEND_BASE_URL } from "../utils/backend";
 import { uploadComprobante } from "./pedidos";
 import { openProtectedComprobante } from "./comprobante";
 
@@ -37,6 +38,7 @@ describe("pedido comprobante services", () => {
     expect(mockedPatch).toHaveBeenCalledTimes(1);
     expect(mockedPatch.mock.calls[0][0]).toBe("/api/mis-pedidos/12/comprobante/");
     expect(mockedPatch.mock.calls[0][1]).toBeInstanceOf(FormData);
+    expect(mockedPatch.mock.calls[0]).toHaveLength(2);
     const formData = mockedPatch.mock.calls[0][1] as FormData;
     expect(formData.get("comprobante_pago")).toBe(file);
   });
@@ -62,5 +64,43 @@ describe("pedido comprobante services", () => {
     URL.createObjectURL = originalCreateObjectURL;
     URL.revokeObjectURL = originalRevokeObjectURL;
     openSpy.mockRestore();
+  });
+
+  it("normalizes same-origin absolute comprobante URLs to protected API paths", async () => {
+    const blob = new Blob(["pdf"], { type: "application/pdf" });
+    mockedGet.mockResolvedValueOnce({
+      data: blob,
+      headers: {},
+    });
+
+    const originalCreateObjectURL = URL.createObjectURL;
+    const originalRevokeObjectURL = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn(() => "blob:comprobante");
+    URL.revokeObjectURL = vi.fn();
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+
+    await openProtectedComprobante(`${BACKEND_BASE_URL}/api/worker/pedidos/45/comprobante/`, "comprobante.pdf");
+
+    expect(mockedGet).toHaveBeenCalledWith("/api/worker/pedidos/45/comprobante/", { responseType: "blob" });
+
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
+    openSpy.mockRestore();
+  });
+
+  it("rejects absolute comprobante URLs that target another origin", async () => {
+    await expect(
+      openProtectedComprobante("https://evil.example/api/mis-pedidos/12/comprobante/", "comprobante.pdf"),
+    ).rejects.toThrow("configured API origin");
+
+    expect(mockedGet).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-comprobante API paths before using the authenticated client", async () => {
+    await expect(
+      openProtectedComprobante("/api/worker/productos/99/", "comprobante.pdf"),
+    ).rejects.toThrow("protected comprobante endpoint");
+
+    expect(mockedGet).not.toHaveBeenCalled();
   });
 });

@@ -16,9 +16,7 @@ export async function uploadComprobante(id: number, file: File): Promise<PedidoD
   const formData = new FormData();
   formData.append("comprobante_pago", file);
 
-  const res = await API.patch(`/api/mis-pedidos/${id}/comprobante/`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const res = await API.patch(`/api/mis-pedidos/${id}/comprobante/`, formData);
 
   return res.data;
 }
