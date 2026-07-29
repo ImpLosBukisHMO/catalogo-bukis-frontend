@@ -35,7 +35,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
         `inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45 ${isActive ? "bg-white/15 underline underline-offset-4" : ""}`;
 
     return (
-        <nav className="sticky top-0 z-20 mb-5 border-b border-red-950/20 bg-bukis-red-600 shadow-bukis-soft" role="navigation" aria-label="main navigation">
+        <nav className={"sticky top-0 z-10000 mb-5 border-b border-red-950/20 bg-bukis-red-600 shadow-bukis-soft"} role="navigation" aria-label="main navigation">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 lg:flex-nowrap lg:px-6">
                 <Link className="flex shrink-0 items-center gap-3 rounded-xl px-2 py-1 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" to="/">
                     <img src={logoBukis} alt="logo-los-bukis" className="h-12 w-auto" />

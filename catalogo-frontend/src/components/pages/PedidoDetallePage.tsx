@@ -184,8 +184,8 @@ export default function PedidoDetallePage() {
   });
 
   useEffect(() => {
-    if (!localStorage.getItem("access")) {
-      navigate("/login");
+    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+      navigate("/iniciar-sesion");
       return;
     }
     if (!id) return;
