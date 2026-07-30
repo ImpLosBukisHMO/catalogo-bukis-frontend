@@ -25,7 +25,7 @@ export async function signUp(data: Usuario) {
     headers: { Accept: "application/json" },
   });
 
-  if (res.status !== 200) {
+  if (res.status > 201) {
     throw new Error(`Error al registrar un nuevo usuario (${res.status}).`);
   }
 

@@ -4,7 +4,7 @@ import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import { getLoggedUserData } from "../../services/user";
 import HideShowPassword from "../elements/HideShowPassword";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
 const SignUpPage = () => {
     // Messages.
