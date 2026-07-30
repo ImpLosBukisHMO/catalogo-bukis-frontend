@@ -1,5 +1,4 @@
 import API from "../api";
-import { login } from "./auth";
 
 /*
 Use if needed:
@@ -26,13 +25,11 @@ export async function signUp(data: Usuario) {
     headers: { Accept: "application/json" },
   });
 
-  if (res.status !== 200) {
+  if (res.status > 201) {
     throw new Error(`Error al registrar un nuevo usuario (${res.status}).`);
   }
 
-  // Use JWT login to avoid infinite redirect bugs
-  await login(data.correo || "", data.password || "");
-  try { await logIn(data.correo || "", data.password || ""); } catch { /* ignore */ }
+  return res
 }
 
 

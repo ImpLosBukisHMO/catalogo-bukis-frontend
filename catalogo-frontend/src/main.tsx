@@ -31,6 +31,7 @@ import PedidoDetallePage from "./components/pages/PedidoDetallePage.tsx";
 import { AuthProvider } from "./context/AuthProvider";
 import { WorkerDiscountsPage } from "./components/pages/WorkerDiscountsPage.tsx";
 import { isBannerOfertasEnabled } from "./utils/featureFlags";
+import ConfirmAccountPage from "./components/pages/ConfirmAccountPage.tsx";
 
 const WorkerBannerOfertasPage = lazy(() => import("./components/pages/WorkerBannerOfertasPage.tsx"));
 
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
   { path: "/", element: <Home /> },
   { path: "/registro", element: <SignUpPage /> },
   { path: "/iniciar-sesion", element: <LogInPage /> },
+  { path: "/confirmar-cuenta", element: <ConfirmAccountPage /> },
   { path: "/perfil", element: <ProfilePage /> },
   { path: "/productos", element: <SearchProductsPage /> },
   { path: "/producto/:id", element: <ProductPage /> },
