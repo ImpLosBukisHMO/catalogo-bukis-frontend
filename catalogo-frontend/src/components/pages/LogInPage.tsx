@@ -4,7 +4,7 @@ import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
 import HideShowPassword from "../elements/HideShowPassword";
 import { logIn } from "../../services/user";
-import { login, getMe, isWorker } from "../../services/auth";
+import { login, getMe, isWorker, reenviarConfirmacion } from "../../services/auth";
 import { useAuth } from "../../context/useAuth";
 
 const LogInPage = () => {
@@ -14,6 +14,8 @@ const LogInPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [passwordVisible, setPasswordVisibility] = useState<string>("password");
+    const [showResend, setShowResend] = useState(false);
+    const [resendStatus, setResendStatus] = useState("");
 
     const { isLoggedIn, isLoading } = useAuth();
 
@@ -27,7 +29,9 @@ const LogInPage = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setError("");
+        setShowResend(false)
+        setResendStatus("")
         try {
             // Login con JWT (access + refresh) para los servicios nuevos
             await login(correo, password);
@@ -36,22 +40,34 @@ const LogInPage = () => {
 
             // Detectar si es worker y redirigir
             const me = await getMe();
-            if (isWorker(me)) {
-                navigate("/worker");
+            navigate(isWorker(me) ? "/worker" : "/");
+        } catch(err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            if (errorMessage.toLowerCase().includes("confirm")) {
+                setError('Tu cuenta aún no ha sido activada.');
+                setShowResend(true);
             } else {
-                navigate("/");
+                setError('Credenciales inválidas');
             }
-        } catch {
-            setError('Credenciales inválidas');
         } finally {
             setLoading(false);
         }
     };
 
+    const handleReenviar = async () => {
+        setResendStatus("Enviando...");
+        try {
+            const res = await reenviarConfirmacion(correo);
+            setResendStatus(`✅ ${res.mensaje}`);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            setResendStatus(`❌ Error: ${errorMessage}`);
+        }
+    }
+
     const togglePasswordVisibility = () => {
         setPasswordVisibility(prev => prev === "password" ? "text" : "password");
     };
-
 
     return (
         <>
@@ -86,17 +102,30 @@ const LogInPage = () => {
                                     </div>
                                 </div>
                                 {error && (
-                                    <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700 ring-1 ring-red-200">
-                                        Error: {error}
-                                    </p>
+                                    <div className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700 ring-1 ring-red-200">
+                                        <p>Error: {error}</p>
+                                        
+                                        {showResend && (
+                                            <div className="mt-3">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={handleReenviar}
+                                                    className="underline hover:text-red-900 font-semibold"
+                                                >
+                                                    Haz clic aquí para reenviar el correo de confirmación
+                                                </button>
+                                                {resendStatus && <p className="mt-1 text-xs">{resendStatus}</p>}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
-                                        <button
-                                            className="w-full rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-3 font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35 disabled:cursor-not-allowed disabled:opacity-60"
-                                            type="submit"
-                                            disabled={loading}
-                                        >
-                                            {loading ? "Iniciando sesión…" : "Iniciar Sesión"}
-                                        </button>
+                                <button
+                                    className="w-full rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-3 font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35 disabled:cursor-not-allowed disabled:opacity-60"
+                                    type="submit"
+                                    disabled={loading}
+                                >
+                                    {loading ? "Iniciando sesión…" : "Iniciar Sesión"}
+                                </button>
                             </form>
                             <div className="mt-5 text-center">
                                 <a className="font-medium text-bukis-red-700 underline-offset-4 hover:underline" href="/registro">¿No tienes cuenta? Regístrate</a>

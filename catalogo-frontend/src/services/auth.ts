@@ -101,3 +101,27 @@ export async function getMe(): Promise<MeUser> {
 
   return me;
 }
+
+
+export async function confirmAccount(correo: string, codigo: string): Promise<{ mensaje: string }> {
+  const res = await fetch(`${API_URL}/confirmar-cuenta/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ correo, codigo }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "No se pudo confirmar la cuenta.");
+  return data;
+}
+
+
+export async function reenviarConfirmacion(correo: string): Promise<{ mensaje: string }> {
+  const res = await fetch(`${API_URL}/reenviar-confirmacion/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ correo }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "No se pudo reenviar el correo.");
+  return data;
+} 

@@ -150,7 +150,7 @@ function Home() {
           Nos ubicamos en:
         </h1>
         <div className='mb-6 flex justify-center'>
-          <iframe className='min-h-[320px] w-full max-w-4xl rounded-2xl border border-neutral-300 shadow-bukis-soft' src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5117.699121661781!2d-110.99242163568606!3d29.0906510470514!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86ce840f0c532091%3A0xb230f207772b69bb!2sImportaciones%20Los%20Bukis!5e0!3m2!1ses-419!2smx!4v1767916805029!5m2!1ses-419!2smx" width="800" height="460" loading="lazy"></iframe>
+          <iframe className='min-h-80 w-full max-w-4xl rounded-2xl border border-neutral-300 shadow-bukis-soft' src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5117.699121661781!2d-110.99242163568606!3d29.0906510470514!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86ce840f0c532091%3A0xb230f207772b69bb!2sImportaciones%20Los%20Bukis!5e0!3m2!1ses-419!2smx!4v1767916805029!5m2!1ses-419!2smx" width="800" height="460" loading="lazy"></iframe>
         </div>
       </section>
       <Footer />
