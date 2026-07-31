@@ -51,7 +51,7 @@ function formatDate(iso: string) {
 }
 
 function DeadlineCountdown({ deadline }: { deadline: string }) {
-  const [timeLeft, setTimeLeft] = useState<number>(new Date(deadline).getTime() - Date.now());
+  const [timeLeft, setTimeLeft] = useState<number>(() => new Date(deadline).getTime() - Date.now());
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -184,7 +184,6 @@ export default function PedidoDetallePage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [proofActionError, setProofActionError] = useState<string | null>(null);
-  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [selectedProofName, setSelectedProofName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -226,7 +225,7 @@ export default function PedidoDetallePage() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleUploadChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

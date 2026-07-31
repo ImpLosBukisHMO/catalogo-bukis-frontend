@@ -4,8 +4,8 @@ import { sanitizeInput, sanitizeEmail, sanitizeSearchQuery, sanitizeNumeric } fr
 describe("sanitizer utility", () => {
   describe("sanitizeInput", () => {
     it("should return empty string for non-string inputs", () => {
-      expect(sanitizeInput(null as any)).toBe("");
-      expect(sanitizeInput(undefined as any)).toBe("");
+      expect(sanitizeInput(null as unknown as string)).toBe("");
+      expect(sanitizeInput(undefined as unknown as string)).toBe("");
     });
 
     it("should remove <script> tags and their contents", () => {
