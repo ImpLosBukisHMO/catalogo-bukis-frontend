@@ -5,6 +5,8 @@ import { getLoggedUserData } from "../../services/user";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 
+import { sanitizeEmail, sanitizeNumeric } from "../../utils/sanitizer";
+
 export default function ConfirmAccountPage() {
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [correo, setCorreo] = useState("");
@@ -21,7 +23,7 @@ export default function ConfirmAccountPage() {
             history.back(); // Si ya está logueado, regresar
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
-            console.error("Error: ", errorMessage)
+            console.error("", errorMessage)
         }
     };
 
@@ -40,30 +42,33 @@ export default function ConfirmAccountPage() {
 
     const handleConfirm = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!correo || !codigo) return;
+        const cleanCorreo = sanitizeEmail(correo);
+        const cleanCodigo = sanitizeNumeric(codigo);
+        if (!cleanCorreo || !cleanCodigo) return;
         setStatus("loading");
         setMensaje("");
         
         try {
-            const res = await confirmAccount(correo, codigo);
+            const res = await confirmAccount(cleanCorreo, cleanCodigo);
             setStatus("success");
             setMensaje(res.mensaje);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             setStatus("error");
             setMensaje(errorMessage || "Error al confirmar la cuenta.");
-            setEmailResend(correo);
+            setEmailResend(cleanCorreo);
         }
     };
 
     const handleReenviar = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!emailResend) return;
+        const targetEmail = sanitizeEmail(emailResend || correo);
+        if (!targetEmail) return;
         setLoadingResend(true);
         setResendStatus(null);
 
         try {
-            const res = await reenviarConfirmacion(emailResend)
+            const res = await reenviarConfirmacion(targetEmail)
             setResendStatus({
                 tipo: "success",
                 msg: res.mensaje
@@ -107,7 +112,7 @@ export default function ConfirmAccountPage() {
                                 <input
                                     type="email"
                                     value={correo}
-                                    onChange={(e) => setCorreo(e.target.value)}
+                                    onChange={(e) => setCorreo(sanitizeEmail(e.target.value))}
                                     placeholder="usuario@correo.com"
                                     required
                                     className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
@@ -151,13 +156,13 @@ export default function ConfirmAccountPage() {
                                         <hr className="my-4 border-red-200" />
                                     </>
                                 )}
-                                <h4 className="font-semibold text-red-900 mb-2">¿Necesitas un nuevo código?</h4>
+                                <h4 className="font-semibold text-red-900 mb-2">Correo electrónico</h4>
                                 <form onSubmit={handleReenviar} className="space-y-3">
                                     <input
                                         type="email"
                                         placeholder="Ingresa tu correo"
                                         value={emailResend}
-                                        onChange={(e) => setEmailResend(e.target.value)}
+                                        onChange={(e) => setEmailResend(sanitizeEmail(e.target.value))}
                                         required
                                         className="w-full rounded-lg border border-red-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                                     />

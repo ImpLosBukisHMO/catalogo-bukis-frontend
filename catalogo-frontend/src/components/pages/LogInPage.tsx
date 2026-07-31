@@ -7,6 +7,9 @@ import { logIn } from "../../services/user";
 import { login, getMe, isWorker, reenviarConfirmacion } from "../../services/auth";
 import { useAuth } from "../../context/useAuth";
 
+import { sanitizeEmail } from "../../utils/sanitizer";
+import { isEmailValid } from "../../utils/auth";
+
 const LogInPage = () => {
     const navigate = useNavigate();
     const [correo, setCorreo] = useState('');
@@ -32,18 +35,31 @@ const LogInPage = () => {
         setError("");
         setShowResend(false)
         setResendStatus("")
+
+        if (!isEmailValid(correo)) {
+            setError("El correo electrónico no tiene un formato válido.");
+            setLoading(false);
+            return;
+        }
+
         try {
+            const cleanCorreo = sanitizeEmail(correo);
             // Login con JWT (access + refresh) para los servicios nuevos
-            await login(correo, password);
+            await login(cleanCorreo, password);
             // También hacer login con el sistema legacy para compatibilidad con axios/user.ts
-            try { await logIn(correo, password); } catch { /* continuar aunque falle el legacy */ }
+            try { await logIn(cleanCorreo, password); } catch { /* continuar aunque falle el legacy */ }
 
             // Detectar si es worker y redirigir
             const me = await getMe();
             navigate(isWorker(me) ? "/worker" : "/");
-        } catch(err) {
+        } catch(err: unknown) {
+            const status = (err as { status?: number }).status;
             const errorMessage = err instanceof Error ? err.message : String(err);
-            if (errorMessage.toLowerCase().includes("confirm")) {
+
+            if (status === 429) {
+                // Rate limiter: demasiados intentos
+                setError(errorMessage);
+            } else if (errorMessage.toLowerCase().includes("confirm")) {
                 setError('Tu cuenta aún no ha sido activada.');
                 setShowResend(true);
             } else {
@@ -57,7 +73,8 @@ const LogInPage = () => {
     const handleReenviar = async () => {
         setResendStatus("Enviando...");
         try {
-            const res = await reenviarConfirmacion(correo);
+            const cleanCorreo = sanitizeEmail(correo);
+            const res = await reenviarConfirmacion(cleanCorreo);
             setResendStatus(`✅ ${res.mensaje}`);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
@@ -82,7 +99,7 @@ const LogInPage = () => {
                                             type="email"
                                             placeholder="usuario@correo.com"
                                             value={correo}
-                                            onChange={(e) => setCorreo(e.target.value)}
+                                            onChange={(e) => setCorreo(sanitizeEmail(e.target.value))}
                                             required
                                         />
                                 </div>

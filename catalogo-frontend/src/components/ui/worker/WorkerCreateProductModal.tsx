@@ -1,3 +1,4 @@
+import { sanitizeInput } from "../../../utils/sanitizer";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, FormEvent, ReactNode } from "react";
 import type { AxiosError } from "axios";
@@ -602,11 +603,11 @@ function UnifiedCreateProductSection({
 
   const buildProductFormData = (estado: "draft" | "active") => {
     const formData = new FormData();
-    formData.append("nombre", form.nombre.trim());
+    formData.append("nombre", sanitizeInput(form.nombre));
     formData.append("precio", form.precio);
     formData.append("peso", form.peso);
-    formData.append("medidas", form.medidas.trim());
-    formData.append("descripcion", form.descripcion.trim());
+    formData.append("medidas", sanitizeInput(form.medidas));
+    formData.append("descripcion", sanitizeInput(form.descripcion));
     formData.append("disponible", estado === "active" ? "true" : "false");
     formData.append("estado", estado);
     if (form.capacidad) formData.append("capacidad", form.capacidad);

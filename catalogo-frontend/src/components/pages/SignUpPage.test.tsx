@@ -132,8 +132,8 @@ describe("SignUpPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/nuevo@example\.com/)).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Ir a Iniciar Sesión/i }),
-    ).toHaveAttribute("href", "/iniciar-sesion");
+      screen.getByRole("link", { name: /Ingresar código de confirmación/i }),
+    ).toHaveAttribute("href", "/confirmar-cuenta");
   });
 
   it("calls signUp with the correct payload", async () => {
@@ -145,8 +145,8 @@ describe("SignUpPage", () => {
       apellido: "López",
       correo: "ana@test.com",
       telefono: "5557654321",
-      password: "Segura2024!",
-      confirmPassword: "Segura2024!",
+      password: "Segura-2024!",
+      confirmPassword: "Segura-2024!",
     });
     fireEvent.click(screen.getByRole("button", { name: /Registrarse/i }));
 
@@ -157,7 +157,7 @@ describe("SignUpPage", () => {
         apellido: "López",
         correo: "ana@test.com",
         telefono: "5557654321",
-        password: "Segura2024!",
+        password: "Segura-2024!",
       });
     });
   });

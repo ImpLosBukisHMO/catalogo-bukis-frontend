@@ -18,16 +18,21 @@ vi.mock("../../services/pedidos", () => ({
 
 vi.mock("../../services/comprobante", () => ({
   openProtectedComprobante: vi.fn(),
+  fetchProtectedComprobante: vi.fn().mockResolvedValue({
+    blob: new Blob([""], { type: "application/pdf" }),
+    fileName: "comprobante.pdf",
+  }),
 }));
 
 import PedidoDetallePage from "./PedidoDetallePage";
 import { getMiPedidoDetalle, uploadComprobante } from "../../services/pedidos";
-import { openProtectedComprobante } from "../../services/comprobante";
+import { openProtectedComprobante, fetchProtectedComprobante } from "../../services/comprobante";
 import type { PedidoDetalle } from "../../types/pedido";
 
 const mockedGetMiPedidoDetalle = vi.mocked(getMiPedidoDetalle);
 const mockedUploadComprobante = vi.mocked(uploadComprobante);
 const mockedOpenProtectedComprobante = vi.mocked(openProtectedComprobante);
+const mockedFetchProtectedComprobante = vi.mocked(fetchProtectedComprobante);
 
 function buildPedido(overrides: Partial<PedidoDetalle> = {}): PedidoDetalle {
     return {
@@ -78,6 +83,10 @@ describe("PedidoDetallePage", () => {
     mockedGetMiPedidoDetalle.mockReset();
     mockedUploadComprobante.mockReset();
     mockedOpenProtectedComprobante.mockReset();
+    mockedFetchProtectedComprobante.mockResolvedValue({
+      blob: new Blob(["test"], { type: "application/pdf" }),
+      fileName: "comprobante.pdf",
+    });
   });
 
   it("shows the upload section only for approved pedidos with a hidden Spanish-controlled file input", async () => {
@@ -116,10 +125,7 @@ describe("PedidoDetallePage", () => {
     expect(await screen.findByText("Comprobante actual")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Ver comprobante" }));
 
-    expect(mockedOpenProtectedComprobante).toHaveBeenCalledWith(
-      "/api/mis-pedidos/12/comprobante/",
-      "comprobante.pdf",
-    );
+    expect(await screen.findByRole("heading", { name: "Comprobante" })).toBeInTheDocument();
   });
 
   it("shows a Spanish upload error when the upload fails", async () => {

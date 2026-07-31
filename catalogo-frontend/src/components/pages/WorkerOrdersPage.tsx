@@ -18,9 +18,9 @@
  *                   dialog accent (#5 via WorkerDialog destructive prop).
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWorkerPedidos, useWorkerPedidoDetalle, useCambiarEstadoPedido } from "../../queries/workerOrders";
-import { openProtectedComprobante } from "../../services/comprobante";
+import ComprobantePreviewModal from "../ui/ComprobantePreviewModal";
 import { ESTADO_LABEL, TRANSICIONES_VALIDAS } from "../../types/worker";
 import { getPedidoStatusColor, getPedidoStatusBg } from "../elements/workerTheme";
 import {
@@ -80,145 +80,171 @@ function StatusChangeDialog({
   const labelNuevo     = nuevoEstado ? (ESTADO_LABEL[nuevoEstado] ?? nuevoEstado) : "";
 
   return (
-    <WorkerDialogRoot open={open} onOpenChange={onOpenChange}>
-      <WorkerDialogContent destructive={isDestructive}>
-        <WorkerDialogHeader>
-          <WorkerDialogTitle>Cambiar estado del pedido</WorkerDialogTitle>
-          <WorkerDialogDescription>
-            Estado actual: <strong style={{ color: "var(--worker-ink)" }}>{labelActual}</strong>
-            {nuevoEstado && (
-              <>
-                {" → "}
-                <strong style={{ color: isDestructive ? "var(--worker-error-fg)" : "var(--worker-rail)" }}>
-                  {labelNuevo}
-                </strong>
-              </>
-            )}
-          </WorkerDialogDescription>
-        </WorkerDialogHeader>
+    <>
+      <WorkerDialogRoot open={open} onOpenChange={onOpenChange}>
+        <WorkerDialogContent destructive={isDestructive}>
+          <WorkerDialogHeader>
+            <WorkerDialogTitle>Cambiar estado del pedido</WorkerDialogTitle>
+            <WorkerDialogDescription>
+              Estado actual: <strong style={{ color: "var(--worker-ink)" }}>{labelActual}</strong>
+              {nuevoEstado && (
+                <>
+                  {" → "}
+                  <strong style={{ color: isDestructive ? "var(--worker-error-fg)" : "var(--worker-rail)" }}>
+                    {labelNuevo}
+                  </strong>
+                </>
+              )}
+            </WorkerDialogDescription>
+          </WorkerDialogHeader>
 
-        <WorkerDialogBody>
-          <div className="wk:space-y-3">
+          <WorkerDialogBody>
+            <div className="wk:space-y-3">
 
-            {/* Status selector */}
-            <div className="wk:flex wk:flex-col wk:gap-1">
-              <label
-                htmlFor="dialog-nuevo-estado"
-                style={{ fontSize: 12, fontWeight: 600, color: "var(--worker-ink-secondary)" }}
-              >
-                Nuevo estado
-              </label>
-              <select
-                id="dialog-nuevo-estado"
-                value={nuevoEstado}
-                onChange={(e) => onNuevoEstadoChange(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 10px",
-                  fontSize: 13,
-                  borderRadius: 6,
-                  border: "1px solid var(--worker-control-border)",
-                  background: "var(--worker-control-bg)",
-                  color: "var(--worker-ink)",
-                  outline: "none",
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">Seleccionar estado…</option>
-                {transicionesDisponibles.map((e) => (
-                  <option key={e} value={e}>
-                    {ESTADO_LABEL[e] ?? e}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Denial reason (required for DENIED) */}
-            {(nuevoEstado === "DENIED" || nuevoEstado === "CANCELED") && (
+              {/* Status selector */}
               <div className="wk:flex wk:flex-col wk:gap-1">
                 <label
-                  htmlFor="dialog-razon"
-                  style={{ fontSize: 12, fontWeight: 600, color: "var(--worker-error-fg)" }}
+                  htmlFor="dialog-nuevo-estado"
+                  style={{ fontSize: 12, fontWeight: 600, color: "var(--worker-ink-secondary)" }}
                 >
-                  Razón {nuevoEstado === "DENIED" ? " del rechazo" : " de la cancelación"} <span aria-hidden="true">*</span>
+                  Nuevo estado
                 </label>
-                <textarea
-                  id="dialog-razon"
-                  value={razon}
-                  onChange={(e) => onRazonChange(e.target.value)}
-                  placeholder={`Describe la razón ${nuevoEstado === "DENIED" ? "del rechazo" : "de la cancelación"} (obligatorio).`}
-                  rows={3}
+                <select
+                  id="dialog-nuevo-estado"
+                  value={nuevoEstado}
+                  onChange={(e) => onNuevoEstadoChange(e.target.value)}
                   style={{
                     width: "100%",
                     padding: "8px 10px",
                     fontSize: 13,
                     borderRadius: 6,
-                    border: "1px solid var(--worker-error-border)",
+                    border: "1px solid var(--worker-control-border)",
                     background: "var(--worker-control-bg)",
                     color: "var(--worker-ink)",
-                    resize: "vertical",
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">Seleccionar estado…</option>
+                  {transicionesDisponibles.map((e) => (
+                    <option key={e} value={e}>
+                      {ESTADO_LABEL[e] ?? e}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Denial reason (required for DENIED) */}
+              {(nuevoEstado === "DENIED" || nuevoEstado === "CANCELED") && (
+                <div className="wk:flex wk:flex-col wk:gap-1">
+                  <label
+                    htmlFor="dialog-razon"
+                    style={{ fontSize: 12, fontWeight: 600, color: "var(--worker-error-fg)" }}
+                  >
+                    Razón {nuevoEstado === "DENIED" ? " del rechazo" : " de la cancelación"} <span aria-hidden="true">*</span>
+                  </label>
+                  <textarea
+                    id="dialog-razon"
+                    value={razon}
+                    onChange={(e) => onRazonChange(e.target.value)}
+                    placeholder={`Describe la razón ${nuevoEstado === "DENIED" ? "del rechazo" : "de la cancelación"} (obligatorio).`}
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      fontSize: 13,
+                      borderRadius: 6,
+                      border: "1px solid var(--worker-error-border)",
+                      background: "var(--worker-control-bg)",
+                      color: "var(--worker-ink)",
+                      resize: "vertical",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Worker note (optional) */}
+              <div className="wk:flex wk:flex-col wk:gap-1">
+                <label
+                  htmlFor="dialog-nota"
+                  style={{ fontSize: 12, fontWeight: 600, color: "var(--worker-ink-secondary)" }}
+                >
+                  Nota para el cliente{" "}
+                  <span style={{ color: "var(--worker-ink-muted)", fontWeight: 400 }}>(opcional)</span>
+                </label>
+                <input
+                  id="dialog-nota"
+                  type="text"
+                  value={nota}
+                  onChange={(e) => onNotaChange(e.target.value)}
+                  placeholder="Ej: Tu pedido está listo para recoger"
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    fontSize: 13,
+                    borderRadius: 6,
+                    border: "1px solid var(--worker-control-border)",
+                    background: "var(--worker-control-bg)",
+                    color: "var(--worker-ink)",
                     outline: "none",
                   }}
                 />
               </div>
-            )}
 
-            {/* Worker note (optional) */}
-            <div className="wk:flex wk:flex-col wk:gap-1">
-              <label
-                htmlFor="dialog-nota"
-                style={{ fontSize: 12, fontWeight: 600, color: "var(--worker-ink-secondary)" }}
-              >
-                Nota para el cliente{" "}
-                <span style={{ color: "var(--worker-ink-muted)", fontWeight: 400 }}>(opcional)</span>
-              </label>
-              <input
-                id="dialog-nota"
-                type="text"
-                value={nota}
-                onChange={(e) => onNotaChange(e.target.value)}
-                placeholder="Ej: Tu pedido está listo para recoger"
-                style={{
-                  width: "100%",
-                  padding: "8px 10px",
-                  fontSize: 13,
-                  borderRadius: 6,
-                  border: "1px solid var(--worker-control-border)",
-                  background: "var(--worker-control-bg)",
-                  color: "var(--worker-ink)",
-                  outline: "none",
-                }}
-              />
+              {/* Mutation error */}
+              {saveError && (
+                <p
+                  role="alert"
+                  style={{ fontSize: 13, color: "var(--worker-error-fg)", margin: 0 }}
+                >
+                  {saveError}
+                </p>
+              )}
             </div>
+          </WorkerDialogBody>
 
-            {/* Mutation error */}
-            {saveError && (
-              <p
-                role="alert"
-                style={{ fontSize: 13, color: "var(--worker-error-fg)", margin: 0 }}
-              >
-                {saveError}
-              </p>
-            )}
-          </div>
-        </WorkerDialogBody>
-
-        <WorkerDialogFooter>
-          <WorkerDialogCancel>Cancelar</WorkerDialogCancel>
-          <WorkerDialogAction
-            onClick={onConfirm}
-            disabled={confirmDisabled}
-            destructive={isDestructive}
-          >
-            {isSaving ? "Guardando…" : "Confirmar cambio"}
-          </WorkerDialogAction>
-        </WorkerDialogFooter>
-      </WorkerDialogContent>
-    </WorkerDialogRoot>
+          <WorkerDialogFooter>
+            <WorkerDialogCancel>Cancelar</WorkerDialogCancel>
+            <WorkerDialogAction
+              onClick={onConfirm}
+              disabled={confirmDisabled}
+              destructive={isDestructive}
+            >
+              {isSaving ? "Guardando…" : "Confirmar cambio"}
+            </WorkerDialogAction>
+          </WorkerDialogFooter>
+        </WorkerDialogContent>
+      </WorkerDialogRoot>
+    </>
   );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
+
+function DeadlineCountdown({ deadline }: { deadline: string }) {
+  const [timeLeft, setTimeLeft] = useState<number>(() => new Date(deadline).getTime() - Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTimeLeft(new Date(deadline).getTime() - Date.now());
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, [deadline]);
+
+  if (timeLeft <= 0) {
+    return <span>¡Plazo vencido!</span>;
+  }
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  
+  return (
+    <span>
+      {hours}h {minutes}m
+    </span>
+  );
+}
 
 export default function WorkerOrdersPage() {
   // ── Local UI state ──
@@ -229,6 +255,7 @@ export default function WorkerOrdersPage() {
   const [dialogOpen, setDialogOpen]       = useState(false);
   const [nuevoEstado, setNuevoEstado]     = useState("");
   const [razon, setRazon]                 = useState("");
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [nota, setNota]                   = useState("");
 
   const getDateMonthYear = (date: Date) => {
@@ -560,6 +587,21 @@ export default function WorkerOrdersPage() {
                 <span style={{ fontSize: 11, color: "var(--worker-ink-tertiary)" }}>
                   {new Date(p.created_at).toLocaleString("es-MX")}
                 </span>
+                {p.estado === "APPROVED" && p.comprobante_deadline && !p.comprobante_pago_subido && (
+                  <span style={{ fontSize: 11, color: "var(--worker-error-fg)", fontWeight: 600, marginTop: 2 }}>
+                    ⚠️ Sube tu comprobante en <DeadlineCountdown deadline={p.comprobante_deadline} />
+                  </span>
+                )}
+                {p.estado === "APPROVED" && p.comprobante_pago_subido && (
+                  <span style={{ fontSize: 11, color: "var(--worker-success-fg)", fontWeight: 600, marginTop: 2 }}>
+                    ✓ Comprobante en revisión
+                  </span>
+                )}
+                {p.estado === "CANCELED" && p.requiere_reembolso && (
+                  <span style={{ fontSize: 11, color: "var(--worker-error-fg)", fontWeight: 700, marginTop: 2 }}>
+                    💰 REQUIERE REEMBOLSO
+                  </span>
+                )}
               </button>
             );
           })}
@@ -723,12 +765,29 @@ export default function WorkerOrdersPage() {
                   </p>
                 )}
 
+                {selected.estado === "CANCELED" && selected.requiere_reembolso && (
+                  <div style={{ marginTop: 12, padding: 12, backgroundColor: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8 }}>
+                    <p style={{ margin: 0, fontSize: 13, color: "#991b1b", fontWeight: 700 }}>
+                      💰 Reembolso Pendiente
+                    </p>
+                    <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#991b1b" }}>
+                      El cliente subió un comprobante antes de la cancelación. Es necesario coordinar la devolución de su dinero.
+                    </p>
+                  </div>
+                )}
+
+                {selected.estado === "APPROVED" && selected.comprobante_deadline && !selected.comprobante_pago_subido && (
+                  <p style={{ marginTop: 12, fontSize: 12, color: "var(--worker-error-fg)", fontWeight: 600 }}>
+                    ⚠️ Tiempo para subir el comprobante: <DeadlineCountdown deadline={selected.comprobante_deadline} />
+                  </p>
+                )}
+
                 {selected.comprobante_pago_subido && selected.comprobante_pago_url && (
                   <p style={{ marginTop: 12, fontSize: 12, color: "var(--worker-ink-secondary)" }}>
                     <strong>Comprobante:</strong>{" "}
                     <button
-                      type="button"
-                      onClick={() => void openProtectedComprobante(selected.comprobante_pago_url!, selected.comprobante_pago_nombre)}
+                      className="cursor-pointer wk:text-indigo-600 hover:text-bukis-red-800"
+                      onClick={() => setIsPreviewModalOpen(true)}
                       style={{ color: "var(--worker-rail)", textDecoration: "underline" }}
                     >
                       Ver comprobante
@@ -934,6 +993,14 @@ export default function WorkerOrdersPage() {
           saveError={saveError}
         />
       )}
+
+      {/* Comprobante preview modal */}
+      <ComprobantePreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        url={selected?.comprobante_pago_url || null}
+        fallbackName={selected?.comprobante_pago_nombre || null}
+      />
 
     </div>
   );

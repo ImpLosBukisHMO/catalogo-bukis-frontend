@@ -7,7 +7,7 @@ import Footer from "../elements/Footer";
 
 import type { PedidoDetalle, PedidoItem } from "../../types/pedido";
 import { getMiPedidoDetalle, uploadComprobante } from "../../services/pedidos";
-import { openProtectedComprobante } from "../../services/comprobante";
+import ComprobantePreviewModal from "../ui/ComprobantePreviewModal";
 import { IMAGE_PLACEHOLDER_URL } from "../../utils/images";
 import { BACKEND_BASE_URL } from "../../utils/backend";
 
@@ -48,6 +48,30 @@ function formatDate(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function DeadlineCountdown({ deadline }: { deadline: string }) {
+  const [timeLeft, setTimeLeft] = useState<number>(new Date(deadline).getTime() - Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTimeLeft(new Date(deadline).getTime() - Date.now());
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, [deadline]);
+
+  if (timeLeft <= 0) {
+    return <span className="font-bold text-red-600">¡Plazo vencido!</span>;
+  }
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  
+  return (
+    <span className="font-bold text-red-600">
+      {hours}h {minutes}m
+    </span>
+  );
 }
 
 function getUploadErrorMessage(error: unknown) {
@@ -160,6 +184,8 @@ export default function PedidoDetallePage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [proofActionError, setProofActionError] = useState<string | null>(null);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [selectedProofName, setSelectedProofName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -218,18 +244,12 @@ export default function PedidoDetallePage() {
     }
   };
 
-  const handleOpenProof = async () => {
+  const handleOpenProof = () => {
     if (!pedido?.comprobante_pago_url) {
       return;
     }
-
     setProofActionError(null);
-
-    try {
-      await openProtectedComprobante(pedido.comprobante_pago_url, pedido.comprobante_pago_nombre);
-    } catch {
-      setProofActionError("No fue posible abrir el comprobante actual.");
-    }
+    setIsPreviewModalOpen(true);
   };
 
   return (
@@ -320,6 +340,11 @@ export default function PedidoDetallePage() {
                         <p className="m-0 mt-1 text-sm text-emerald-900/80">
                           Sube una imagen o PDF del pago realizado.
                         </p>
+                        {pedido.comprobante_deadline && !pedido.comprobante_pago_subido && (
+                          <p className="m-0 mt-2 text-sm text-red-700 bg-red-50 p-2 rounded border border-red-200 inline-block">
+                            Tiempo restante para subir el comprobante: <DeadlineCountdown deadline={pedido.comprobante_deadline} />
+                          </p>
+                        )}
                       </div>
 
                       {pedido.comprobante_pago_subido && pedido.comprobante_pago_url && (
@@ -415,6 +440,12 @@ export default function PedidoDetallePage() {
         </div>
       </div>
 
+      <ComprobantePreviewModal
+        url={pedido?.comprobante_pago_url ?? null}
+        fallbackName={pedido?.comprobante_pago_nombre ?? null}
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+      />
       <Footer />
     </>
   );

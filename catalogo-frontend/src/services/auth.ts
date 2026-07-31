@@ -28,8 +28,14 @@ export async function login(correo: string, contrasena: string): Promise<AuthTok
   });
 
   if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Login falló: ${res.status} ${txt}`);
+    let detail = `Login falló: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = body.detail;
+    } catch { /* body no es JSON, usar mensaje genérico */ }
+    const err = new Error(detail) as Error & { status: number };
+    err.status = res.status;
+    throw err;
   }
 
   const data = (await res.json()) as AuthTokens;

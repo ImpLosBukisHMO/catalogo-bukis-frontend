@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sanitizeInput } from "../../../utils/sanitizer";
 import { useCrearDescuento, useWorkerTiposDescuento } from "../../../queries/workerDescuentos";
 import {
   WorkerDialogRoot,
@@ -35,7 +36,9 @@ export function WorkerCreateDiscountModal({ open, onOpenChange }: WorkerCreateDi
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!nombre.trim()) {
+    const cleanNombre = sanitizeInput(nombre);
+
+    if (!cleanNombre) {
       setErrorMsg("El nombre del descuento es requerido.");
       return;
     }
@@ -57,7 +60,7 @@ export function WorkerCreateDiscountModal({ open, onOpenChange }: WorkerCreateDi
 
     crearDescuentoM.mutate(
       {
-        nombre,
+        nombre: cleanNombre,
         tipo,
         porcentaje: Number(porcentaje),
         activo,

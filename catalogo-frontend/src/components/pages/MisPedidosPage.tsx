@@ -37,6 +37,30 @@ function formatDate(iso: string) {
   });
 }
 
+function DeadlineCountdown({ deadline }: { deadline: string }) {
+  const [timeLeft, setTimeLeft] = useState<number>(() => new Date(deadline).getTime() - Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTimeLeft(new Date(deadline).getTime() - Date.now());
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, [deadline]);
+
+  if (timeLeft <= 0) {
+    return <span>¡Plazo vencido!</span>;
+  }
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  
+  return (
+    <span>
+      {hours}h {minutes}m
+    </span>
+  );
+}
+
 export default function MisPedidosPage() {
   const navigate = useNavigate();
   const [pedidos, setPedidos] = useState<PedidoResumen[]>([]);
@@ -58,7 +82,7 @@ export default function MisPedidosPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -126,6 +150,16 @@ export default function MisPedidosPage() {
                           {formatDate(p.created_at)} · {p.items_count}{" "}
                           {p.items_count === 1 ? "producto" : "productos"}
                         </p>
+                        {p.estado === "APPROVED" && p.comprobante_deadline && !p.comprobante_pago_subido && (
+                          <p className="mt-1 text-xs font-semibold text-red-400">
+                            ⚠️ Sube tu comprobante en <DeadlineCountdown deadline={p.comprobante_deadline} />
+                          </p>
+                        )}
+                        {p.estado === "APPROVED" && p.comprobante_pago_subido && (
+                          <p className="mt-1 text-xs font-semibold text-emerald-400">
+                            ✓ Comprobante en revisión
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4">
