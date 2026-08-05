@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthContext } from "../../context/AuthContext";
 
 vi.mock("../elements/NavBar", () => ({
   default: () => <div data-testid="navbar" />,
@@ -72,15 +73,16 @@ function renderPage() {
   const queryClient = new QueryClient();
 
   render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <AuthContext.Provider value={{ isLoggedIn: true, isStaff: false, isLoading: false, refresh: async () => {}, setLoggedOut: () => {} }}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </AuthContext.Provider>,
   );
 }
 
 describe("PedidoDetallePage", () => {
   beforeEach(() => {
-    localStorage.setItem("access", "token");
     mockedGetMiPedidoDetalle.mockReset();
     mockedUploadComprobante.mockReset();
     mockedOpenProtectedComprobante.mockReset();

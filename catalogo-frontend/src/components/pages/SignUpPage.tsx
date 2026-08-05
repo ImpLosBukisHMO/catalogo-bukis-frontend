@@ -6,7 +6,7 @@ import { getLoggedUserData } from "../../services/user";
 import HideShowPassword from "../elements/HideShowPassword";
 import { Link } from "react-router-dom";
 
-import { sanitizeInput, sanitizeEmail } from "../../utils/sanitizer";
+import { sanitizeEmail } from "../../utils/sanitizer";
 import { isEmailValid, isPasswordValid } from "../../utils/auth";
 
 const SignUpPage = () => {
@@ -50,27 +50,34 @@ const SignUpPage = () => {
         }
 
         if (!isPasswordValid(password)) {
-            setError("La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&).");
+            setError("La contraseña debe tener al menos 8 caracteres.");
             return;
         }
 
         setError("");
         try {
-            const cleanNombre = sanitizeInput(nombre);
-            const cleanApellido = sanitizeInput(apellido);
             const cleanCorreo = sanitizeEmail(correo);
-            const cleanTelefono = sanitizeInput(telefono);
             const res = await signUp({
                 id: null,
-                nombre: cleanNombre,
-                apellido: cleanApellido,
+                nombre: nombre.trim(),
+                apellido: apellido.trim(),
                 correo: cleanCorreo,
-                telefono: cleanTelefono,
+                telefono: telefono.trim(),
                 password
             });
             if (res.status < 400) setSuccessfulRegistration(true);
-        } catch {
-            setError("Error al registrar usuario. Es posible que dicho usuario ya esté registrado.");
+        } catch (err: unknown) {
+            // Parsear errores de validación del backend (DRFValidationError via axios)
+            // Axios lanza excepciones con .response.data cuando el servidor devuelve 4xx.
+            // e.g. { password: ["La contraseña debe tener..."] } o { correo: ["..."] }
+            const responseData = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
+            if (responseData?.password?.[0]) {
+                setError(responseData.password[0]);
+            } else if (responseData?.correo?.[0]) {
+                setError(responseData.correo[0]);
+            } else {
+                setError("Error al registrar usuario. Es posible que dicho usuario ya esté registrado.");
+            }
         }
     };
 
@@ -150,7 +157,7 @@ const SignUpPage = () => {
                                     type="email"
                                     placeholder="Ej.: usuario@correo.com"
                                     value={correo}
-                                    onChange={(e) => setCorreo(sanitizeEmail(e.target.value))}
+                                    onChange={(e) => setCorreo(e.target.value)}
                                     required
                                 />
                             </div>

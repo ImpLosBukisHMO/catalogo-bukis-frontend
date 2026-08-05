@@ -1,65 +1,44 @@
 /**
- * Sanitizador de entradas de usuario para el frontend.
- * Proporciona funciones para limpiar entradas contra XSS, inyecciones de script,
- * caracteres nulos y normalización de textos antes de enviar a la API o procesar.
+ * Utilidades de normalización y sanitización de entradas de usuario.
+ *
+ * NOTA: React escapa automáticamente todo el contenido que se renderiza a través
+ * de JSX, por lo que la sanitización anti-XSS (eliminación de <script>, eventos
+ * inline, etc.) es redundante para valores que solo se muestran en el DOM vía JSX.
+ *
+ * Las funciones de este módulo se enfocan únicamente en:
+ *  - Normalización de formatos (correo: minúsculas + sin espacios).
+ *  - Restricción de tipo (OTP: solo dígitos).
+ *  - Límites razonables de longitud (buscador).
+ *
+ * Si en el futuro se utiliza `dangerouslySetInnerHTML` o se construye HTML de
+ * manera imperativa, se deberá añadir una librería dedicada (ej. DOMPurify)
+ * y aplicarla específicamente en ese punto.
  */
 
 /**
- * Sanitiza una cadena de texto eliminando etiquetas HTML, scripts,
- * instrucciones javascript: y caracteres nulos/control.
- */
-export function sanitizeInput(input: string): string {
-  if (typeof input !== "string") return "";
-
-  return input
-    // Eliminar caracteres nulos
-    .replace(/\0/g, "")
-    // Eliminar etiquetas <script> y su contenido de forma case-insensitive
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    // Eliminar atributos de evento en línea (ej: onload=, onerror=, onclick=)
-    .replace(/on\w+\s*=\s*(['"]?)(?:(?!\1).)*\1/gi, "")
-    // Eliminar esquemas de URL peligrosos (javascript:, data:text/html)
-    .replace(/javascript\s*:/gi, "")
-    .replace(/data\s*:\s*text\/html/gi, "")
-    // Convertir corchetes de etiquetas HTML restantes a entidades de texto
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .trim();
-}
-
-/**
- * Sanitiza un correo electrónico: remueve espacios, convierte a minúsculas
- * y elimina caracteres peligrosos o secuencias de inyección.
+ * Normaliza un correo electrónico: elimina espacios y convierte a minúsculas.
+ * No aplica sanitización anti-XSS porque React gestiona el escape en el DOM.
  */
 export function sanitizeEmail(email: string): string {
   if (typeof email !== "string") return "";
-
-  const clean = sanitizeInput(email)
-    .toLowerCase()
-    .replace(/\s+/g, ""); // Los correos no deben contener espacios
-
-  return clean;
+  return email.trim().toLowerCase().replace(/\s+/g, "");
 }
 
 /**
- * Sanitiza una consulta de búsqueda removiendo scripts y limitando
- * la longitud para evitar cargas excesivas o abusos.
+ * Normaliza una consulta de búsqueda: colapsa espacios múltiples y la trunca
+ * a una longitud máxima razonable para evitar cargas excesivas.
+ * No aplica sanitización anti-XSS porque el valor se usa en parámetros de URL,
+ * no en HTML sin escape.
  */
 export function sanitizeSearchQuery(query: string, maxLength: number = 100): string {
   if (typeof query !== "string") return "";
-
-  const clean = sanitizeInput(query)
-    // Reemplazar múltiples espacios consecutivos por uno solo
-    .replace(/\s+/g, " ");
-
-  return clean.slice(0, maxLength);
+  return query.trim().replace(/\s+/g, " ").slice(0, maxLength);
 }
 
 /**
- * Sanitiza un valor numérico/OTP asegurando que solo contenga dígitos.
+ * Restringe un valor numérico/OTP para que solo contenga dígitos.
  */
 export function sanitizeNumeric(value: string): string {
   if (typeof value !== "string") return "";
-
   return value.replace(/\D/g, "");
 }

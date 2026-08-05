@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 
@@ -10,6 +10,7 @@ import { getMiPedidoDetalle, uploadComprobante } from "../../services/pedidos";
 import ComprobantePreviewModal from "../ui/ComprobantePreviewModal";
 import { IMAGE_PLACEHOLDER_URL } from "../../utils/images";
 import { BACKEND_BASE_URL } from "../../utils/backend";
+import { AuthContext } from "../../context/AuthContext";
 
 
 const ESTADO_COLOR: Record<string, string> = {
@@ -208,8 +209,12 @@ export default function PedidoDetallePage() {
     },
   });
 
+  const { isLoggedIn, isLoading } = useContext(AuthContext) || { isLoggedIn: false, isLoading: false };
+
   useEffect(() => {
-    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+    if (isLoading) return;
+
+    if (!isLoggedIn) {
       navigate("/iniciar-sesion");
       return;
     }

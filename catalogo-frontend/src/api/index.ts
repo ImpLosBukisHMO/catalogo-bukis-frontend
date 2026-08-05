@@ -1,46 +1,39 @@
 import axios from 'axios';
-import { refreshAccessToken, logout } from '../services/auth';
+import { refreshAccessToken } from '../services/auth';
 import { BACKEND_BASE_URL } from '../utils/backend';
 
 const API = axios.create({
   baseURL: BACKEND_BASE_URL,
   withCredentials: true,
+  xsrfCookieName: 'csrftoken',
+  xsrfHeaderName: 'X-CSRFToken',
 });
 
-// Inyecta el JWT access token (nuevo sistema) o el token legacy
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access") ?? localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Ya no necesitamos interceptor de request para inyectar token, las cookies viajan solas
 
-// Si recibe 401, intenta refrescar el JWT y reintentar; si falla, cierra sesión
+// Si recibe 401, intenta refrescar la sesión (HttpOnly cookies) y reintentar.
+// NO llama logout() al fallar — deja que el caller (AuthProvider, etc.) maneje el estado.
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+
+    // Excluir endpoints de auth del retry para evitar loops
+    const url = original?.url ?? '';
+    const isAuthEndpoint = url.includes('/auth/') || url.includes('/logout');
+
+    if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true;
 
-      // Si el backend dice que el token no es válido (token_not_valid),
-      // limpiamos el token y reintentamos sin Authorization para endpoints públicos
-      const errorCode = error.response?.data?.code;
-      if (errorCode === "token_not_valid") {
-        localStorage.removeItem("access");
-        localStorage.removeItem("token");
-        delete original.headers.Authorization;
-        return API(original);
-      }
-
-      // Si no es token_not_valid, intentamos refrescar el token
+      // Intentamos refrescar el token vía endpoint (usa la cookie refresh_token)
       try {
-        const newAccess = await refreshAccessToken();
-        original.headers.Authorization = `Bearer ${newAccess}`;
+        await refreshAccessToken();
+        // Si tiene éxito, la cookie access_token se ha renovado. Reintentamos.
         return API(original);
       } catch {
-        logout();
+        // El refresh falló (token expirado o usuario anónimo).
+        // NO hacer logout con redirect — dejar que el caller maneje el error.
+        // AuthProvider se encargará de marcar isLoggedIn = false.
       }
     }
     return Promise.reject(error);

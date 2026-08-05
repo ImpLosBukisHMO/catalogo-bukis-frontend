@@ -6,8 +6,7 @@ import { getLoggedUserData } from "../services/user";
 function readCachedAuth(): { isLoggedIn: boolean; isStaff: boolean } {
     try {
         const raw = localStorage.getItem("me");
-        const token = localStorage.getItem("access") ?? localStorage.getItem("token");
-        if (!raw || !token) return { isLoggedIn: false, isStaff: false };
+        if (!raw) return { isLoggedIn: false, isStaff: false };
         const me = JSON.parse(raw);
         return { isLoggedIn: true, isStaff: Boolean(me.is_staff) };
     } catch {
@@ -17,29 +16,32 @@ function readCachedAuth(): { isLoggedIn: boolean; isStaff: boolean } {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const cached = readCachedAuth();
+    // Optimismo inicial: si hay cache local, mostrar como logueado mientras verificamos.
     const [isLoggedIn, setIsLoggedIn] = useState(cached.isLoggedIn);
     const [isStaff, setIsStaff] = useState(cached.isStaff);
-    const [isLoading, setIsLoading] = useState(!cached.isLoggedIn);
+    // Siempre arrancamos en isLoading=true para verificar la cookie con el backend.
+    const [isLoading, setIsLoading] = useState(true);
+
     const setLoggedOut = () => {
         setIsLoggedIn(false);
         setIsStaff(false);
         localStorage.removeItem("me");
-        localStorage.removeItem("token");
-        localStorage.removeItem("access");
     };
 
     const fetchAuth = async () => {
+        setIsLoading(true);
         try {
+            // Siempre consultamos al backend: la autenticación real es via cookie HttpOnly.
+            // Si la cookie no existe o expiró, el backend devolverá 401.
             const userData = await getLoggedUserData();
             localStorage.setItem("me", JSON.stringify(userData));
             setIsLoggedIn(true);
             setIsStaff(Boolean(userData.is_staff));
-        } catch (e: unknown) {
-            if ((e as { response?: { status?: number } }).response?.status === 401) {
-                setIsLoggedIn(false);
-                setIsStaff(false);
-                localStorage.removeItem("me");
-            }
+        } catch {
+            // Cualquier error (401, red, etc.) = sesión inválida
+            setIsLoggedIn(false);
+            setIsStaff(false);
+            localStorage.removeItem("me");
         } finally {
             setIsLoading(false);
         }

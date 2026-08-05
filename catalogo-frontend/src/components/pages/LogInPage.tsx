@@ -20,7 +20,8 @@ const LogInPage = () => {
     const [showResend, setShowResend] = useState(false);
     const [resendStatus, setResendStatus] = useState("");
 
-    const { isLoggedIn, isLoading } = useAuth();
+    const auth = useAuth();
+    const { isLoggedIn, isLoading } = auth;
 
     // Si ya tiene sesión activa, redirigir
     useEffect(() => {
@@ -51,6 +52,11 @@ const LogInPage = () => {
 
             // Detectar si es worker y redirigir
             const me = await getMe();
+
+            // Actualizar el AuthProvider para que NavBar y páginas protegidas
+            // detecten la sesión inmediatamente.
+            await auth.refresh();
+
             navigate(isWorker(me) ? "/worker" : "/");
         } catch(err: unknown) {
             const status = (err as { status?: number }).status;
@@ -62,8 +68,10 @@ const LogInPage = () => {
             } else if (errorMessage.toLowerCase().includes("confirm")) {
                 setError('Tu cuenta aún no ha sido activada.');
                 setShowResend(true);
+            } else if (errorMessage && !errorMessage.includes("No active account")) {
+                setError(errorMessage);
             } else {
-                setError('Credenciales inválidas');
+                setError('Credenciales inválidas. Verifica tu correo y contraseña.');
             }
         } finally {
             setLoading(false);
@@ -99,7 +107,7 @@ const LogInPage = () => {
                                             type="email"
                                             placeholder="usuario@correo.com"
                                             value={correo}
-                                            onChange={(e) => setCorreo(sanitizeEmail(e.target.value))}
+                                            onChange={(e) => setCorreo(e.target.value)}
                                             required
                                         />
                                 </div>
@@ -144,8 +152,9 @@ const LogInPage = () => {
                                     {loading ? "Iniciando sesión…" : "Iniciar Sesión"}
                                 </button>
                             </form>
-                            <div className="mt-5 text-center">
+                            <div className="mt-5 flex flex-col gap-3 text-center text-sm">
                                 <a className="font-medium text-bukis-red-700 underline-offset-4 hover:underline" href="/registro">¿No tienes cuenta? Regístrate</a>
+                                <a className="font-medium text-neutral-500 underline-offset-4 hover:underline" href="/recuperar-password">¿Olvidaste tu contraseña?</a>
                             </div>
             </main>
             <Footer />

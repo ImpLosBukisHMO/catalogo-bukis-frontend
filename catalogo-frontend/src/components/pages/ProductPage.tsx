@@ -241,7 +241,7 @@ export default function ProductPage() {
   }
 
   const handleToggleFavorite = async (product: ProductCardVM | ProductDetail) => {
-    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+    if (!isLoggedIn) {
         window.location.href = "/iniciar-sesion";
         return;
     }

@@ -112,7 +112,7 @@ export default function ConfirmAccountPage() {
                                 <input
                                     type="email"
                                     value={correo}
-                                    onChange={(e) => setCorreo(sanitizeEmail(e.target.value))}
+                                    onChange={(e) => setCorreo(e.target.value)}
                                     placeholder="usuario@correo.com"
                                     required
                                     className="w-full rounded-xl border border-neutral-400 bg-white px-3 py-2 text-bukis-ink placeholder:text-neutral-500 outline-none transition focus:border-bukis-red-600 focus:ring-2 focus:ring-bukis-red-600/25"
@@ -162,7 +162,7 @@ export default function ConfirmAccountPage() {
                                         type="email"
                                         placeholder="Ingresa tu correo"
                                         value={emailResend}
-                                        onChange={(e) => setEmailResend(sanitizeEmail(e.target.value))}
+                                        onChange={(e) => setEmailResend(e.target.value)}
                                         required
                                         className="w-full rounded-lg border border-red-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                                     />
