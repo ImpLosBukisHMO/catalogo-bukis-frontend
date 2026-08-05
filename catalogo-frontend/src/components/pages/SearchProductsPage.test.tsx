@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SearchProductsPage from "./SearchProductsPage";
 import { getCategories } from "../../services/category";
+import { AuthContext } from "../../context/AuthContext";
 import { getProductsPage, getProductById } from "../../services/product";
 import { getFavoritos } from "../../services/favoritos";
 import type { PagedResponse } from "./responseNormalizer";
@@ -117,7 +118,7 @@ function LocationDisplay() {
   return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
 }
 
-function renderSearchProductsPage(initialEntry: string) {
+function renderSearchProductsPage(initialEntry: string, isLoggedIn = false) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -127,21 +128,23 @@ function renderSearchProductsPage(initialEntry: string) {
   });
 
   return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <Routes>
-          <Route
-            path="/productos"
-            element={
-              <>
-                <SearchProductsPage />
-                <LocationDisplay />
-              </>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <AuthContext.Provider value={{ isLoggedIn, isStaff: false, isLoading: false, refresh: async () => {}, setLoggedOut: () => {} }}>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <Routes>
+            <Route
+              path="/productos"
+              element={
+                <>
+                  <SearchProductsPage />
+                  <LocationDisplay />
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </AuthContext.Provider>
   );
 }
 
@@ -284,7 +287,6 @@ describe("SearchProductsPage", () => {
   });
 
   it("fetches favoritos when the visitor has an access token", async () => {
-    localStorage.setItem("access", "fake-jwt");
     mockedGetProductsPage.mockResolvedValue(
       buildPagedResponse([buildProduct(1, "Mate Imperial")], 1, {
         previous: null,
@@ -292,7 +294,7 @@ describe("SearchProductsPage", () => {
       }),
     );
 
-    renderSearchProductsPage("/productos?page=1");
+    renderSearchProductsPage("/productos?page=1", true);
 
     expect(await screen.findByText("Mate Imperial")).toBeInTheDocument();
     expect(mockedGetFavoritos).toHaveBeenCalledTimes(1);

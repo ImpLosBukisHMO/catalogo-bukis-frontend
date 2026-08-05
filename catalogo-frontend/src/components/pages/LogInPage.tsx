@@ -7,6 +7,9 @@ import { logIn } from "../../services/user";
 import { login, getMe, isWorker, reenviarConfirmacion } from "../../services/auth";
 import { useAuth } from "../../context/useAuth";
 
+import { sanitizeEmail } from "../../utils/sanitizer";
+import { isEmailValid } from "../../utils/auth";
+
 const LogInPage = () => {
     const navigate = useNavigate();
     const [correo, setCorreo] = useState('');
@@ -17,7 +20,8 @@ const LogInPage = () => {
     const [showResend, setShowResend] = useState(false);
     const [resendStatus, setResendStatus] = useState("");
 
-    const { isLoggedIn, isLoading } = useAuth();
+    const auth = useAuth();
+    const { isLoggedIn, isLoading } = auth;
 
     // Si ya tiene sesión activa, redirigir
     useEffect(() => {
@@ -32,22 +36,42 @@ const LogInPage = () => {
         setError("");
         setShowResend(false)
         setResendStatus("")
+
+        if (!isEmailValid(correo)) {
+            setError("El correo electrónico no tiene un formato válido.");
+            setLoading(false);
+            return;
+        }
+
         try {
+            const cleanCorreo = sanitizeEmail(correo);
             // Login con JWT (access + refresh) para los servicios nuevos
-            await login(correo, password);
+            await login(cleanCorreo, password);
             // También hacer login con el sistema legacy para compatibilidad con axios/user.ts
-            try { await logIn(correo, password); } catch { /* continuar aunque falle el legacy */ }
+            try { await logIn(cleanCorreo, password); } catch { /* continuar aunque falle el legacy */ }
 
             // Detectar si es worker y redirigir
             const me = await getMe();
+
+            // Actualizar el AuthProvider para que NavBar y páginas protegidas
+            // detecten la sesión inmediatamente.
+            await auth.refresh();
+
             navigate(isWorker(me) ? "/worker" : "/");
-        } catch(err) {
+        } catch(err: unknown) {
+            const status = (err as { status?: number }).status;
             const errorMessage = err instanceof Error ? err.message : String(err);
-            if (errorMessage.toLowerCase().includes("confirm")) {
+
+            if (status === 429) {
+                // Rate limiter: demasiados intentos
+                setError(errorMessage);
+            } else if (errorMessage.toLowerCase().includes("confirm")) {
                 setError('Tu cuenta aún no ha sido activada.');
                 setShowResend(true);
+            } else if (errorMessage && !errorMessage.includes("No active account")) {
+                setError(errorMessage);
             } else {
-                setError('Credenciales inválidas');
+                setError('Credenciales inválidas. Verifica tu correo y contraseña.');
             }
         } finally {
             setLoading(false);
@@ -57,7 +81,8 @@ const LogInPage = () => {
     const handleReenviar = async () => {
         setResendStatus("Enviando...");
         try {
-            const res = await reenviarConfirmacion(correo);
+            const cleanCorreo = sanitizeEmail(correo);
+            const res = await reenviarConfirmacion(cleanCorreo);
             setResendStatus(`✅ ${res.mensaje}`);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
@@ -127,8 +152,9 @@ const LogInPage = () => {
                                     {loading ? "Iniciando sesión…" : "Iniciar Sesión"}
                                 </button>
                             </form>
-                            <div className="mt-5 text-center">
+                            <div className="mt-5 flex flex-col gap-3 text-center text-sm">
                                 <a className="font-medium text-bukis-red-700 underline-offset-4 hover:underline" href="/registro">¿No tienes cuenta? Regístrate</a>
+                                <a className="font-medium text-neutral-500 underline-offset-4 hover:underline" href="/recuperar-password">¿Olvidaste tu contraseña?</a>
                             </div>
             </main>
             <Footer />

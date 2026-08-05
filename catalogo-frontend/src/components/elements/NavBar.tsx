@@ -7,6 +7,8 @@ import { logOut } from "../../services/user";
 import { useAuth } from "../../context/useAuth";
 import { buildCatalogLocation, normalizeCatalogQuery } from "../../utils/catalogNavigation";
 
+import { sanitizeSearchQuery } from "../../utils/sanitizer";
+
 type NavBarProps = {
     navBarQuery?: string | null;
 }
@@ -27,7 +29,8 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
 
     const handleQuery = (e: React.FormEvent) => {
         e.preventDefault();
-        navigate(buildCatalogLocation({ page: 1, query: searchQuery }));
+        const cleanQuery = sanitizeSearchQuery(searchQuery);
+        navigate(buildCatalogLocation({ page: 1, query: cleanQuery }));
         setIsOpen(false);
     };
 

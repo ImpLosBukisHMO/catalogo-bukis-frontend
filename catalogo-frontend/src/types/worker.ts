@@ -50,6 +50,9 @@ export type WorkerPedido = {
   precio_total: string;
   items_count: number;
   created_at: string;
+  comprobante_deadline: string | null;
+  comprobante_pago_subido: boolean;
+  requiere_reembolso: boolean;
 };
 
 export type WorkerPedidoItem = {
@@ -84,7 +87,9 @@ export type WorkerPedidoDetalle = {
   comprobante_pago_subido: boolean;
   comprobante_pago_nombre: string | null;
   comprobante_pago_url: string | null;
+  requiere_reembolso: boolean;
   items: WorkerPedidoItem[];
+  comprobante_deadline: string | null;
   created_at: string;
 };
 

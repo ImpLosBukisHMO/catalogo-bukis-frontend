@@ -6,6 +6,9 @@ import { getLoggedUserData } from "../../services/user";
 import HideShowPassword from "../elements/HideShowPassword";
 import { Link } from "react-router-dom";
 
+import { sanitizeEmail } from "../../utils/sanitizer";
+import { isEmailValid, isPasswordValid } from "../../utils/auth";
+
 const SignUpPage = () => {
     // Messages.
     const [successfulRegistration, setSuccessfulRegistration] = useState(false);
@@ -36,16 +39,45 @@ const SignUpPage = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isEmailValid(correo)) {
+            setError("El correo electrónico no tiene un formato válido.");
+            return;
+        }
+
         if (password !== confirmPassword) {
             setError("Las contraseñas no coinciden.");
             return;
         }
+
+        if (!isPasswordValid(password)) {
+            setError("La contraseña debe tener al menos 8 caracteres.");
+            return;
+        }
+
         setError("");
         try {
-            const res = await signUp({ id: null, nombre, apellido, correo, telefono, password });
+            const cleanCorreo = sanitizeEmail(correo);
+            const res = await signUp({
+                id: null,
+                nombre: nombre.trim(),
+                apellido: apellido.trim(),
+                correo: cleanCorreo,
+                telefono: telefono.trim(),
+                password
+            });
             if (res.status < 400) setSuccessfulRegistration(true);
-        } catch {
-            setError("Error al registrar usuario. Es posible que dicho usuario ya esté registrado.");
+        } catch (err: unknown) {
+            // Parsear errores de validación del backend (DRFValidationError via axios)
+            // Axios lanza excepciones con .response.data cuando el servidor devuelve 4xx.
+            // e.g. { password: ["La contraseña debe tener..."] } o { correo: ["..."] }
+            const responseData = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
+            if (responseData?.password?.[0]) {
+                setError(responseData.password[0]);
+            } else if (responseData?.correo?.[0]) {
+                setError(responseData.correo[0]);
+            } else {
+                setError("Error al registrar usuario. Es posible que dicho usuario ya esté registrado.");
+            }
         }
     };
 
@@ -82,10 +114,11 @@ const SignUpPage = () => {
                         </p>
                         <div className="mt-6">
                             <Link
-                                to="/iniciar-sesion"
+                                to="/confirmar-cuenta"
+                                state={{ email: correo }}
                                 className="inline-block rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-6 py-3 font-semibold text-white transition hover:bg-bukis-red-700"
                             >
-                                Ir a Iniciar Sesión
+                                Ingresar código de confirmación
                             </Link>
                         </div>
                     </div>
@@ -176,8 +209,13 @@ const SignUpPage = () => {
                                 Registrarse
                             </button>
                         </form>
-                        <div className="mt-5 text-center">
-                            <Link to="/iniciar-sesion" className="font-medium text-bukis-red-700 underline-offset-4 hover:underline">¿Ya tienes cuenta? Inicia sesión</Link>
+                        <div className="mt-5 flex flex-col gap-3 text-center text-sm">
+                            <Link to="/iniciar-sesion" className="font-medium text-bukis-red-700 underline-offset-4 hover:underline">
+                                ¿Ya tienes cuenta? Inicia sesión
+                            </Link>
+                            <Link to="/confirmar-cuenta" className="font-medium text-neutral-500 underline-offset-4 hover:underline">
+                                ¿Tienes un código de confirmación pendiente?
+                            </Link>
                         </div>
                     </>
                 )}

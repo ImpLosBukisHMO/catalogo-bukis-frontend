@@ -1,14 +1,5 @@
 import API from "../api";
 
-/*
-Use if needed:
-
-const TOKEN_NAME: string = import.meta.env.VITE_TOKEN_NAME;
-const ACCESS_NAME: string = import.meta.env.VITE_ACCESS_NAME;
-const REFRESH_NAME: string = import.meta.env.VITE_REFRESH_NAME;
-const ME_NAME: string = import.meta.env.VITE_ME_NAME;
-*/
-
 // User data. CAUTION: Privacy may be compromised, use carefully.
 export type Usuario = {
   id: number | null;
@@ -34,59 +25,39 @@ export async function signUp(data: Usuario) {
 
 
 export async function logIn(correo: string, password: string) {
-  // Remove token (especially if it's already expired).
-  localStorage.removeItem("token");
-  localStorage.removeItem("access");
-  localStorage.removeItem("me");
-
   const data = {
     correo: correo,
     password: password
   };
 
-  const res = await API.post("/api/login/", data, {
+  // El backend establece las cookies HttpOnly (access_token, refresh_token).
+  // No necesitamos guardar nada en localStorage.
+  // La redirección la maneja el componente que llama a esta función.
+  await API.post("/api/login/", data, {
     headers: { Accept: "application/json" },
   });
-
-  // Successful log-in.
-  if (res.data && res.data.token) {
-    localStorage.setItem("token", res.data.token);
-    window.location.href = '/';
-  } else {
-    throw new Error(`Error al iniciar sesión: no se recibió el token del servidor.`);
-  }
 }
 
 export async function logOut(onClearAuth?: () => void) {
-  const token = localStorage.getItem("token");
   try {
-    // El segundo argumento es el body (vacío), el tercero es la configuración (headers)
+    // Las cookies se envían automáticamente por withCredentials: true.
     await API.post("/api/logout/", {}, {
-      headers: { 
-        Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
+      headers: { Accept: "application/json" },
     });
   } catch (error) {
     console.error("Error al cerrar sesión en el servidor:", error);
   } finally {
-    // Aseguramos borrar el token localmente pase lo que pase en el servidor
+    // Limpiar caché local y estado de auth
     onClearAuth?.();
-    localStorage.removeItem("token");
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
     localStorage.removeItem("me");
     window.location.href = '/';
   }
 }
 
 export async function getLoggedUserData() {
-  const token = localStorage.getItem("access") ?? localStorage.getItem("token");
+  // Las cookies se envían automáticamente por withCredentials: true.
   const res = await API.get("/api/mi_usuario/", {
-    headers: { 
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
+    headers: { Accept: "application/json" },
   });
 
   if (res.status !== 200) {
@@ -111,17 +82,13 @@ export async function updateUserData(data: Usuario) {
     payload.password = data.password;
   }
 
-  const token = localStorage.getItem("token");
-
   try {
+    // Las cookies se envían automáticamente por withCredentials: true.
     await API.put(`/api/usuarios/${data.id}/`, payload, {
-      headers: { 
-        Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
+      headers: { Accept: "application/json" },
     });
   } catch (error) {
     console.error("Error al actualizar usuario:", error);
     throw new Error(`Error al actualizar los datos del usuario.`);
   }
-}
+}
