@@ -4,14 +4,17 @@ import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import ProductCard from "../elements/ProductCard";
 import OfferSlider from "../elements/OfferSlider";
-import { getProductById, getProducts } from "../../services/product";
+import { getProductById, getNovedades, getMasVistos, getMasVendidos } from "../../services/product";
 import type { Product, ProductCardVM, ProductDetail } from "../../types/product";
 import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
 import { AuthContext } from "../../context/AuthContext";
 
 
 function Home() {
-  const [products, setProducts] = useState<ProductCardVM[]>([]);
+  const [novedades, setNovedades] = useState<ProductCardVM[]>([]);
+  const [masVistos, setMasVistos] = useState<ProductCardVM[]>([]);
+  const [masVendidos, setMasVendidos] = useState<ProductCardVM[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favMsg, setFavMsg] = useState<string | null>(null);
@@ -27,7 +30,7 @@ function Home() {
           const formattedData = data.map((f) => ({ id: f.id, producto_id: f.variante?.producto_id }))
           setFavoritos(formattedData);
         } catch (error) {
-          console.error("Error al cargar errores favoritos.", error)
+          console.error("Error al cargar favoritos.", error)
         }
       }
     }
@@ -73,24 +76,29 @@ function Home() {
     setTimeout(() => setFavMsg(null), 3000);
   };
 
+  const mapToCardVM = (p: Product): ProductCardVM => ({
+    id: p.id,
+    nombre: p.nombre,
+    precio: Number(p.precio),
+    imagenUrl: p.imagen ?? null,
+    disponible: true,
+    categoria: p.categoria ?? null,
+    descuento_especial: p.descuento_especial ?? null,
+  });
+
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        const data: Product[] = await getProducts();
+        const [novData, vistosData, vendidosData] = await Promise.all([
+            getNovedades(),
+            getMasVistos(),
+            getMasVendidos()
+        ]);
 
-        const mapped: ProductCardVM[] = data.map((p: Product) => ({
-          id: p.id,
-          nombre: p.nombre,
-          precio: Number(p.precio),
-          imagenUrl: p.imagen ?? null,
-          disponible: true,
-          categoria: p.categoria ?? null,
-          descuento_especial: p.descuento_especial ?? null,
-        }));
-
-
-        setProducts(mapped);
+        setNovedades(novData.map(mapToCardVM));
+        setMasVistos(vistosData.map(mapToCardVM));
+        setMasVendidos(vendidosData.map(mapToCardVM));
       } catch (e) {
         console.error("Error al obtener los productos:", e);
         setError(e instanceof Error ? e.message : "Error desconocido al cargar productos.");
@@ -100,55 +108,68 @@ function Home() {
     })();
   }, []);
 
+  const renderCarousel = (title: string, data: ProductCardVM[]) => {
+      if (data.length === 0 && !loading) return null;
+
+      return (
+          <section className="mx-auto max-w-7xl px-4 py-8">
+            <h2 className="text-2xl font-bold text-bukis-ink">{title}</h2>
+            <div className="mt-6 flex w-full gap-4 overflow-x-auto px-1 pb-4 snap-x snap-mandatory">
+              {data.map((p) => (
+                <div key={p.id} className="w-72 shrink-0 snap-start">
+                  <ProductCard 
+                    product={p}
+                    onToggleFavorite={handleToggleFavorite}
+                    isLikedByUser={isLikedByUser(p.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+      );
+  }
+
   return (
     <>
       <title>Inicio | Importaciones Los Bukis</title>
       <NavBar />
 
-      <h1 className="mb-5 text-center text-4xl font-bold text-bukis-ink">
+      <h1 className="mb-5 text-center text-4xl font-bold text-bukis-ink mt-8">
         {"¡Bienvenido(a)!"}
       </h1>
 
       <OfferSlider />
 
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <h1 className="text-center text-3xl font-bold text-bukis-ink">
-          Productos destacados
-        </h1>
-        <div className="mt-4 flex justify-center">
-          <Link
-            to="/productos"
-            className="inline-flex items-center justify-center rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
-          >
-            Ver todo el catálogo
-          </Link>
+      {loading && <p className="mt-12 text-center text-neutral-600">Cargando productos...</p>}
+      {error && <p className="mt-12 text-center text-bukis-red-700">{error}</p>}
+
+      {favMsg && (
+        <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-bukis-ink px-4 py-3 text-white shadow-bukis-soft">
+          {favMsg}
         </div>
+      )}
 
-        {loading && <p className="mt-6 text-center text-neutral-600">Cargando productos...</p>}
-        {error && <p className="mt-6 text-center text-bukis-red-700">{error}</p>}
-
-        {favMsg && (
-          <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-bukis-ink px-4 py-3 text-white shadow-bukis-soft">
-            {favMsg}
-          </div>
-        )}
-
-        <div className="mt-6 flex w-full gap-4 overflow-x-auto px-1 pb-4 snap-x snap-mandatory">
-          {products.map((p) => (
-            <div key={p.id} className="w-72 shrink-0 snap-start">
-              <ProductCard 
-                product={p}
-                onToggleFavorite={handleToggleFavorite}
-                isLikedByUser={isLikedByUser(p.id)}
-              />
+      {!loading && !error && (
+        <div className="flex flex-col gap-2">
+            {renderCarousel("Novedades", novedades)}
+            {renderCarousel("Productos Más Vistos", masVistos)}
+            {renderCarousel("Productos Más Vendidos", masVendidos)}
+            
+            <div className="my-2 flex justify-center">
+              <Link
+                to="/productos"
+                className="inline-flex items-center justify-center rounded-xl border border-bukis-red-800 bg-bukis-red-600 px-4 py-2 text-lg font-semibold text-white transition hover:bg-bukis-red-700 focus:outline-none focus:ring-2 focus:ring-bukis-red-600/35"
+              >
+                Ver todos los productos
+              </Link>
             </div>
-          ))}
         </div>
-      </section>
-      <section className="mx-auto max-w-5xl px-4 pb-10">
-        <h1 className='py-5 text-center text-3xl font-bold text-bukis-ink'>
-          Nos ubicamos en:
-        </h1>
+      )}
+
+      <section className="mx-auto max-w-5xl px-4 pb-10 mt-4">
+        <h2 className='py-5 text-center text-3xl font-bold text-bukis-ink'>
+          Visítanos
+        </h2>
         <div className='mb-6 flex justify-center'>
           <iframe className='min-h-80 w-full max-w-4xl rounded-2xl border border-neutral-300 shadow-bukis-soft' src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5117.699121661781!2d-110.99242163568606!3d29.0906510470514!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86ce840f0c532091%3A0xb230f207772b69bb!2sImportaciones%20Los%20Bukis!5e0!3m2!1ses-419!2smx!4v1767916805029!5m2!1ses-419!2smx" width="800" height="460" loading="lazy"></iframe>
         </div>

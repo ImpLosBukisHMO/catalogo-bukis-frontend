@@ -9,6 +9,7 @@ import {
   getProductById,
   getProductImages,
   getProducts,
+  reportProductView,
   type ProductImage,
 } from "../../services/product";
 import type { ProductDetail, Variant } from "../../types/product";
@@ -100,6 +101,9 @@ export default function ProductPage() {
 
         const data = await getProductById(id);
         setProduct(data);
+        
+        // Reportar vista de producto (fire and forget)
+        reportProductView(id);
 
         const defVariantId = pickDefaultVariantId(data.variantes);
         setSelectedVariantId(defVariantId);
