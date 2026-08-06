@@ -35,6 +35,13 @@ vi.mock("../../services/product", () => ({
   getProductById: vi.fn(),
   getProductImages: vi.fn(),
   getProducts: vi.fn(),
+  reportProductView: vi.fn(),
+}));
+
+vi.mock("../../services/favoritos", () => ({
+  getFavoritos: vi.fn().mockResolvedValue([]),
+  addFavorito: vi.fn(),
+  removeFavorito: vi.fn(),
 }));
 
 const mockedGetProductById = vi.mocked(getProductById);

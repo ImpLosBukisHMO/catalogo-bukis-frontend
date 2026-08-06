@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "./Home";
-import { getProducts } from "../../services/product";
+import { getNovedades, getMasVistos, getMasVendidos } from "../../services/product";
 import type { Product } from "../../types/product";
 
 vi.mock("../elements/NavBar", () => ({
@@ -22,10 +22,20 @@ vi.mock("../elements/ProductCard", () => ({
 }));
 
 vi.mock("../../services/product", () => ({
-  getProducts: vi.fn(),
+  getNovedades: vi.fn(),
+  getMasVistos: vi.fn(),
+  getMasVendidos: vi.fn(),
 }));
 
-const mockedGetProducts = vi.mocked(getProducts);
+vi.mock("../../services/favoritos", () => ({
+  getFavoritos: vi.fn().mockResolvedValue([]),
+  addFavorito: vi.fn(),
+  removeFavorito: vi.fn(),
+}));
+
+const mockedGetNovedades = vi.mocked(getNovedades);
+const mockedGetMasVistos = vi.mocked(getMasVistos);
+const mockedGetMasVendidos = vi.mocked(getMasVendidos);
 
 function buildProduct(id: number, nombre: string): Product {
   return {
@@ -50,7 +60,9 @@ function buildProduct(id: number, nombre: string): Product {
 
 describe("Home", () => {
   beforeEach(() => {
-    mockedGetProducts.mockResolvedValue([]);
+    mockedGetNovedades.mockResolvedValue([]);
+    mockedGetMasVistos.mockResolvedValue([]);
+    mockedGetMasVendidos.mockResolvedValue([]);
   });
 
   it("keeps featured products flat and links browse-all actions to /productos without pagination controls", async () => {
@@ -60,7 +72,7 @@ describe("Home", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("link", { name: /Ver todo el catálogo/i })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: /Ver todos los productos/i })).toHaveAttribute(
       "href",
       "/productos",
     );
@@ -68,7 +80,7 @@ describe("Home", () => {
   });
 
   it("renders fetched featured products without adding pagination controls", async () => {
-    mockedGetProducts.mockResolvedValue([
+    mockedGetNovedades.mockResolvedValue([
       buildProduct(1, "Mate Imperial"),
       buildProduct(2, "Libro Azul"),
     ]);
