@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useContext } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import Footer from "../elements/Footer";
@@ -11,6 +11,7 @@ import { getCategories } from "../../services/category";
 import { type Product, type ProductCardVM } from "../../types/product";
 import type { Categoria } from "../../types/categoria";
 import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
+import { AuthContext } from "../../context/AuthContext";
 import { productKeys } from "../../queries/productKeys";
 import { formatMoney } from "../../utils/normalizers";
 import {
@@ -44,6 +45,7 @@ export default function SearchProductsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const pageParam = parseCatalogPageParam(searchParams.get("page"));
     const productQuery = normalizeCatalogQuery(searchParams.get("query"));
+    const isLoggedIn = useContext(AuthContext)?.isLoggedIn ?? false;
 
     const [sideBarSearch, setSideBarSearch] = useState<string>(productQuery);
     const [categories, setCategories] = useState<Categoria[]>([]);
@@ -135,7 +137,7 @@ export default function SearchProductsPage() {
     }, []);
 
     useEffect(() => {
-        if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+        if (!isLoggedIn) {
             setFavoritos([]);
             return;
         }
@@ -160,7 +162,7 @@ export default function SearchProductsPage() {
     }
 
     const handleToggleFavorite = async (product: ProductCardVM) => {
-        if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+        if (!isLoggedIn) {
             window.location.href = "/iniciar-sesion";
             return;
         }

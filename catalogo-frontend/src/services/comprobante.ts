@@ -33,15 +33,22 @@ function resolveProtectedComprobantePath(url: string) {
   return pathname;
 }
 
-export async function openProtectedComprobante(url: string, fallbackName?: string | null): Promise<void> {
+export async function fetchProtectedComprobante(url: string, fallbackName?: string | null) {
   const response = await API.get(resolveProtectedComprobantePath(url), { responseType: "blob" });
-  const blobUrl = URL.createObjectURL(response.data as Blob);
+  const blob = response.data as Blob;
+  const fileName = getFileNameFromDisposition(response.headers?.["content-disposition"], fallbackName);
+  return { blob, fileName };
+}
+
+export async function openProtectedComprobante(url: string, fallbackName?: string | null): Promise<void> {
+  const { blob, fileName } = await fetchProtectedComprobante(url, fallbackName);
+  const blobUrl = URL.createObjectURL(blob);
   const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
 
   if (!openedWindow) {
     const anchor = document.createElement("a");
     anchor.href = blobUrl;
-    anchor.download = getFileNameFromDisposition(response.headers?.["content-disposition"], fallbackName);
+    anchor.download = fileName;
     anchor.rel = "noreferrer";
     document.body.appendChild(anchor);
     anchor.click();
