@@ -59,6 +59,29 @@ export async function getProductById(id: string | number) {
   return data?.datos || data;
 }
 
+export async function getNovedades(): Promise<Product[]> {
+  const res = await API.get("/api/productos/novedades/");
+  return res.data;
+}
+
+export async function getMasVistos(): Promise<Product[]> {
+  const res = await API.get("/api/productos/mas-vistos/");
+  return res.data;
+}
+
+export async function getMasVendidos(): Promise<Product[]> {
+  const res = await API.get("/api/productos/mas-vendidos/");
+  return res.data;
+}
+
+export async function reportProductView(id: string | number): Promise<void> {
+  try {
+    await API.post(`/api/productos/${id}/ver/`);
+  } catch (error) {
+    console.error("Error al reportar vista de producto:", error);
+  }
+}
+
 export type ProductImage = {
   id: number;
   producto: number;
