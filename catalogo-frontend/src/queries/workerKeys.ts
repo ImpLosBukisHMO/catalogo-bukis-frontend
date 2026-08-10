@@ -19,6 +19,8 @@ export const workerKeys = {
   // ─── Dashboard ─────────────────────────────────────────────────────────────
   /** Dashboard-composed summary key. */
   dashboard: () => [...workerKeys.all, "dashboard"] as const,
+  /** Dashboard KPI keys for lists like masVistos, masVendidos, etc. */
+  dashboardKpi: (kpi: string) => [...workerKeys.dashboard(), kpi] as const,
 
   // ─── Pedidos ───────────────────────────────────────────────────────────────
   /** Parent pedidos namespace — invalidates all pedido keys. */

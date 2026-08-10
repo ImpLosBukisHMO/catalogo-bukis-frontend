@@ -153,6 +153,7 @@ export default function WorkerProductsPage() {
   // ── Search / filter ──
   const [search, setSearch]       = useState("");
   const [catFilter, setCatFilter] = useState("ALL");
+  const [itemFilter, setItemFilter] = useState("");
 
   // ── Utility drawer / create modal ──
   const [panelOpen, setPanelOpen] = useState(false);
@@ -230,15 +231,19 @@ export default function WorkerProductsPage() {
     const catId = catFilter !== "ALL"
       ? categorias.find((c) => c.nombre === catFilter)?.id
       : undefined;
+    const itemTrim = itemFilter.trim();
     return variants.filter((v) => {
       const matchName = stripDiacritics(v.producto.nombre).toLowerCase()
       .includes(stripDiacritics(search).toLowerCase());
       const matchCat =
         catId === undefined ||
         (catId !== undefined && v.producto.categoria?.id === catId);
-      return matchName && matchCat;
+      const matchItem =
+        itemTrim === "" ||
+        String(v.item).includes(itemTrim);
+      return matchName && matchCat && matchItem;
     });
-  }, [variants, search, catFilter, categorias]);
+  }, [variants, search, catFilter, categorias, itemFilter]);
 
   const variantName = (v: WorkerVariant) => v.producto.nombre;
 
@@ -499,6 +504,22 @@ export default function WorkerProductsPage() {
           placeholder="Buscar producto…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+        />
+        <input
+          type="text"
+          style={{
+            width: 130,
+            padding: "8px 12px",
+            fontSize: 13,
+            background: "var(--worker-control-bg)",
+            border: "1px solid var(--worker-control-border)",
+            borderRadius: 7,
+            color: "var(--worker-ink)",
+          }}
+          placeholder="No. Ítem…"
+          value={itemFilter}
+          min={0}
+          onChange={(e) => setItemFilter(e.target.value)}
         />
         <select
           value={catFilter}
