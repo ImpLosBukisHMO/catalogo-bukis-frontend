@@ -74,6 +74,16 @@ export async function getMasVendidos(): Promise<Product[]> {
   return res.data;
 }
 
+export async function getMenosVistos(): Promise<Product[]> {
+  const res = await API.get("/api/productos/menos-vistos/");
+  return res.data;
+}
+
+export async function getMenosVendidos(): Promise<Product[]> {
+  const res = await API.get("/api/productos/menos-vendidos/");
+  return res.data;
+}
+
 export async function reportProductView(id: string | number): Promise<void> {
   try {
     await API.post(`/api/productos/${id}/ver/`);
