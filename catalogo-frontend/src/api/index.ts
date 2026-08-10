@@ -9,7 +9,23 @@ const API = axios.create({
   xsrfHeaderName: 'X-CSRFToken',
 });
 
-// Ya no necesitamos interceptor de request para inyectar token, las cookies viajan solas
+// Obtener el valor de una cookie por su nombre
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
+// Interceptor de request para inyectar manualmente el token CSRF.
+// Axios no lo inyecta automáticamente en peticiones cross-origin (diferente puerto).
+API.interceptors.request.use((config) => {
+  const csrfToken = getCookie('csrftoken');
+  if (csrfToken) {
+    config.headers['X-CSRFToken'] = csrfToken;
+  }
+  return config;
+});
 
 // Si recibe 401, intenta refrescar la sesión (HttpOnly cookies) y reintentar.
 // NO llama logout() al fallar — deja que el caller (AuthProvider, etc.) maneje el estado.
