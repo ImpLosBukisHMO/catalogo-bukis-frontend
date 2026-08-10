@@ -33,6 +33,13 @@ import {
 import type { WorkerCreatedVariant, WorkerUploadedImage } from "../services/worker";
 import { workerKeys } from "./workerKeys";
 import type { WorkerProducto } from "../types/worker";
+import {
+  getNovedades,
+  getMasVistos,
+  getMasVendidos,
+  getMenosVistos,
+  getMenosVendidos,
+} from "../services/product";
 
 // ─── useWorkerVariants ────────────────────────────────────────────────────────
 
@@ -294,5 +301,47 @@ export function useCrearCategoria() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workerKeys.categories() });
     },
+  });
+}
+
+// ─── Dashboard KPIs ───────────────────────────────────────────────────────────
+
+export function useDashboardKpiNovedades() {
+  return useQuery({
+    queryKey: workerKeys.dashboardKpi("novedades"),
+    queryFn: getNovedades,
+    staleTime: 60_000,
+  });
+}
+
+export function useDashboardKpiMasVistos() {
+  return useQuery({
+    queryKey: workerKeys.dashboardKpi("masVistos"),
+    queryFn: getMasVistos,
+    staleTime: 60_000,
+  });
+}
+
+export function useDashboardKpiMasVendidos() {
+  return useQuery({
+    queryKey: workerKeys.dashboardKpi("masVendidos"),
+    queryFn: getMasVendidos,
+    staleTime: 60_000,
+  });
+}
+
+export function useDashboardKpiMenosVistos() {
+  return useQuery({
+    queryKey: workerKeys.dashboardKpi("menosVistos"),
+    queryFn: getMenosVistos,
+    staleTime: 60_000,
+  });
+}
+
+export function useDashboardKpiMenosVendidos() {
+  return useQuery({
+    queryKey: workerKeys.dashboardKpi("menosVendidos"),
+    queryFn: getMenosVendidos,
+    staleTime: 60_000,
   });
 }
