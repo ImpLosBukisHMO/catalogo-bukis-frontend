@@ -64,11 +64,13 @@ export function getAccessToken(): string | null {
   return localStorage.getItem("access");
 }
 
-export function logout(): void {
+export function logout(onClearAuth: () => void, navigate?: () => void): void {
   localStorage.removeItem("access");
   localStorage.removeItem("refresh");
-  localStorage.removeItem("me"); // opcional
+  localStorage.removeItem("me");
   localStorage.removeItem("token");
+  onClearAuth();
+  navigate?.();
 }
 
 async function doFetch(url: string, accessToken: string | null) {

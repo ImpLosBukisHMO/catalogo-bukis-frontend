@@ -7,9 +7,9 @@ const API = axios.create({
   withCredentials: true,
 });
 
-// Inyecta el JWT access token (nuevo sistema) o el token legacy
+// Inyecta el JWT access token
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access") ?? localStorage.getItem("token");
+  const token = localStorage.getItem("access");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -25,7 +25,7 @@ API.interceptors.response.use(
       original._retry = true;
 
       // Si el backend dice que el token no es válido (token_not_valid),
-      // limpiamos el token y reintentamos sin Authorization para endpoints públicos
+      // limpiamos access y reintentamos sin Authorization para endpoints públicos
       const errorCode = error.response?.data?.code;
       if (errorCode === "token_not_valid") {
         localStorage.removeItem("access");
@@ -40,7 +40,7 @@ API.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newAccess}`;
         return API(original);
       } catch {
-        logout();
+        logout(() => {});
       }
     }
     return Promise.reject(error);

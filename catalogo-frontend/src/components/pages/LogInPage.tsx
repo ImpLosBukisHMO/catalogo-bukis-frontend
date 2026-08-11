@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../elements/Footer";
 import NavBar from "../elements/NavBar";
 import HideShowPassword from "../elements/HideShowPassword";
-import { logIn } from "../../services/user";
 import { login, getMe, isWorker } from "../../services/auth";
 import { useAuth } from "../../context/useAuth";
 
@@ -29,12 +28,7 @@ const LogInPage = () => {
         setLoading(true);
         setError('');
         try {
-            // Login con JWT (access + refresh) para los servicios nuevos
             await login(correo, password);
-            // También hacer login con el sistema legacy para compatibilidad con axios/user.ts
-            try { await logIn(correo, password); } catch { /* continuar aunque falle el legacy */ }
-
-            // Detectar si es worker y redirigir
             const me = await getMe();
             if (isWorker(me)) {
                 navigate("/worker");

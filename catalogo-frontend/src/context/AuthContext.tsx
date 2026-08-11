@@ -8,5 +8,4 @@ export type AuthState = {
     setLoggedOut: () => void;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthState | undefined>(undefined);

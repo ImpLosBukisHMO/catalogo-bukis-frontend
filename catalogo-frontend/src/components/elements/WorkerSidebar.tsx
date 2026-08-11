@@ -1,7 +1,8 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ClipboardList, Image, LayoutDashboard, Moon, Package, Percent, Store, Sun, UserCircle } from "lucide-react";
-import { logOut } from "../../services/user";
+import { logout } from "../../services/auth";
+import { useAuth } from "../../context/useAuth";
 import { useWorkerTheme } from "../providers/useWorkerTheme";
 import { isBannerOfertasEnabled } from "../../utils/featureFlags";
 import {
@@ -50,6 +51,8 @@ const NAV_ROUTES = [
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
 const WorkerSidebar = () => {
+  const navigate = useNavigate();
+  const { setLoggedOut } = useAuth();
   const { theme, toggleTheme } = useWorkerTheme();
   const routes = isBannerOfertasEnabled
     ? [...NAV_ROUTES, {
@@ -61,9 +64,7 @@ const WorkerSidebar = () => {
     : NAV_ROUTES;
 
   const handleLogOut = () => {
-    logOut().catch((err: unknown) =>
-      console.error("Error al cerrar sesión:", err)
-    );
+    logout(setLoggedOut, () => navigate("/"));
   };
 
   return (

@@ -44,7 +44,7 @@ export default function MisPedidosPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+    if (!localStorage.getItem("access")) {
       navigate("/iniciar-sesion");
       return;
     }
@@ -58,7 +58,7 @@ export default function MisPedidosPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen flex-col">

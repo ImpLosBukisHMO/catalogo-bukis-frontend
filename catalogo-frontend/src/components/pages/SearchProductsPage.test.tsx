@@ -283,6 +283,21 @@ describe("SearchProductsPage", () => {
     expect(screen.queryByText(/Error al obtener productos favoritos/)).not.toBeInTheDocument();
   });
 
+  it("does not treat the legacy token key as an authenticated session for favoritos", async () => {
+    localStorage.setItem("token", "legacy-token");
+    mockedGetProductsPage.mockResolvedValue(
+      buildPagedResponse([buildProduct(1, "Mate Imperial")], 1, {
+        previous: null,
+        next: null,
+      }),
+    );
+
+    renderSearchProductsPage("/productos?page=1");
+
+    expect(await screen.findByText("Mate Imperial")).toBeInTheDocument();
+    expect(mockedGetFavoritos).not.toHaveBeenCalled();
+  });
+
   it("fetches favoritos when the visitor has an access token", async () => {
     localStorage.setItem("access", "fake-jwt");
     mockedGetProductsPage.mockResolvedValue(

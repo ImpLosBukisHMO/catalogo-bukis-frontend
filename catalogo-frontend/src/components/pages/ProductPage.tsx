@@ -15,6 +15,7 @@ import type { ProductDetail, Variant } from "../../types/product";
 import type { Product, ProductCardVM } from "../../types/product";
 import Barcode from "react-barcode";
 import { addFavorito, removeFavorito, getFavoritos } from "../../services/favoritos";
+import { getAccessToken } from "../../services/auth";
 
 
 const RELATED_PRODUCTS_LIMIT = 9;
@@ -73,6 +74,7 @@ export default function ProductPage() {
   const qty = useMemo(() => parseQty(qtyRaw), [qtyRaw]);
   const displayedPrice = selectedVariant?.precio ?? product?.precio ?? "0";
   const isLoggedIn = useContext(AuthContext)?.isLoggedIn ?? false;
+  const hasAccessToken = Boolean(getAccessToken());
 
   const validation = useMemo(() => {
     if (!selectedVariant) return { ok: false, msg: "Selecciona una variante." };
@@ -162,19 +164,22 @@ export default function ProductPage() {
 
   useEffect(() => {
     const fetchFavoritos = async () => {
-      if (isLoggedIn) {
-        try {
-          const data = await getFavoritos();
-          const formattedData = data.map((f) => ({ id: f.id, producto_id: f.variante.producto_id }))
-          setFavoritos(formattedData);
-        } catch (error) {
-          console.error("Error al cargar errores favoritos.", error)
-        }
+      if (!hasAccessToken) {
+        setFavoritos([]);
+        return;
+      }
+
+      try {
+        const data = await getFavoritos();
+        const formattedData = data.map((f) => ({ id: f.id, producto_id: f.variante.producto_id }))
+        setFavoritos(formattedData);
+      } catch (error) {
+        console.error("Error al cargar errores favoritos.", error)
       }
     }
 
     fetchFavoritos();
-  }, [isLoggedIn])
+  }, [hasAccessToken])
 
   // Cargar “Más productos” usando el mismo ProductCard del Home
   useEffect(() => {
@@ -241,7 +246,7 @@ export default function ProductPage() {
   }
 
   const handleToggleFavorite = async (product: ProductCardVM | ProductDetail) => {
-    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+    if (!getAccessToken()) {
         window.location.href = "/iniciar-sesion";
         return;
     }

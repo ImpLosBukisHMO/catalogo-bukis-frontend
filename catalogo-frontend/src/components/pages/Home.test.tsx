@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "./Home";
 import { getProducts } from "../../services/product";
+import { getFavoritos } from "../../services/favoritos";
 import type { Product } from "../../types/product";
 
 vi.mock("../elements/NavBar", () => ({
@@ -18,14 +19,33 @@ vi.mock("../elements/OfferSlider", () => ({
 }));
 
 vi.mock("../elements/ProductCard", () => ({
-  default: ({ product }: { product: { nombre: string } }) => <div>{product.nombre}</div>,
+  default: ({
+    product,
+    onToggleFavorite,
+  }: {
+    product: { id: number; nombre: string };
+    onToggleFavorite: (product: { id: number; nombre: string }) => void;
+  }) => (
+    <div>
+      <span>{product.nombre}</span>
+      <button type="button" onClick={() => onToggleFavorite(product)}>
+        Toggle favorite {product.nombre}
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("../../services/product", () => ({
   getProducts: vi.fn(),
+  getProductById: vi.fn(),
+}));
+
+vi.mock("../../services/favoritos", () => ({
+  getFavoritos: vi.fn(),
 }));
 
 const mockedGetProducts = vi.mocked(getProducts);
+const mockedGetFavoritos = vi.mocked(getFavoritos);
 
 function buildProduct(id: number, nombre: string): Product {
   return {
@@ -51,6 +71,9 @@ function buildProduct(id: number, nombre: string): Product {
 describe("Home", () => {
   beforeEach(() => {
     mockedGetProducts.mockResolvedValue([]);
+    mockedGetFavoritos.mockReset();
+    mockedGetFavoritos.mockResolvedValue([]);
+    localStorage.clear();
   });
 
   it("keeps featured products flat and links browse-all actions to /productos without pagination controls", async () => {
@@ -82,5 +105,19 @@ describe("Home", () => {
     expect(await screen.findByText("Mate Imperial")).toBeInTheDocument();
     expect(screen.getByText("Libro Azul")).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Catalog pagination" })).not.toBeInTheDocument();
+  });
+
+  it("does not treat the legacy token key as an authenticated session when loading favoritos", async () => {
+    localStorage.setItem("token", "legacy-token");
+    mockedGetProducts.mockResolvedValue([buildProduct(1, "Mate Imperial")]);
+
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Mate Imperial")).toBeInTheDocument();
+    expect(mockedGetFavoritos).not.toHaveBeenCalled();
   });
 });

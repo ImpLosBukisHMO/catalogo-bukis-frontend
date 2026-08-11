@@ -184,7 +184,7 @@ export default function PedidoDetallePage() {
   });
 
   useEffect(() => {
-    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+    if (!localStorage.getItem("access")) {
       navigate("/iniciar-sesion");
       return;
     }
@@ -200,7 +200,7 @@ export default function PedidoDetallePage() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleUploadChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

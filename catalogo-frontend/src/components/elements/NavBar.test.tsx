@@ -1,18 +1,22 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import NavBar from "./NavBar";
+import { logout } from "../../services/auth";
+
+const mockedSetLoggedOut = vi.fn();
+const authState = {
+  isLoggedIn: false,
+  isStaff: false,
+  setLoggedOut: mockedSetLoggedOut,
+};
 
 vi.mock("../../context/useAuth", () => ({
-  useAuth: () => ({
-    isLoggedIn: false,
-    isStaff: false,
-    setLoggedOut: vi.fn(),
-  }),
+  useAuth: () => authState,
 }));
 
-vi.mock("../../services/user", () => ({
-  logOut: vi.fn(),
+vi.mock("../../services/auth", () => ({
+  logout: vi.fn(),
 }));
 
 function LocationDisplay() {
@@ -39,6 +43,12 @@ function renderNavBar() {
 }
 
 describe("NavBar", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authState.isLoggedIn = false;
+    authState.isStaff = false;
+  });
+
   it("navigates to the canonical catalog route when a search is submitted", () => {
     renderNavBar();
 
@@ -56,5 +66,22 @@ describe("NavBar", () => {
     fireEvent.submit(screen.getByRole("searchbox").closest("form") as HTMLFormElement);
 
     expect(screen.getByTestId("location")).toHaveTextContent("/productos?page=1");
+  });
+
+  it("uses the shared JWT-only logout flow when an authenticated user signs out", () => {
+    authState.isLoggedIn = true;
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <NavBar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar Sesión" }));
+
+    expect(logout).toHaveBeenCalledTimes(1);
+    const [onClearAuth, navigate] = vi.mocked(logout).mock.calls[0];
+    expect(onClearAuth).toBe(mockedSetLoggedOut);
+    expect(typeof navigate).toBe("function");
   });
 });

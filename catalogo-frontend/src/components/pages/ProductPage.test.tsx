@@ -8,6 +8,7 @@ import {
   getProductImages,
   getProducts,
 } from "../../services/product";
+import { getFavoritos } from "../../services/favoritos";
 
 vi.mock("react-barcode", () => ({
   default: () => <div data-testid="barcode" />,
@@ -37,12 +38,41 @@ vi.mock("../../services/product", () => ({
   getProducts: vi.fn(),
 }));
 
+vi.mock("../../services/favoritos", () => ({
+  getFavoritos: vi.fn(),
+  addFavorito: vi.fn(),
+  removeFavorito: vi.fn(),
+}));
+
 const mockedGetProductById = vi.mocked(getProductById);
 const mockedGetProductImages = vi.mocked(getProductImages);
 const mockedGetProducts = vi.mocked(getProducts);
+const mockedGetFavoritos = vi.mocked(getFavoritos);
+
+function renderProductPage({ isLoggedIn = false }: { isLoggedIn?: boolean } = {}) {
+  const router = createMemoryRouter(
+    [{ path: "/producto/:id", element: <ProductPage /> }],
+    { initialEntries: ["/producto/10"] },
+  );
+
+  return render(
+    <AuthContext.Provider
+      value={{
+        isLoggedIn,
+        isStaff: false,
+        isLoading: false,
+        refresh: async () => {},
+        setLoggedOut: () => {},
+      }}
+    >
+      <RouterProvider router={router} />
+    </AuthContext.Provider>,
+  );
+}
 
 describe("ProductPage", () => {
   beforeEach(() => {
+    localStorage.clear();
     mockedGetProductById.mockResolvedValue({
       id: 10,
       nombre: "Producto detalle",
@@ -90,6 +120,8 @@ describe("ProductPage", () => {
         disponible: true,
       })),
     );
+    mockedGetFavoritos.mockReset();
+    mockedGetFavoritos.mockResolvedValue([]);
   });
 
   it("keeps related products non-paginated, uses the first page product list, and caps discovery cards without rendering pagination controls", async () => {
@@ -248,5 +280,30 @@ describe("ProductPage", () => {
 
     // Discounted price: 150 * 0.90 = 135.
     expect(screen.getByText(/\$ 135\.00 MXN \(-10\.00 %\)/)).toBeInTheDocument();
+  });
+
+  it("does not fetch favoritos when auth context is logged in but there is no access token", async () => {
+    renderProductPage({ isLoggedIn: true });
+
+    expect(await screen.findByText("Producto detalle")).toBeInTheDocument();
+    expect(mockedGetFavoritos).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Agregar a favoritos" })).toBeInTheDocument();
+  });
+
+  it("fetches favoritos when an access token exists even if auth context is desynced", async () => {
+    localStorage.setItem("access", "jwt-access");
+    mockedGetFavoritos.mockResolvedValue([
+      {
+        id: 77,
+        variante: {
+          producto_id: 10,
+        },
+      } as Awaited<ReturnType<typeof getFavoritos>>[number],
+    ]);
+
+    renderProductPage({ isLoggedIn: false });
+
+    expect(await screen.findByRole("button", { name: "Quitar de favoritos" })).toBeInTheDocument();
+    expect(mockedGetFavoritos).toHaveBeenCalledTimes(1);
   });
 });

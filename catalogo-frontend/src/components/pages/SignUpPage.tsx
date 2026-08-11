@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { signUp } from "../../services/user";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
@@ -6,6 +7,7 @@ import { getLoggedUserData } from "../../services/user";
 import HideShowPassword from "../elements/HideShowPassword";
 
 const SignUpPage = () => {
+    const navigate = useNavigate();
     // Password visibility.
     const [passwordVisible, setPasswordVisibility] = useState("password");
     const [confirmPasswordVisible, setConfirmPasswordVisibility] = useState("password");
@@ -38,6 +40,7 @@ const SignUpPage = () => {
         }
         try {
             await signUp({ id: null, nombre, apellido, correo, telefono, password });
+            navigate("/");
         } catch {
             setError('Error al registrar usuario');
         }

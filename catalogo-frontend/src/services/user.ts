@@ -26,70 +26,16 @@ export async function signUp(data: Usuario) {
     headers: { Accept: "application/json" },
   });
 
-  if (res.status !== 200) {
+  if (res.status !== 200 && res.status !== 201) {
     throw new Error(`Error al registrar un nuevo usuario (${res.status}).`);
   }
 
-  // Use JWT login to avoid infinite redirect bugs
   await login(data.correo || "", data.password || "");
-  try { await logIn(data.correo || "", data.password || ""); } catch { /* ignore */ }
-}
-
-
-export async function logIn(correo: string, password: string) {
-  // Remove token (especially if it's already expired).
-  localStorage.removeItem("token");
-  localStorage.removeItem("access");
-  localStorage.removeItem("me");
-
-  const data = {
-    correo: correo,
-    password: password
-  };
-
-  const res = await API.post("/api/login/", data, {
-    headers: { Accept: "application/json" },
-  });
-
-  // Successful log-in.
-  if (res.data && res.data.token) {
-    localStorage.setItem("token", res.data.token);
-    window.location.href = '/';
-  } else {
-    throw new Error(`Error al iniciar sesión: no se recibió el token del servidor.`);
-  }
-}
-
-export async function logOut(onClearAuth?: () => void) {
-  const token = localStorage.getItem("token");
-  try {
-    // El segundo argumento es el body (vacío), el tercero es la configuración (headers)
-    await API.post("/api/logout/", {}, {
-      headers: { 
-        Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-    });
-  } catch (error) {
-    console.error("Error al cerrar sesión en el servidor:", error);
-  } finally {
-    // Aseguramos borrar el token localmente pase lo que pase en el servidor
-    onClearAuth?.();
-    localStorage.removeItem("token");
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("me");
-    window.location.href = '/';
-  }
 }
 
 export async function getLoggedUserData() {
-  const token = localStorage.getItem("access") ?? localStorage.getItem("token");
   const res = await API.get("/api/mi_usuario/", {
-    headers: { 
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
+    headers: { Accept: "application/json" },
   });
 
   if (res.status !== 200) {
@@ -114,14 +60,9 @@ export async function updateUserData(data: Usuario) {
     payload.password = data.password;
   }
 
-  const token = localStorage.getItem("token");
-
   try {
     await API.put(`/api/usuarios/${data.id}/`, payload, {
-      headers: { 
-        Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
+      headers: { Accept: "application/json" },
     });
   } catch (error) {
     console.error("Error al actualizar usuario:", error);

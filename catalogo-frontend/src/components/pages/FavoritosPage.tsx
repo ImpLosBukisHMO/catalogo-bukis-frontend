@@ -56,7 +56,7 @@ export default function FavoritosPage() {
   }
 
   async function handleAddToCart(fav: FavoritoVariante) {
-    if (!localStorage.getItem("access") && !localStorage.getItem("token")) {
+    if (!localStorage.getItem("access")) {
       navigate("/iniciar-sesion");
       return;
     }

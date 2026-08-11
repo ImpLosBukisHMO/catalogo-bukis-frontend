@@ -3,7 +3,7 @@ import { Briefcase, House, Heart, ShoppingCart, UserRound, Search, Box, Menu, X 
 import { DoorOpen } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoBukis from '/bukis_logo.png';
-import { logOut } from "../../services/user";
+import { logout } from "../../services/auth";
 import { useAuth } from "../../context/useAuth";
 import { buildCatalogLocation, normalizeCatalogQuery } from "../../utils/catalogNavigation";
 
@@ -95,7 +95,7 @@ const NavBar = ({navBarQuery}: NavBarProps) => {
                     {isLoggedIn && (
                         <button 
                         className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/95 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/45" 
-                        onClick={async () => await logOut(setLoggedOut)}
+                        onClick={() => logout(setLoggedOut, () => navigate("/"))}
                         type="button">
                             <DoorOpen size={iconSize} />
                             <span>Cerrar Sesión</span>
