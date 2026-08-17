@@ -3,6 +3,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductPage from "./ProductPage";
 import { AuthContext } from "../../context/AuthContext";
+import { BACKEND_BASE_URL } from "../../utils/backend";
 import {
   getProductById,
   getProductImages,
@@ -255,5 +256,33 @@ describe("ProductPage", () => {
 
     // Discounted price: 150 * 0.90 = 135.
     expect(screen.getByText(/\$ 135\.00 MXN \(-10\.00 %\)/)).toBeInTheDocument();
+  });
+
+  it("resolves relative gallery image URLs for the main product image", async () => {
+    mockedGetProductImages.mockResolvedValueOnce([
+      {
+        id: 77,
+        producto: 10,
+        variante: 500,
+        imagen: "/media/img/products/galeria/product-page.jpg",
+        orden: 0,
+        es_principal: true,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+
+    const router = createMemoryRouter(
+      [{ path: "/producto/:id", element: <ProductPage /> }],
+      { initialEntries: ["/producto/10"] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    const image = await screen.findByAltText("Producto detalle");
+    expect(image).toHaveAttribute(
+      "src",
+      `${BACKEND_BASE_URL}/media/img/products/galeria/product-page.jpg`,
+    );
   });
 });
