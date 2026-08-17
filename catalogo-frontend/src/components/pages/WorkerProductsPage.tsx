@@ -12,6 +12,7 @@ import {
   useCrearCategoria,
   useWorkerProductosSlim,
 } from "../../queries/workerProducts";
+import { workerKeys } from "../../queries/workerKeys";
 import { normalizeResponse } from "./responseNormalizer";
 import { getStockColor } from "../elements/workerTheme";
 import {
@@ -1096,8 +1097,8 @@ export default function WorkerProductsPage() {
 
           <Seccion title="Colores">
             <CrearColorForm
-              onCreated={() => {
-                queryClient.invalidateQueries({ queryKey: ["worker", "colores"] });
+              onCreated={async () => {
+                await queryClient.invalidateQueries({ queryKey: workerKeys.colors() });
                 crearColorM.reset();
               }}
               mutation={crearColorM}
@@ -1108,7 +1109,7 @@ export default function WorkerProductsPage() {
             <CrearCategoriaForm 
               mutation={crearCategoriaM} 
               onCreated={async () => {
-                await queryClient.invalidateQueries({ queryKey: ["worker", "categorias"] });
+                await queryClient.invalidateQueries({ queryKey: workerKeys.categories() });
                 refetchCategorias();
               }}
             />
