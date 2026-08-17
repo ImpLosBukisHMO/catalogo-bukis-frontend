@@ -16,6 +16,7 @@ import type { ProductDetail, Variant } from "../../types/product";
 import type { Product, ProductCardVM } from "../../types/product";
 import Barcode from "react-barcode";
 import { addFavorito, removeFavorito, getFavoritos } from "../../services/favoritos";
+import { resolveImageUrlOrPlaceholder } from "../../utils/images";
 
 
 const RELATED_PRODUCTS_LIMIT = 9;
@@ -68,6 +69,10 @@ export default function ProductPage() {
     if (!images.length) return null;
     return images.find((i) => i.id === activeImageId) ?? images[0];
   }, [images, activeImageId]);
+  const activeImageSrc = useMemo(
+    () => resolveImageUrlOrPlaceholder(activeImage?.imagen ?? product?.imagen ?? null),
+    [activeImage?.imagen, product?.imagen],
+  );
 
   const stock = selectedVariant?.stock ?? 0;
   const isDisponible = Boolean(selectedVariant?.disponible);
@@ -313,12 +318,13 @@ export default function ProductPage() {
                     className="aspect-square overflow-hidden rounded-xl bg-white"
                   >
                     <img
-                      src={
-                        activeImage?.imagen ??
-                        product.imagen ??
-                        "https://placehold.net/600x600.png"
-                      }
+                      src={activeImageSrc}
                       alt={product.nombre}
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        img.onerror = null;
+                        img.src = resolveImageUrlOrPlaceholder(null);
+                      }}
                       className="h-full w-full object-contain"
                     />
                   </figure>

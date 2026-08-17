@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { Box, Heart } from "lucide-react";
 import type { ProductCardVM } from "../../types/product";
+import { resolveImageUrlOrPlaceholder } from "../../utils/images";
 
 type Props = {
   product: ProductCardVM;
@@ -24,6 +25,7 @@ const ProductCard = ({ product, className, onToggleFavorite, isLikedByUser = fal
   let finalProductPrice = productBasePrice;
   let hasDiscount = false;
   let percentage = 0;
+  const imageSrc = resolveImageUrlOrPlaceholder(imagenUrl);
 
   if (specialDiscount && specialDiscount.es_valido) {
     percentage = Number(specialDiscount.porcentaje) || 0;
@@ -42,12 +44,12 @@ const ProductCard = ({ product, className, onToggleFavorite, isLikedByUser = fal
     >
       <div className="w-full overflow-hidden rounded-xl border border-neutral-300 bg-white shadow-sm">
         <img
-          src={imagenUrl || "https://placehold.net/600x600.png"}
+          src={imageSrc}
           alt={nombre}
           onError={(e) => {
             const img = e.currentTarget;
             img.onerror = null;
-            img.src = "https://placehold.net/600x600.png";
+            img.src = resolveImageUrlOrPlaceholder(null);
           }}
           className="aspect-square w-full object-cover"
         />
