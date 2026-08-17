@@ -1,4 +1,5 @@
 import { BACKEND_BASE_URL } from "../utils/backend";
+import { setCsrfToken } from "../api";
 
 const API_URL = `${BACKEND_BASE_URL}/api`;
 
@@ -29,6 +30,9 @@ export async function login(correo: string, contrasena: string): Promise<AuthTok
     body: JSON.stringify({ correo, password: contrasena }),
   });
 
+  const csrf = res.headers.get("x-csrftoken");
+  if (csrf) setCsrfToken(csrf);
+
   if (!res.ok) {
     let detail = `Login falló: ${res.status}`;
     try {
@@ -50,6 +54,9 @@ export async function refreshAccessToken(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     credentials: "include", // Envia el refresh_token cookie
   });
+
+  const csrf = res.headers.get("x-csrftoken");
+  if (csrf) setCsrfToken(csrf);
 
   if (!res.ok) {
     const txt = await res.text();
@@ -83,6 +90,9 @@ async function doFetch(url: string) {
 
 export async function getMe(): Promise<MeUser> {
   const res = await doFetch(`${API_URL}/mi_usuario/`);
+
+  const csrf = res.headers.get("x-csrftoken");
+  if (csrf) setCsrfToken(csrf);
 
   if (!res.ok) {
     const err = new Error(`Me falló: ${res.status}`);

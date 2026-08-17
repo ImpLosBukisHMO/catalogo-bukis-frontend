@@ -17,10 +17,16 @@ function getCookie(name: string): string | null {
   return null;
 }
 
+// Variable en memoria para almacenar el token CSRF (útil para cross-origin donde JS no lee cookies)
+let memoryCsrfToken: string | null = null;
+
+export function setCsrfToken(token: string) {
+  memoryCsrfToken = token;
+}
+
 // Interceptor de request para inyectar manualmente el token CSRF.
-// Axios no lo inyecta automáticamente en peticiones cross-origin (diferente puerto).
 API.interceptors.request.use((config) => {
-  const csrfToken = getCookie('csrftoken');
+  const csrfToken = memoryCsrfToken || getCookie('csrftoken');
   if (csrfToken) {
     config.headers['X-CSRFToken'] = csrfToken;
   }
@@ -30,8 +36,17 @@ API.interceptors.request.use((config) => {
 // Si recibe 401, intenta refrescar la sesión (HttpOnly cookies) y reintentar.
 // NO llama logout() al fallar — deja que el caller (AuthProvider, etc.) maneje el estado.
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const token = response.headers['x-csrftoken'];
+    if (token) {
+      memoryCsrfToken = token;
+    }
+    return response;
+  },
   async (error) => {
+    if (error.response?.headers?.['x-csrftoken']) {
+      memoryCsrfToken = error.response.headers['x-csrftoken'];
+    }
     const original = error.config;
 
     // Excluir endpoints de auth del retry para evitar loops
