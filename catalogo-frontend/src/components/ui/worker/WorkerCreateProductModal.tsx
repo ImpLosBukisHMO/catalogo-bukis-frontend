@@ -775,7 +775,7 @@ function UnifiedCreateProductSection({
 
             <div style={responsiveGridStyle}>
               <FormField label="Peso" error={fieldErrors.peso}>
-                <input type="number" min="0" step="0.01" inputMode="decimal" value={form.peso} onChange={(event) => setField("peso")(event.target.value)} style={inputStyle} />
+                <input type="text" value={form.peso} onChange={(event) => setField("peso")(event.target.value)} style={inputStyle} />
               </FormField>
               <FormField label="Medidas" error={fieldErrors.medidas}>
                 <input type="text" value={form.medidas} onChange={(event) => setField("medidas")(event.target.value)} style={inputStyle} />
@@ -1147,10 +1147,7 @@ function CreateProductSection({
         <div style={responsiveGridStyle}>
           <FormField label="Peso" error={fieldErrors.peso}>
             <input
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
+              type="text"
               value={form.peso}
               onChange={(event) => setField("peso")(event.target.value)}
               style={inputStyle}
