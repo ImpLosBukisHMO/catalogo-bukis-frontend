@@ -8,6 +8,7 @@ import { addItem } from "../../services/carrito";
 import {
   getProductById,
   getProductImages,
+  getMasVistos,
   getMasVendidos,
   reportProductView,
   type ProductImage,
@@ -18,6 +19,8 @@ import Barcode from "react-barcode";
 import { addFavorito, removeFavorito, getFavoritos } from "../../services/favoritos";
 import { resolveImageUrlOrPlaceholder } from "../../utils/images";
 const RELATED_PRODUCTS_LIMIT = 9;
+const BEST_SELLING_TITLE = "Productos Más Vendidos";
+const MOST_VIEWED_TITLE = "Productos Más Vistos";
 
 function mapToCardVM(product: Product): ProductCardVM {
   return {
@@ -29,6 +32,13 @@ function mapToCardVM(product: Product): ProductCardVM {
     categoria: product.categoria ?? null,
     descuento_especial: product.descuento_especial ?? null,
   };
+}
+
+function buildRelatedProducts(products: Product[], currentProductId: string | undefined): ProductCardVM[] {
+  return products
+    .filter((p) => String(p.id) !== String(currentProductId))
+    .map(mapToCardVM)
+    .slice(0, RELATED_PRODUCTS_LIMIT);
 }
 
 function pickDefaultVariantId(variantes: Variant[]): number | null {
@@ -66,6 +76,7 @@ export default function ProductPage() {
   const [bestSellingProducts, setBestSellingProducts] = useState<ProductCardVM[]>([]);
   const [bestSellingLoading, setBestSellingLoading] = useState(false);
   const [bestSellingError, setBestSellingError] = useState<string | null>(null);
+  const [recommendationTitle, setRecommendationTitle] = useState(BEST_SELLING_TITLE);
 
   const [favMsg, setFavMsg] = useState<string | null>(null);
   const [favoritos, setFavoritos] = useState<{ id: number; producto_id: number }[]>([]);
@@ -202,14 +213,20 @@ export default function ProductPage() {
         setBestSellingLoading(true);
         setBestSellingError(null);
 
-        const data: Product[] = await getMasVendidos();
+        const bestSellingData: Product[] = await getMasVendidos();
+        const bestSellingRecommendations = buildRelatedProducts(bestSellingData, id);
 
-        const mapped: ProductCardVM[] = data
-          .filter((p) => String(p.id) !== String(id))
-          .map(mapToCardVM)
-          .slice(0, RELATED_PRODUCTS_LIMIT);
+        if (bestSellingRecommendations.length > 0) {
+          setRecommendationTitle(BEST_SELLING_TITLE);
+          setBestSellingProducts(bestSellingRecommendations);
+          return;
+        }
 
-        setBestSellingProducts(mapped);
+        const mostViewedData: Product[] = await getMasVistos();
+        const mostViewedRecommendations = buildRelatedProducts(mostViewedData, id);
+
+        setRecommendationTitle(MOST_VIEWED_TITLE);
+        setBestSellingProducts(mostViewedRecommendations);
       } catch (e) {
         setBestSellingError(e instanceof Error ? e.message : "Error desconocido");
       } finally {
@@ -582,7 +599,7 @@ export default function ProductPage() {
 
               {!bestSellingLoading && !bestSellingError && (
                 <ProductCarousel
-                  title="Productos Más Vendidos"
+                  title={recommendationTitle}
                   products={bestSellingProducts}
                   onToggleFavorite={handleToggleFavorite}
                   isLikedByUser={isLikedByUser}

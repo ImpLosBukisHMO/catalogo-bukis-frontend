@@ -7,6 +7,7 @@ import { BACKEND_BASE_URL } from "../../utils/backend";
 import {
   getProductById,
   getProductImages,
+  getMasVistos,
   getMasVendidos,
 } from "../../services/product";
 
@@ -35,6 +36,7 @@ vi.mock("../../services/carrito", () => ({
 vi.mock("../../services/product", () => ({
   getProductById: vi.fn(),
   getProductImages: vi.fn(),
+  getMasVistos: vi.fn(),
   getMasVendidos: vi.fn(),
   reportProductView: vi.fn(),
 }));
@@ -47,10 +49,13 @@ vi.mock("../../services/favoritos", () => ({
 
 const mockedGetProductById = vi.mocked(getProductById);
 const mockedGetProductImages = vi.mocked(getProductImages);
+const mockedGetMasVistos = vi.mocked(getMasVistos);
 const mockedGetMasVendidos = vi.mocked(getMasVendidos);
 
 describe("ProductPage", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+
     mockedGetProductById.mockResolvedValue({
       id: 10,
       nombre: "Producto detalle",
@@ -78,6 +83,7 @@ describe("ProductPage", () => {
       ],
     });
     mockedGetProductImages.mockResolvedValue([]);
+    mockedGetMasVistos.mockResolvedValue([]);
     mockedGetMasVendidos.mockResolvedValue(
       Array.from({ length: 12 }, (_, index) => ({
         id: index + 1,
@@ -115,6 +121,7 @@ describe("ProductPage", () => {
     expect(screen.queryByText("Producto 10")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("product-card")).toHaveLength(9);
     expect(mockedGetMasVendidos).toHaveBeenCalledTimes(1);
+    expect(mockedGetMasVistos).not.toHaveBeenCalled();
     expect(screen.getByRole("heading", { name: "Productos Más Vendidos" })).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Catalog pagination" })).not.toBeInTheDocument();
   });
@@ -188,6 +195,102 @@ describe("ProductPage", () => {
     expect(screen.getByText("Producto relacionado B")).toBeInTheDocument();
     expect(screen.getAllByTestId("product-card")).toHaveLength(2);
     expect(screen.queryByRole("navigation", { name: "Catalog pagination" })).not.toBeInTheDocument();
+  });
+
+  it("falls back to most-viewed products when best sellers become empty after excluding the current product", async () => {
+    mockedGetMasVendidos.mockResolvedValueOnce([
+      {
+        id: 10,
+        nombre: "Producto detalle",
+        imagen: null,
+        descripcion: "",
+        precio: "10.00",
+        peso: "1",
+        medidas: "1x1",
+        capacidad: "1",
+        categoria: {
+          id: 1,
+          nombre: "Categoría 1",
+          descuento: null,
+        },
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+        disponible: true,
+      },
+    ]);
+    mockedGetMasVistos.mockResolvedValueOnce([
+      {
+        id: 10,
+        nombre: "Producto detalle",
+        imagen: null,
+        descripcion: "",
+        precio: "10.00",
+        peso: "1",
+        medidas: "1x1",
+        capacidad: "1",
+        categoria: {
+          id: 1,
+          nombre: "Categoría 1",
+          descuento: null,
+        },
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+        disponible: true,
+      },
+      {
+        id: 21,
+        nombre: "Producto más visto A",
+        imagen: null,
+        descripcion: "",
+        precio: "10.00",
+        peso: "1",
+        medidas: "1x1",
+        capacidad: "1",
+        categoria: {
+          id: 1,
+          nombre: "Categoría 1",
+          descuento: null,
+        },
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+        disponible: true,
+      },
+      {
+        id: 22,
+        nombre: "Producto más visto B",
+        imagen: null,
+        descripcion: "",
+        precio: "10.00",
+        peso: "1",
+        medidas: "1x1",
+        capacidad: "1",
+        categoria: {
+          id: 1,
+          nombre: "Categoría 1",
+          descuento: null,
+        },
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+        disponible: true,
+      },
+    ]);
+
+    const router = createMemoryRouter(
+      [{ path: "/producto/:id", element: <ProductPage /> }],
+      { initialEntries: ["/producto/10"] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByText("Producto más visto A")).toBeInTheDocument();
+    expect(screen.getByText("Producto más visto B")).toBeInTheDocument();
+    const relatedCards = screen.getAllByTestId("product-card");
+    expect(relatedCards).toHaveLength(2);
+    expect(relatedCards.map((card) => card.textContent)).not.toContain("Producto detalle");
+    expect(mockedGetMasVendidos).toHaveBeenCalledTimes(1);
+    expect(mockedGetMasVistos).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("heading", { name: "Productos Más Vistos" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Productos Más Vendidos" })).not.toBeInTheDocument();
   });
 
   it("shows the selected variant's own price (not the product base price) when computing discount for logged-in users", async () => {
