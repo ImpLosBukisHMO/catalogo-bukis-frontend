@@ -3,12 +3,12 @@ import { useParams } from "react-router";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
 import { AuthContext } from "../../context/AuthContext";
-import ProductCard from "../elements/ProductCard";
+import ProductCarousel from "../elements/ProductCarousel";
 import { addItem } from "../../services/carrito";
 import {
   getProductById,
   getProductImages,
-  getProducts,
+  getMasVendidos,
   reportProductView,
   type ProductImage,
 } from "../../services/product";
@@ -17,9 +17,19 @@ import type { Product, ProductCardVM } from "../../types/product";
 import Barcode from "react-barcode";
 import { addFavorito, removeFavorito, getFavoritos } from "../../services/favoritos";
 import { resolveImageUrlOrPlaceholder } from "../../utils/images";
-
-
 const RELATED_PRODUCTS_LIMIT = 9;
+
+function mapToCardVM(product: Product): ProductCardVM {
+  return {
+    id: product.id,
+    nombre: product.nombre,
+    precio: Number(product.precio),
+    imagenUrl: product.imagen ?? null,
+    disponible: true,
+    categoria: product.categoria ?? null,
+    descuento_especial: product.descuento_especial ?? null,
+  };
+}
 
 function pickDefaultVariantId(variantes: Variant[]): number | null {
   if (!variantes?.length) return null;
@@ -53,9 +63,9 @@ export default function ProductPage() {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  const [moreProducts, setMoreProducts] = useState<ProductCardVM[]>([]);
-  const [moreLoading, setMoreLoading] = useState(false);
-  const [moreError, setMoreError] = useState<string | null>(null);
+  const [bestSellingProducts, setBestSellingProducts] = useState<ProductCardVM[]>([]);
+  const [bestSellingLoading, setBestSellingLoading] = useState(false);
+  const [bestSellingError, setBestSellingError] = useState<string | null>(null);
 
   const [favMsg, setFavMsg] = useState<string | null>(null);
   const [favoritos, setFavoritos] = useState<{ id: number; producto_id: number }[]>([]);
@@ -185,33 +195,25 @@ export default function ProductPage() {
     fetchFavoritos();
   }, [isLoggedIn])
 
-  // Cargar “Más productos” usando el mismo ProductCard del Home
+  // Cargar “Más vendidos” usando el mismo carrusel del Home
   useEffect(() => {
     (async () => {
       try {
-        setMoreLoading(true);
-        setMoreError(null);
+        setBestSellingLoading(true);
+        setBestSellingError(null);
 
-        const data: Product[] = await getProducts();
+        const data: Product[] = await getMasVendidos();
 
         const mapped: ProductCardVM[] = data
-          .filter((p) => String(p.id) !== String(id)) // evita repetir el mismo producto
-          .map((p) => ({
-            id: p.id,
-            nombre: p.nombre,
-            precio: Number(p.precio),
-            imagenUrl: p.imagen ?? null,
-            disponible: true,
-            categoria: p.categoria ?? null,
-            descuento_especial: p.descuento_especial ?? null
-          }))
+          .filter((p) => String(p.id) !== String(id))
+          .map(mapToCardVM)
           .slice(0, RELATED_PRODUCTS_LIMIT);
 
-        setMoreProducts(mapped);
+        setBestSellingProducts(mapped);
       } catch (e) {
-        setMoreError(e instanceof Error ? e.message : "Error desconocido");
+        setBestSellingError(e instanceof Error ? e.message : "Error desconocido");
       } finally {
-        setMoreLoading(false);
+        setBestSellingLoading(false);
       }
     })();
   }, [id]);
@@ -573,26 +575,19 @@ export default function ProductPage() {
 
             <hr className="my-8 border-bukis-border" />
 
-            {/* Más productos: mismo componente del Home, sin textos grises */}
+            {/* Más vendidos: mismo carrusel del Home */}
             <section className="pt-5">
-              <h2 className="mb-4 text-3xl font-bold text-bukis-ink">
-                Más productos
-              </h2>
+              {bestSellingLoading && <p className="text-neutral-600">Cargando productos...</p>}
+              {bestSellingError && <p className="text-bukis-red-700">{bestSellingError}</p>}
 
-              {moreLoading && <p className="text-neutral-600">Cargando productos...</p>}
-              {moreError && <p className="text-bukis-red-700">{moreError}</p>}
-
-              {!moreLoading && !moreError && (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {moreProducts.map((p) => (
-                    <ProductCard
-                      key={p.id}
-                      product={p}
-                      onToggleFavorite={handleToggleFavorite} 
-                      isLikedByUser={isLikedByUser(p.id)}
-                    />
-                  ))}
-                </div>
+              {!bestSellingLoading && !bestSellingError && (
+                <ProductCarousel
+                  title="Productos Más Vendidos"
+                  products={bestSellingProducts}
+                  onToggleFavorite={handleToggleFavorite}
+                  isLikedByUser={isLikedByUser}
+                  className="px-0 py-0"
+                />
               )}
             </section>
           </>

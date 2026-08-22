@@ -2,8 +2,8 @@ import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import NavBar from "../elements/NavBar";
 import Footer from "../elements/Footer";
-import ProductCard from "../elements/ProductCard";
 import OfferSlider from "../elements/OfferSlider";
+import ProductCarousel from "../elements/ProductCarousel";
 import { getProductById, getNovedades, getMasVistos, getMasVendidos } from "../../services/product";
 import type { Product, ProductCardVM, ProductDetail } from "../../types/product";
 import { addFavorito, getFavoritos, removeFavorito } from "../../services/favoritos";
@@ -108,27 +108,6 @@ function Home() {
     })();
   }, []);
 
-  const renderCarousel = (title: string, data: ProductCardVM[]) => {
-      if (data.length === 0 && !loading) return null;
-
-      return (
-          <section className="mx-auto max-w-7xl px-4 py-8">
-            <h2 className="text-2xl font-bold text-bukis-ink">{title}</h2>
-            <div className="mt-6 flex w-full gap-4 overflow-x-auto px-1 pb-4 snap-x snap-mandatory">
-              {data.map((p) => (
-                <div key={p.id} className="w-72 shrink-0 snap-start">
-                  <ProductCard 
-                    product={p}
-                    onToggleFavorite={handleToggleFavorite}
-                    isLikedByUser={isLikedByUser(p.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-      );
-  }
-
   return (
     <>
       <title>Inicio | Importaciones Los Bukis</title>
@@ -151,9 +130,24 @@ function Home() {
 
       {!loading && !error && (
         <div className="flex flex-col gap-2">
-            {renderCarousel("Novedades", novedades)}
-            {renderCarousel("Productos Más Vistos", masVistos)}
-            {renderCarousel("Productos Más Vendidos", masVendidos)}
+            <ProductCarousel
+              title="Novedades"
+              products={novedades}
+              onToggleFavorite={handleToggleFavorite}
+              isLikedByUser={isLikedByUser}
+            />
+            <ProductCarousel
+              title="Productos Más Vistos"
+              products={masVistos}
+              onToggleFavorite={handleToggleFavorite}
+              isLikedByUser={isLikedByUser}
+            />
+            <ProductCarousel
+              title="Productos Más Vendidos"
+              products={masVendidos}
+              onToggleFavorite={handleToggleFavorite}
+              isLikedByUser={isLikedByUser}
+            />
             
             <div className="my-2 flex justify-center">
               <Link
