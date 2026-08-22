@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductPage from "./ProductPage";
@@ -7,7 +7,7 @@ import { BACKEND_BASE_URL } from "../../utils/backend";
 import {
   getProductById,
   getProductImages,
-  getProducts,
+  getMasVendidos,
 } from "../../services/product";
 
 vi.mock("react-barcode", () => ({
@@ -35,7 +35,7 @@ vi.mock("../../services/carrito", () => ({
 vi.mock("../../services/product", () => ({
   getProductById: vi.fn(),
   getProductImages: vi.fn(),
-  getProducts: vi.fn(),
+  getMasVendidos: vi.fn(),
   reportProductView: vi.fn(),
 }));
 
@@ -47,7 +47,7 @@ vi.mock("../../services/favoritos", () => ({
 
 const mockedGetProductById = vi.mocked(getProductById);
 const mockedGetProductImages = vi.mocked(getProductImages);
-const mockedGetProducts = vi.mocked(getProducts);
+const mockedGetMasVendidos = vi.mocked(getMasVendidos);
 
 describe("ProductPage", () => {
   beforeEach(() => {
@@ -78,7 +78,7 @@ describe("ProductPage", () => {
       ],
     });
     mockedGetProductImages.mockResolvedValue([]);
-    mockedGetProducts.mockResolvedValue(
+    mockedGetMasVendidos.mockResolvedValue(
       Array.from({ length: 12 }, (_, index) => ({
         id: index + 1,
         nombre: `Producto ${index + 1}`,
@@ -100,7 +100,7 @@ describe("ProductPage", () => {
     );
   });
 
-  it("keeps related products non-paginated, uses the first page product list, and caps discovery cards without rendering pagination controls", async () => {
+  it("shows best-selling products from the dedicated endpoint, excludes the current product, and keeps the carousel flat", async () => {
     const router = createMemoryRouter(
       [{ path: "/producto/:id", element: <ProductPage /> }],
       { initialEntries: ["/producto/10"] },
@@ -114,12 +114,13 @@ describe("ProductPage", () => {
     expect(await screen.findByText("Producto 9")).toBeInTheDocument();
     expect(screen.queryByText("Producto 10")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("product-card")).toHaveLength(9);
-    expect(mockedGetProducts).toHaveBeenCalledTimes(1);
+    expect(mockedGetMasVendidos).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("heading", { name: "Productos Más Vendidos" })).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Catalog pagination" })).not.toBeInTheDocument();
   });
 
-  it("keeps discovery cards flat even when only a few related products remain after excluding the current product", async () => {
-    mockedGetProducts.mockResolvedValue([
+  it("keeps the best-selling carousel flat even when only a few items remain after excluding the current product", async () => {
+    mockedGetMasVendidos.mockResolvedValue([
       {
         id: 10,
         nombre: "Producto detalle",
@@ -280,9 +281,12 @@ describe("ProductPage", () => {
     render(<RouterProvider router={router} />);
 
     const image = await screen.findByAltText("Producto detalle");
-    expect(image).toHaveAttribute(
-      "src",
-      `${BACKEND_BASE_URL}/media/img/products/galeria/product-page.jpg`,
-    );
+
+    await waitFor(() => {
+      expect(image).toHaveAttribute(
+        "src",
+        `${BACKEND_BASE_URL}/media/img/products/galeria/product-page.jpg`,
+      );
+    });
   });
 });
